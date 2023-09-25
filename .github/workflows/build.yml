@@ -21,4 +21,4 @@ jobs:
           echo "$(pwd)/depot_tools" >> $GITHUB_PATH
 
       - name: Build R8 Jar
-        run: ./tools/gradle.py d8 r8
+        run: ./tools/gradle.py r8
