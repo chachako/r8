@@ -19,10 +19,16 @@ public abstract class DumpInputFlags {
 
   public static DumpInputFlags getDefault() {
     String dumpInputToFile = System.getProperty(DUMP_INPUT_TO_FILE_PROPERTY);
+    if (dumpInputToFile == null) {
+      dumpInputToFile = System.getenv("COM_ANDROID_TOOLS_R8_DUMPINPUTTOFILE");
+    }
     if (dumpInputToFile != null) {
       return dumpToFile(Paths.get(dumpInputToFile));
     }
     String dumpInputToDirectory = System.getProperty(DUMP_INPUT_TO_DIRECTORY_PROPERTY);
+    if (dumpInputToDirectory == null) {
+      dumpInputToDirectory = System.getenv("COM_ANDROID_TOOLS_R8_DUMPINPUTTODIRECTORY");
+    }
     if (dumpInputToDirectory != null) {
       return dumpToDirectory(Paths.get(dumpInputToDirectory));
     }
