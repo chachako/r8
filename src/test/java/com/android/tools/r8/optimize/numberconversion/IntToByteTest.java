@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
+import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.constant.SparseConditionalConstantPropagation;
@@ -22,6 +23,7 @@ import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,11 +37,16 @@ public class IntToByteTest extends TestBase {
   @Parameterized.Parameter(0)
   public int input;
 
-  @Parameterized.Parameters(name = "{0}")
-  public static Integer[] data() {
-    return new Integer[] {
-      128, 65408, -65408, 42, -32, 0,
-    };
+  @Parameterized.Parameter(1)
+  public TestParameters parameters;
+
+  @Parameterized.Parameters(name = "{0}, {1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        new Integer[] {
+          128, 65408, -65408, 42, -32, 0,
+        },
+        TestParameters.builder().withNoneRuntime().build());
   }
 
   @Test
