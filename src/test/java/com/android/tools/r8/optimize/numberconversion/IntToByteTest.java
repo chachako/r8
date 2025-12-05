@@ -55,7 +55,6 @@ public class IntToByteTest extends TestBase {
         new SparseConditionalConstantPropagation(appView).run(ir, null, null, Timing.empty());
     assertEquals(OptionalBool.TRUE, result.hasChanged());
     new DeadCodeRemover(appView).run(ir, Timing.empty());
-
     // Assertions.
     ImmutableList<ConstNumber> constNumbers =
         ImmutableList.copyOf(
@@ -66,7 +65,7 @@ public class IntToByteTest extends TestBase {
     assertEquals(1, constNumbers.size());
     ConstNumber cst = constNumbers.get(0);
     assertEquals(ValueType.INT, cst.outType());
-    assertEquals((byte) 0, cst.getByteValue());
+    assertEquals(0, cst.getRawValue());
   }
 
   public static class TestDump implements Opcodes {
