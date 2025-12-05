@@ -82,6 +82,11 @@ public class ConstNumber extends ConstInstruction {
     return !isZero();
   }
 
+  public byte getByteValue() {
+    assert outType() == ValueType.INT;
+    return (byte) value;
+  }
+
   public int getIntValue() {
     assert outType() == ValueType.INT
         || outType() == ValueType.OBJECT; // Used for is-null conditionals.

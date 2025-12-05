@@ -22,8 +22,12 @@ import com.android.tools.r8.dex.code.DexLongToFloat;
 import com.android.tools.r8.dex.code.DexLongToInt;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
+import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
+import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
@@ -146,5 +150,25 @@ public class NumberConversion extends Unop {
   @Override
   public boolean outTypeKnownToBeBoolean(Set<Phi> seen) {
     return type.getTo() == NumericType.BYTE && source().knownToBeBoolean(seen);
+  }
+
+  @Override
+  public AbstractValue getAbstractValue(
+      AppView<?> appView, ProgramMethod context, AbstractValueSupplier abstractValueSupplier) {
+    AbstractValue val = abstractValueSupplier.getAbstractValue(getFirstOperand(), appView, context);
+    if (!val.isSingleNumberValue()) {
+      return super.getAbstractValue(appView, context, abstractValueSupplier);
+    }
+    SingleNumberValue num = val.asSingleNumberValue();
+    AbstractValueFactory valueFactory = appView.abstractValueFactory();
+    PrimitiveTypeElement typeElement = PrimitiveTypeElement.fromNumericType(type.getTo());
+
+    switch (type) {
+      case INT_TO_BYTE:
+        long rawValue = num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawValue, typeElement);
+      default:
+        return super.getAbstractValue(appView, context, abstractValueSupplier);
+    }
   }
 }
