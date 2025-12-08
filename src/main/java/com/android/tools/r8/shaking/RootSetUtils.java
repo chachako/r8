@@ -14,7 +14,6 @@ import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.errors.AssumeNoSideEffectsRuleForObjectMembersDiagnostic;
 import com.android.tools.r8.errors.AssumeValuesMissingStaticFieldDiagnostic;
 import com.android.tools.r8.errors.InlinableStaticFinalFieldPreconditionDiagnostic;
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.errors.UnusedProguardKeepRuleDiagnostic;
 import com.android.tools.r8.graph.AccessControl;
@@ -1783,7 +1782,7 @@ public class RootSetUtils {
           AssumeMethodInfoCollection.Builder methodInfoCollection =
               assumeInfoCollectionBuilder.getOrCreateMethodInfo(method.getReference());
           if (rule.hasPreconditions()) {
-            throw new Unimplemented();
+            assumeInfo = methodInfoCollection.getOrCreateConditionalInfo(rule.getPreconditions());
           } else {
             assumeInfo = methodInfoCollection.getOrCreateUnconditionalInfo();
           }
@@ -1820,7 +1819,7 @@ public class RootSetUtils {
         AssumeMethodInfoCollection.Builder methodInfoCollection =
             assumeInfoCollectionBuilder.getOrCreateMethodInfo(method.getReference());
         if (rule.hasPreconditions()) {
-          throw new Unimplemented();
+          assumeInfo = methodInfoCollection.getOrCreateConditionalInfo(rule.getPreconditions());
         } else {
           assumeInfo = methodInfoCollection.getOrCreateUnconditionalInfo();
         }

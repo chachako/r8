@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.shaking;
 
+import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -15,8 +16,11 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
+import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.LongInterval;
+import com.android.tools.r8.utils.ObjectUtils;
+import java.util.Objects;
 
 public class ProguardMemberRuleReturnValue {
 
@@ -170,6 +174,43 @@ public class ProguardMemberRuleReturnValue {
     return valueType.isReferenceType() && hasNullability() && getNullability().isDefinitelyNotNull()
         ? DynamicType.definitelyNotNull()
         : DynamicType.unknown();
+  }
+
+  // TODO(b/409103321): Implement all cases.
+  public boolean test(Value value) {
+    switch (type) {
+      case BOOLEAN:
+        return value.isConstNumber(booleanValue ? 1 : 0);
+      case FIELD:
+        throw new Unimplemented("Unimplemented type: " + type);
+      case NULLABILITY:
+        throw new Unimplemented("Unimplemented type: " + type);
+      case VALUE_RANGE:
+        throw new Unimplemented("Unimplemented type: " + type);
+      default:
+        throw new Unreachable("Unexpected type: " + type);
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof ProguardMemberRuleReturnValue)) {
+      return false;
+    }
+    ProguardMemberRuleReturnValue other = (ProguardMemberRuleReturnValue) obj;
+    return type == other.type
+        && booleanValue == other.booleanValue
+        && Objects.equals(longInterval, other.longInterval)
+        && ObjectUtils.identical(fieldHolder, other.fieldHolder)
+        && nullability == other.nullability;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, booleanValue, longInterval, fieldHolder, nullability);
   }
 
   @Override

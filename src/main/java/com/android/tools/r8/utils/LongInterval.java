@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.utils;
 
+import java.util.Objects;
+
 /**
  * Closed interval of two longs.
  */
@@ -58,19 +60,20 @@ public class LongInterval {
   }
 
   @Override
-  public int hashCode() {
-    return super.hashCode();
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj instanceof LongInterval) {
+      LongInterval other = (LongInterval) obj;
+      return min == other.min && max == other.max;
+    }
+    return false;
   }
 
   @Override
-  public boolean equals(Object other) {
-    if (this == other) {
-      return true;
-    }
-    if (other instanceof LongInterval) {
-      return ((LongInterval) other).min == min && ((LongInterval) other).max == max;
-    }
-    return false;
+  public int hashCode() {
+    return Objects.hash(min, max);
   }
 
   @Override

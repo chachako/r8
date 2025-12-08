@@ -3,23 +3,38 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking.assume;
 
+import static com.android.tools.r8.utils.MapUtils.ignoreKey;
+
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
+import com.android.tools.r8.shaking.ProguardMemberRuleReturnValue;
+import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ObjectUtils;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 public class AssumeMethodInfoCollection {
 
   private static final AssumeMethodInfoCollection EMPTY =
-      new AssumeMethodInfoCollection(AssumeInfo.empty());
+      new AssumeMethodInfoCollection(AssumeInfo.empty(), Collections.emptyMap());
 
   private final AssumeInfo unconditionalInfo;
+  private final Map<List<ProguardMemberRuleReturnValue>, AssumeInfo> conditionalInfos;
 
-  private AssumeMethodInfoCollection(AssumeInfo unconditionalInfo) {
+  private AssumeMethodInfoCollection(
+      AssumeInfo unconditionalInfo,
+      Map<List<ProguardMemberRuleReturnValue>, AssumeInfo> conditionalInfos) {
     this.unconditionalInfo = unconditionalInfo;
+    this.conditionalInfos = conditionalInfos;
   }
 
   public static Builder builder() {
@@ -31,36 +46,80 @@ public class AssumeMethodInfoCollection {
   }
 
   public AssumeInfo getUnconditionalInfo() {
-    return unconditionalInfo;
+    return unconditionalInfo != null ? unconditionalInfo : AssumeInfo.empty();
   }
 
   public boolean isEmpty() {
-    return unconditionalInfo == null;
+    return unconditionalInfo == null && conditionalInfos.isEmpty();
   }
 
   public AssumeInfo lookup(InvokeMethod invoke) {
+    if (conditionalInfos.isEmpty()) {
+      return getUnconditionalInfo();
+    }
+    // TODO(b/409103321): Raise an error if there exists more than one match.
+    for (Entry<List<ProguardMemberRuleReturnValue>, AssumeInfo> entry :
+        conditionalInfos.entrySet()) {
+      List<ProguardMemberRuleReturnValue> condition = entry.getKey();
+      if (test(invoke, condition)) {
+        return entry.getValue();
+      }
+    }
     return getUnconditionalInfo();
+  }
+
+  private boolean test(InvokeMethod invoke, List<ProguardMemberRuleReturnValue> conditions) {
+    for (int parameterIndex = 0; parameterIndex < conditions.size(); parameterIndex++) {
+      ProguardMemberRuleReturnValue condition = conditions.get(parameterIndex);
+      if (condition != null && !condition.test(invoke.getArgumentForParameter(parameterIndex))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public AssumeMethodInfoCollection rewrittenWithLens(AppView<?> appView, GraphLens graphLens) {
     AssumeInfo rewrittenUnconditionalInfo =
         unconditionalInfo != null ? unconditionalInfo.rewrittenWithLens(appView, graphLens) : null;
-    return ObjectUtils.notIdentical(rewrittenUnconditionalInfo, unconditionalInfo)
-        ? new AssumeMethodInfoCollection(rewrittenUnconditionalInfo)
-        : this;
+    if (conditionalInfos.isEmpty()) {
+      return ObjectUtils.identical(rewrittenUnconditionalInfo, unconditionalInfo)
+          ? new AssumeMethodInfoCollection(rewrittenUnconditionalInfo, conditionalInfos)
+          : this;
+    }
+    Map<List<ProguardMemberRuleReturnValue>, AssumeInfo> rewrittenConditionalInfos =
+        MapUtils.transform(
+            conditionalInfos,
+            HashMap::new,
+            Function.identity(),
+            assumeInfo -> assumeInfo.rewrittenWithLens(appView, graphLens),
+            (condition, value, otherValue) -> value);
+    return new AssumeMethodInfoCollection(rewrittenUnconditionalInfo, rewrittenConditionalInfos);
   }
 
   public AssumeMethodInfoCollection withoutPrunedItems(PrunedItems prunedItems) {
     AssumeInfo rewrittenUnconditionalInfo =
         unconditionalInfo != null ? unconditionalInfo.withoutPrunedItems(prunedItems) : null;
-    return ObjectUtils.notIdentical(rewrittenUnconditionalInfo, unconditionalInfo)
-        ? new AssumeMethodInfoCollection(rewrittenUnconditionalInfo)
-        : this;
+    if (conditionalInfos.isEmpty()) {
+      return ObjectUtils.notIdentical(rewrittenUnconditionalInfo, unconditionalInfo)
+          ? new AssumeMethodInfoCollection(rewrittenUnconditionalInfo, conditionalInfos)
+          : this;
+    }
+    Map<List<ProguardMemberRuleReturnValue>, AssumeInfo> rewrittenConditionalInfos =
+        MapUtils.transform(
+            conditionalInfos,
+            HashMap::new,
+            Function.identity(),
+            assumeInfo -> assumeInfo.withoutPrunedItems(prunedItems),
+            (condition, value, otherValue) -> value);
+    return new AssumeMethodInfoCollection(rewrittenUnconditionalInfo, rewrittenConditionalInfos);
   }
 
   public static class Builder {
 
     private volatile AssumeInfo.Builder unconditionalInfo;
+
+    private final Map<List<ProguardMemberRuleReturnValue>, AssumeInfo.Builder> conditionalInfos =
+        new ConcurrentHashMap<>();
 
     public AssumeInfo.Builder getOrCreateUnconditionalInfo() {
       if (unconditionalInfo == null) {
@@ -73,6 +132,11 @@ public class AssumeMethodInfoCollection {
       return unconditionalInfo;
     }
 
+    public AssumeInfo.Builder getOrCreateConditionalInfo(
+        List<ProguardMemberRuleReturnValue> condition) {
+      return conditionalInfos.computeIfAbsent(condition, ignoreKey(AssumeInfo::builder));
+    }
+
     public boolean isEqualTo(Builder builder) {
       if (Objects.isNull(unconditionalInfo) != Objects.isNull(builder.unconditionalInfo)) {
         return false;
@@ -80,7 +144,7 @@ public class AssumeMethodInfoCollection {
       if (unconditionalInfo != null && !unconditionalInfo.isEqualTo(builder.unconditionalInfo)) {
         return false;
       }
-      return true;
+      return conditionalInfos.equals(builder.conditionalInfos);
     }
 
     public Builder meet(Builder builder) {
@@ -91,8 +155,18 @@ public class AssumeMethodInfoCollection {
     }
 
     public AssumeMethodInfoCollection build() {
+      Map<List<ProguardMemberRuleReturnValue>, AssumeInfo> materializedConditionalInfos =
+          conditionalInfos.isEmpty()
+              ? Collections.emptyMap()
+              : MapUtils.transform(
+                  conditionalInfos,
+                  HashMap::new,
+                  Function.identity(),
+                  AssumeInfo.Builder::build,
+                  (condition, value, otherValue) -> value);
       return new AssumeMethodInfoCollection(
-          unconditionalInfo != null ? unconditionalInfo.build() : null);
+          unconditionalInfo != null ? unconditionalInfo.build() : null,
+          materializedConditionalInfos);
     }
   }
 }
