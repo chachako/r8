@@ -44,7 +44,7 @@ public class AssumePropagator extends MemberValuePropagation<AppInfoWithClassHie
       if (resolutionResult != null) {
         DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
         AssumeInfo lookup =
-            AssumeInfoLookup.lookupAssumeInfo(appView, resolutionResult, singleTarget);
+            AssumeInfoLookup.lookupAssumeInfo(appView, invoke, resolutionResult, singleTarget);
         applyAssumeInfo(code, affectedValues, blocks, iterator, invoke, lookup);
       }
     }
@@ -80,7 +80,7 @@ public class AssumePropagator extends MemberValuePropagation<AppInfoWithClassHie
     DexClassAndField resolvedField =
         current.resolveField(appView, code.context()).getResolutionPair();
     if (resolvedField != null) {
-      AssumeInfo lookup = appView.getAssumeInfoCollection().get(resolvedField);
+      AssumeInfo lookup = appView.getAssumeInfoCollection().getField(resolvedField);
       applyAssumeInfo(code, affectedValues, blocks, iterator, current, lookup);
     }
     return iterator;

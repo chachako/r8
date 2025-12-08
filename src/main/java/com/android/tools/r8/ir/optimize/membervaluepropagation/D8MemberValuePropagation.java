@@ -69,7 +69,7 @@ public class D8MemberValuePropagation extends MemberValuePropagation<AppInfo> {
       BasicBlockIterator blocks,
       InstructionListIterator iterator,
       StaticGet current) {
-    AssumeInfo assumeInfo = appView.getAssumeInfoCollection().get(current.getField());
+    AssumeInfo assumeInfo = appView.getAssumeInfoCollection().getField(current.getField());
     applyAssumeInfo(code, affectedValues, blocks, iterator, current, assumeInfo);
     return iterator;
   }

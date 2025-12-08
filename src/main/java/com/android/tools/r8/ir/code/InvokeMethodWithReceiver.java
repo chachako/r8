@@ -245,8 +245,8 @@ public abstract class InvokeMethodWithReceiver extends InvokeMethod {
     }
 
     DexClassAndMethod resolvedMethod = resolutionResult.getResolutionPair();
-    if (appView.getAssumeInfoCollection().isSideEffectFree(getInvokedMethod())
-        || appView.getAssumeInfoCollection().isSideEffectFree(resolvedMethod)) {
+    if (appView.getAssumeInfoCollection().getMethod(getInvokedMethod(), this).isSideEffectFree()
+        || appView.getAssumeInfoCollection().getMethod(resolvedMethod, this).isSideEffectFree()) {
         return false;
       }
 
@@ -270,7 +270,7 @@ public abstract class InvokeMethodWithReceiver extends InvokeMethod {
     }
 
     // Verify that the target method does not have side-effects.
-    if (appView.getAssumeInfoCollection().isSideEffectFree(singleTarget)) {
+    if (appView.getAssumeInfoCollection().getMethod(singleTarget, this).isSideEffectFree()) {
       return false;
     }
 

@@ -120,7 +120,7 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing
       // If the value of the field is not guaranteed to be the default value, even if it is never
       // assigned, then give up.
       // TODO(b/205810841): Allow this by handling this in the corresponding IR rewriter.
-      AssumeInfo assumeInfo = appView.getAssumeInfoCollection().get(field);
+      AssumeInfo assumeInfo = appView.getAssumeInfoCollection().getField(field);
       if (!assumeInfo.getAssumeValue().isUnknown()) {
         return enqueueDeferredEnqueuerActions(field);
       }

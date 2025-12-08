@@ -12,6 +12,7 @@ import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.JumpInstruction;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
 import java.util.ArrayList;
@@ -42,7 +43,9 @@ public class DynamicTypeOptimization {
     }
     DynamicType dynamicReturnType = DynamicType.join(appView, returnedTypes);
     AssumeInfoCollection assumeInfoCollection = appView.getAssumeInfoCollection();
-    if (assumeInfoCollection.get(method).getAssumeType().getNullability().isDefinitelyNotNull()) {
+    AssumeInfo assumeInfo =
+        assumeInfoCollection.getMethod(method.getReference()).getUnconditionalInfo();
+    if (assumeInfo.getAssumeNullability().isDefinitelyNotNull()) {
       return dynamicReturnType.withNullability(Nullability.definitelyNotNull());
     }
     return dynamicReturnType;

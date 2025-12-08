@@ -14,6 +14,7 @@ import com.android.tools.r8.diagnostic.DefinitionContext;
 import com.android.tools.r8.errors.AssumeNoSideEffectsRuleForObjectMembersDiagnostic;
 import com.android.tools.r8.errors.AssumeValuesMissingStaticFieldDiagnostic;
 import com.android.tools.r8.errors.InlinableStaticFinalFieldPreconditionDiagnostic;
+import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.errors.UnusedProguardKeepRuleDiagnostic;
 import com.android.tools.r8.graph.AccessControl;
@@ -72,6 +73,7 @@ import com.android.tools.r8.shaking.EnqueuerEvent.UnconditionalKeepInfoEvent;
 import com.android.tools.r8.shaking.KeepAnnotationCollectionInfo.RetentionInfo;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
 import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
+import com.android.tools.r8.shaking.assume.AssumeMethodInfoCollection;
 import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8PartialRule;
 import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.Action;
@@ -702,44 +704,42 @@ public class RootSetUtils {
 
     private void propagateAssumeRules(
         DexClass clazz, DexMethod reference, List<DexClass> subclasses) {
-      AssumeInfo infoToBePropagated = null;
+      AssumeMethodInfoCollection.Builder infoToBePropagated = null;
       for (DexClass subclass : subclasses) {
-        DexMethod referenceInSubType =
-            appView
-                .dexItemFactory()
-                .createMethod(subclass.getType(), reference.proto, reference.name);
         // Those rules are bound to definitions, not references. If the current subtype does not
         // override the method, and when the retrieval of bound rule fails, it is unclear whether it
         // is due to the lack of the definition or it indeed means no matching rules. Similar to how
         // we apply those assume rules, here we use a resolved target.
+        DexMethod referenceInSubclass = reference.withHolder(subclass, appView.dexItemFactory());
         DexClassAndMethod target =
             appView
                 .appInfo()
-                .unsafeResolveMethodDueToDexFormatLegacy(referenceInSubType)
+                .unsafeResolveMethodDueToDexFormatLegacy(referenceInSubclass)
                 .getResolutionPair();
         // But, the resolution should not be landed on the current type we are visiting.
         if (target == null || target.getHolder() == clazz) {
           continue;
         }
-        AssumeInfo ruleInSubType = assumeInfoCollectionBuilder.buildInfo(target);
-        // We are looking for the greatest lower bound of assume rules from all sub types.
-        // If any subtype doesn't have a matching assume rule, the lower bound is literally nothing.
-        if (ruleInSubType == null) {
+        if (!assumeInfoCollectionBuilder.hasMethodInfo(target.getReference())) {
           infoToBePropagated = null;
           break;
         }
+        AssumeMethodInfoCollection.Builder ruleInSubType =
+            assumeInfoCollectionBuilder.getOrCreateMethodInfo(target.getReference());
+        // We are looking for the greatest lower bound of assume rules from all sub types.
+        // If any subtype doesn't have a matching assume rule, the lower bound is literally nothing.
         if (infoToBePropagated == null) {
           infoToBePropagated = ruleInSubType;
         } else {
           // TODO(b/133208961): Introduce comparison/meet of assume rules.
-          if (!infoToBePropagated.equals(ruleInSubType)) {
+          if (!infoToBePropagated.isEqualTo(ruleInSubType)) {
             infoToBePropagated = null;
             break;
           }
         }
       }
       if (infoToBePropagated != null) {
-        assumeInfoCollectionBuilder.meet(reference, infoToBePropagated);
+        assumeInfoCollectionBuilder.getOrCreateMethodInfo(reference).meet(infoToBePropagated);
       }
     }
 
@@ -1774,25 +1774,32 @@ public class RootSetUtils {
         assert member.isMethod();
         reportAssumeNoSideEffectsWarningForJavaLangClassMethod(member.asMethod(), context);
       } else {
-        DexType valueType =
-            member.getReference().apply(DexField::getType, DexMethod::getReturnType);
-        assumeInfoCollectionBuilder
-            .applyIf(
-                rule.hasReturnValue(),
-                builder -> {
-                  DynamicType assumeType = rule.getReturnValue().toDynamicType(appView, valueType);
-                  AbstractValue assumeValue =
-                      rule.getReturnValue().toAbstractValue(appView, valueType);
-                  builder.meetAssumeType(member, assumeType).meetAssumeValue(member, assumeValue);
-                  reportAssumeValuesWarningForMissingReturnField(context, rule, assumeValue);
-                })
-            .setIsSideEffectFree(member);
-        if (member.isMethod()) {
+        AssumeInfo.Builder assumeInfo;
+        if (member.isField()) {
+          DexClassAndField field = member.asField();
+          assumeInfo = assumeInfoCollectionBuilder.getOrCreateFieldInfo(field.getReference());
+        } else {
           DexClassAndMethod method = member.asMethod();
+          AssumeMethodInfoCollection.Builder methodInfoCollection =
+              assumeInfoCollectionBuilder.getOrCreateMethodInfo(method.getReference());
+          if (rule.hasPreconditions()) {
+            throw new Unimplemented();
+          } else {
+            assumeInfo = methodInfoCollection.getOrCreateUnconditionalInfo();
+          }
           if (method.getDefinition().isClassInitializer()) {
             feedback.classInitializerMayBePostponed(method.getDefinition());
           }
         }
+        if (rule.hasReturnValue()) {
+          DexType valueType =
+              member.getReference().apply(DexField::getType, DexMethod::getReturnType);
+          DynamicType assumeType = rule.getReturnValue().toDynamicType(appView, valueType);
+          AbstractValue assumeValue = rule.getReturnValue().toAbstractValue(appView, valueType);
+          assumeInfo.meetAssumeType(assumeType).meetAssumeValue(assumeValue);
+          reportAssumeValuesWarningForMissingReturnField(context, rule, assumeValue);
+        }
+        assumeInfo.setIsSideEffectFree();
       }
       context.markAsUsed();
     }
@@ -1804,12 +1811,24 @@ public class RootSetUtils {
         return;
       }
       DexClassAndMember<?, ?> member = item.asMember();
+      AssumeInfo.Builder assumeInfo;
+      if (item.isField()) {
+        DexClassAndField field = item.asField();
+        assumeInfo = assumeInfoCollectionBuilder.getOrCreateFieldInfo(field.getReference());
+      } else {
+        DexClassAndMethod method = member.asMethod();
+        AssumeMethodInfoCollection.Builder methodInfoCollection =
+            assumeInfoCollectionBuilder.getOrCreateMethodInfo(method.getReference());
+        if (rule.hasPreconditions()) {
+          throw new Unimplemented();
+        } else {
+          assumeInfo = methodInfoCollection.getOrCreateUnconditionalInfo();
+        }
+      }
       DexType valueType = member.getReference().apply(DexField::getType, DexMethod::getReturnType);
       DynamicType assumeType = rule.getReturnValue().toDynamicType(appView, valueType);
       AbstractValue assumeValue = rule.getReturnValue().toAbstractValue(appView, valueType);
-      assumeInfoCollectionBuilder
-          .meetAssumeType(member, assumeType)
-          .meetAssumeValue(member, assumeValue);
+      assumeInfo.meetAssumeType(assumeType).meetAssumeValue(assumeValue);
       reportAssumeValuesWarningForMissingReturnField(context, rule, assumeValue);
       context.markAsUsed();
     }

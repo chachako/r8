@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
+import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.SingleFieldValue;
 import java.util.Objects;
@@ -41,6 +42,10 @@ public class AssumeInfo {
 
   public static AssumeInfo empty() {
     return EMPTY;
+  }
+
+  public Nullability getAssumeNullability() {
+    return getAssumeType().getNullability();
   }
 
   public DynamicType getAssumeType() {
@@ -159,10 +164,10 @@ public class AssumeInfo {
     private AbstractValue assumeValue = AbstractValue.unknown();
     private boolean isSideEffectFree = false;
 
-    public Builder meet(AssumeInfo assumeInfo) {
-      return meetAssumeType(assumeInfo.assumeType)
-          .meetAssumeValue(assumeInfo.assumeValue)
-          .meetIsSideEffectFree(assumeInfo.isSideEffectFree);
+    public Builder meet(Builder builder) {
+      return meetAssumeType(builder.assumeType)
+          .meetAssumeValue(builder.assumeValue)
+          .meetIsSideEffectFree(builder.isSideEffectFree);
     }
 
     public Builder meetAssumeType(DynamicType assumeType) {
@@ -187,6 +192,12 @@ public class AssumeInfo {
 
     public AssumeInfo build() {
       return create(assumeType, assumeValue, isSideEffectFree);
+    }
+
+    public boolean isEqualTo(Builder builder) {
+      return assumeValue.equals(builder.assumeValue)
+          && assumeType.equals(builder.assumeType)
+          && isSideEffectFree == builder.isSideEffectFree;
     }
   }
 }

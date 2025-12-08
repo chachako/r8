@@ -228,8 +228,7 @@ public abstract class FieldInstruction extends Instruction {
     if (field == null) {
       return AbstractValue.unknown();
     }
-    AbstractValue assumeValue =
-        appView.getAssumeInfoCollection().get(field.getReference()).getAssumeValue();
+    AbstractValue assumeValue = appView.getAssumeInfoCollection().getField(field).getAssumeValue();
     if (!assumeValue.isUnknown()) {
       return assumeValue;
     }

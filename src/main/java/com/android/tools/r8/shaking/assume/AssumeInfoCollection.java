@@ -4,16 +4,19 @@
 
 package com.android.tools.r8.shaking.assume;
 
+
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.DexClassAndField;
 import com.android.tools.r8.graph.DexClassAndMember;
-import com.android.tools.r8.graph.DexEncodedMember;
-import com.android.tools.r8.graph.DexMember;
+import com.android.tools.r8.graph.DexClassAndMethod;
+import com.android.tools.r8.graph.DexField;
+import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.MapUtils;
@@ -25,11 +28,16 @@ import java.util.function.Consumer;
 
 public class AssumeInfoCollection {
 
-  private final Map<DexMember<?, ?>, AssumeInfo> backing;
+  private final Map<DexField, AssumeInfo> fieldInfos;
+  private final Map<DexMethod, AssumeMethodInfoCollection> methodInfos;
 
-  AssumeInfoCollection(Map<DexMember<?, ?>, AssumeInfo> backing) {
-    assert backing.values().stream().noneMatch(AssumeInfo::isEmpty);
-    this.backing = backing;
+  AssumeInfoCollection(
+      Map<DexField, AssumeInfo> fieldInfos,
+      Map<DexMethod, AssumeMethodInfoCollection> methodInfos) {
+    assert fieldInfos.values().stream().noneMatch(AssumeInfo::isEmpty);
+    assert methodInfos.values().stream().noneMatch(AssumeMethodInfoCollection::isEmpty);
+    this.fieldInfos = fieldInfos;
+    this.methodInfos = methodInfos;
   }
 
   public static Builder builder() {
@@ -37,38 +45,56 @@ public class AssumeInfoCollection {
   }
 
   public boolean contains(DexClassAndMember<?, ?> member) {
-    return backing.containsKey(member.getReference());
+    return member.isField()
+        ? fieldInfos.containsKey(member.asField().getReference())
+        : methodInfos.containsKey(member.asMethod().getReference());
   }
 
-  public AssumeInfo get(DexMember<?, ?> member) {
-    return backing.getOrDefault(member, AssumeInfo.empty());
+  public AssumeInfo getField(DexField field) {
+    return fieldInfos.getOrDefault(field, AssumeInfo.empty());
   }
 
-  public AssumeInfo get(DexClassAndMember<?, ?> member) {
-    return get(member.getReference());
+  public AssumeInfo getField(DexClassAndField field) {
+    return getField(field.getReference());
   }
 
-  public AssumeInfo get(DexEncodedMember<?, ?> member) {
-    return get(member.getReference());
+  public AssumeMethodInfoCollection getMethod(DexMethod method) {
+    return methodInfos.getOrDefault(method, AssumeMethodInfoCollection.empty());
+  }
+
+  public AssumeInfo getMethod(DexMethod method, InvokeMethod invoke) {
+    return getMethod(method).lookup(invoke);
+  }
+
+  public AssumeInfo getMethod(DexClassAndMethod method, InvokeMethod invoke) {
+    return getMethod(method.getReference(), invoke);
   }
 
   public boolean isEmpty() {
-    return backing.isEmpty();
+    return fieldInfos.isEmpty() && methodInfos.isEmpty();
   }
 
   public boolean isMaterializableInAllContexts(
-      AppView<? extends AppInfoWithLiveness> appView, DexClassAndMember<?, ?> member) {
-    AbstractValue assumeValue = get(member).getAssumeValue();
+      AppView<? extends AppInfoWithLiveness> appView, DexClassAndField field) {
+    AbstractValue assumeValue = getField(field).getAssumeValue();
     return assumeValue.isSingleValue()
         && assumeValue.asSingleValue().isMaterializableInAllContexts(appView);
   }
 
-  public boolean isSideEffectFree(DexMember<?, ?> member) {
-    return get(member).isSideEffectFree();
+  public boolean isSideEffectFree(DexField field) {
+    return getField(field).isSideEffectFree();
   }
 
-  public boolean isSideEffectFree(DexClassAndMember<?, ?> member) {
-    return isSideEffectFree(member.getReference());
+  public boolean isSideEffectFree(DexClassAndField field) {
+    return isSideEffectFree(field.getReference());
+  }
+
+  public boolean isSideEffectFree(DexMethod method) {
+    return getMethod(method).getUnconditionalInfo().isSideEffectFree();
+  }
+
+  public boolean isSideEffectFree(DexClassAndMethod method) {
+    return isSideEffectFree(method.getReference());
   }
 
   public AssumeInfoCollection rewrittenWithLens(
@@ -79,38 +105,58 @@ public class AssumeInfoCollection {
 
   private AssumeInfoCollection rewrittenWithLens(
       AppView<?> appView, GraphLens graphLens, GraphLens appliedLens) {
-    Map<DexMember<?, ?>, AssumeInfo> rewrittenCollection = new IdentityHashMap<>();
-    backing.forEach(
-        (reference, info) -> {
-          DexMember<?, ?> rewrittenReference =
-              graphLens.getRenamedMemberSignature(reference, appliedLens);
+    Map<DexField, AssumeInfo> rewrittenFieldInfos = new IdentityHashMap<>();
+    fieldInfos.forEach(
+        (field, info) -> {
+          DexField rewrittenField = graphLens.getRenamedFieldSignature(field, appliedLens);
           AssumeInfo rewrittenInfo = info.rewrittenWithLens(appView, graphLens);
           assert !rewrittenInfo.isEmpty();
-          rewrittenCollection.put(rewrittenReference, rewrittenInfo);
+          rewrittenFieldInfos.put(rewrittenField, rewrittenInfo);
         });
-    return new AssumeInfoCollection(rewrittenCollection);
+    Map<DexMethod, AssumeMethodInfoCollection> rewrittenMethodInfos = new IdentityHashMap<>();
+    methodInfos.forEach(
+        (method, info) -> {
+          DexMethod rewrittenMethod = graphLens.getRenamedMethodSignature(method, appliedLens);
+          AssumeMethodInfoCollection rewrittenInfo = info.rewrittenWithLens(appView, graphLens);
+          assert !rewrittenInfo.isEmpty();
+          rewrittenMethodInfos.put(rewrittenMethod, rewrittenInfo);
+        });
+    return new AssumeInfoCollection(rewrittenFieldInfos, rewrittenMethodInfos);
   }
 
   public AssumeInfoCollection withoutPrunedItems(PrunedItems prunedItems, Timing timing) {
     timing.begin("Prune AssumeInfoCollection");
-    Map<DexMember<?, ?>, AssumeInfo> rewrittenCollection = new IdentityHashMap<>();
-    backing.forEach(
-        (reference, info) -> {
-          if (!prunedItems.isRemoved(reference)) {
+    Map<DexField, AssumeInfo> rewrittenFieldInfos = new IdentityHashMap<>();
+    fieldInfos.forEach(
+        (field, info) -> {
+          if (!prunedItems.isRemoved(field)) {
             AssumeInfo rewrittenInfo = info.withoutPrunedItems(prunedItems);
             if (!rewrittenInfo.isEmpty()) {
-              rewrittenCollection.put(reference, rewrittenInfo);
+              rewrittenFieldInfos.put(field, rewrittenInfo);
             }
           }
         });
-    AssumeInfoCollection result = new AssumeInfoCollection(rewrittenCollection);
+    Map<DexMethod, AssumeMethodInfoCollection> rewrittenMethodInfos = new IdentityHashMap<>();
+    methodInfos.forEach(
+        (method, info) -> {
+          if (!prunedItems.isRemoved(method)) {
+            AssumeMethodInfoCollection rewrittenInfo = info.withoutPrunedItems(prunedItems);
+            if (!rewrittenInfo.isEmpty()) {
+              rewrittenMethodInfos.put(method, rewrittenInfo);
+            }
+          }
+        });
+    AssumeInfoCollection result =
+        new AssumeInfoCollection(rewrittenFieldInfos, rewrittenMethodInfos);
     timing.end();
     return result;
   }
 
   public static class Builder {
 
-    private final Map<DexMember<?, ?>, AssumeInfo.Builder> backing = new ConcurrentHashMap<>();
+    private final Map<DexField, AssumeInfo.Builder> fieldInfos = new ConcurrentHashMap<>();
+    private final Map<DexMethod, AssumeMethodInfoCollection.Builder> methodInfos =
+        new ConcurrentHashMap<>();
 
     public Builder applyIf(boolean condition, Consumer<Builder> consumer) {
       if (condition) {
@@ -119,21 +165,37 @@ public class AssumeInfoCollection {
       return this;
     }
 
-    public AssumeInfo buildInfo(DexClassAndMember<?, ?> member) {
-      AssumeInfo.Builder builder = backing.get(member.getReference());
-      return builder != null ? builder.build() : AssumeInfo.empty();
+    public AssumeInfo.Builder getOrCreateFieldInfo(DexField field) {
+      return fieldInfos.computeIfAbsent(field, ignoreKey(AssumeInfo::builder));
     }
 
-    private AssumeInfo.Builder getOrCreateAssumeInfo(DexMember<?, ?> member) {
-      return backing.computeIfAbsent(member, ignoreKey(AssumeInfo::builder));
+    public boolean hasMethodInfo(DexMethod method) {
+      return methodInfos.containsKey(method);
     }
 
-    private AssumeInfo.Builder getOrCreateAssumeInfo(DexClassAndMember<?, ?> member) {
-      return getOrCreateAssumeInfo(member.getReference());
+    public AssumeMethodInfoCollection.Builder getOrCreateMethodInfo(DexMethod method) {
+      return methodInfos.computeIfAbsent(method, ignoreKey(AssumeMethodInfoCollection::builder));
     }
 
     public boolean isEmpty() {
-      return backing.isEmpty();
+      return fieldInfos.isEmpty() && methodInfos.isEmpty();
+    }
+
+    /*public AssumeInfo buildInfo(DexClassAndMember<?, ?> member) {
+      AssumeInfo.Builder builder = fieldInfos.get(member.getReference());
+      return builder != null ? builder.build() : AssumeInfo.empty();
+    }
+
+    private AssumeInfo.Builder getOrCreateAssumeInfo(DexClassAndField field) {
+      return getOrCreateAssumeInfo(field.getReference());
+    }
+
+    private AssumeInfo.Builder getOrCreateAssumeInfo(DexMethod method) {
+      return methodInfos.computeIfAbsent(method, ignoreKey(AssumeInfo::builder));
+    }
+
+    private AssumeInfo.Builder getOrCreateAssumeInfo(DexClassAndMethod method) {
+      return getOrCreateAssumeInfo(method.getReference());
     }
 
     public Builder meet(DexMember<?, ?> member, AssumeInfo assumeInfo) {
@@ -162,20 +224,30 @@ public class AssumeInfoCollection {
 
     public Builder setIsSideEffectFree(DexClassAndMember<?, ?> member) {
       return setIsSideEffectFree(member.getReference());
-    }
+    }*/
 
     public AssumeInfoCollection build() {
       return new AssumeInfoCollection(
           MapUtils.newIdentityHashMap(
               builder ->
-                  backing.forEach(
-                      (reference, infoBuilder) -> {
+                  fieldInfos.forEach(
+                      (field, infoBuilder) -> {
                         AssumeInfo info = infoBuilder.build();
+                        if (!info.isEmpty()) {
+                          builder.accept(field, info);
+                        }
+                      }),
+              fieldInfos.size()),
+          MapUtils.newIdentityHashMap(
+              builder ->
+                  methodInfos.forEach(
+                      (reference, infoBuilder) -> {
+                        AssumeMethodInfoCollection info = infoBuilder.build();
                         if (!info.isEmpty()) {
                           builder.accept(reference, info);
                         }
                       }),
-              backing.size()));
+              methodInfos.size()));
     }
   }
 }

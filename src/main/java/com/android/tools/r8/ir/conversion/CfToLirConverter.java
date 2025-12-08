@@ -7,7 +7,7 @@ import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.CfCode;
-import com.android.tools.r8.graph.DexEncodedMember;
+import com.android.tools.r8.graph.DexEncodedField;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.ProgramMethod;
@@ -25,6 +25,7 @@ import com.android.tools.r8.ir.conversion.passes.ConstResourceNumberRewriter;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.AssumePropagator;
+import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo;
 import com.android.tools.r8.lightir.IR2LirConverter;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirStrategy;
@@ -141,18 +142,25 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
   private boolean hasApplicableAssumeValuesRule(IRCode code) {
     AssumeInfoCollection assumeInfoCollection = appView.getAssumeInfoCollection();
     for (Instruction instruction : code.instructions()) {
-      DexEncodedMember<?, ?> resolvedMember;
+      AssumeInfo assumeInfo = null;
       if (instruction.isFieldGet()) {
         FieldGet fieldGet = instruction.asFieldGet();
-        resolvedMember = fieldGet.resolveField(appView, code.context()).getResolvedField();
+        DexEncodedField resolvedField =
+            fieldGet.resolveField(appView, code.context()).getResolvedField();
+        if (resolvedField != null) {
+          assumeInfo = assumeInfoCollection.getField(resolvedField.getReference());
+        }
       } else if (instruction.isInvokeMethod()) {
         InvokeMethod invoke = instruction.asInvokeMethod();
-        resolvedMember = invoke.resolveMethod(appView, code.context()).getResolvedMethod();
+        DexEncodedMethod resolvedMethod =
+            invoke.resolveMethod(appView, code.context()).getResolvedMethod();
+        if (resolvedMethod != null) {
+          assumeInfo = assumeInfoCollection.getMethod(resolvedMethod.getReference(), invoke);
+        }
       } else {
         continue;
       }
-      if (resolvedMember != null
-          && !assumeInfoCollection.get(resolvedMember).getAssumeValue().isUnknown()) {
+      if (assumeInfo != null && !assumeInfo.getAssumeValue().isUnknown()) {
         return true;
       }
     }

@@ -77,7 +77,7 @@ public class CheckNotNullConverter {
     if (invoke.hasUsedOutValue()) {
       invoke.outValue().replaceUsers(checkNotNullValue);
     }
-    if (appView.getAssumeInfoCollection().isSideEffectFree(singleTarget)
+    if (appView.getAssumeInfoCollection().getMethod(singleTarget, invoke).isSideEffectFree()
         || checkNotNullValue.getType().nullability().isDefinitelyNotNull()) {
       instructionIterator.removeOrReplaceByDebugLocalRead();
     } else {
