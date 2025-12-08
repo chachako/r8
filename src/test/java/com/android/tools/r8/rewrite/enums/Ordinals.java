@@ -23,11 +23,13 @@ class Ordinals {
   }
 
   @NeverInline
+  @NeverPropagateValue
   private static long simple() {
     return Number.TWO.ordinal();
   }
 
   @NeverInline
+  @NeverPropagateValue
   private static long local() {
     Number two = Number.TWO;
     return two.ordinal();
@@ -42,6 +44,7 @@ class Ordinals {
   }
 
   @NeverInline
+  @NeverPropagateValue
   private static long inlined() {
     return inlined2(Number.TWO);
   }
@@ -72,12 +75,14 @@ class Ordinals {
   }
 
   @NeverInline
+  @NeverPropagateValue
   private static long differentTypeStaticField() {
     return Number.DOWN.ordinal();
   }
 
   @AssumeMayHaveSideEffects
   @NeverInline
+  @NeverPropagateValue
   private static long nonValueStaticField() {
     return Number.DEFAULT.ordinal();
   }
@@ -93,6 +98,7 @@ class Ordinals {
   }
 
   @NeverInline
+  @NeverPropagateValue
   private static long nonStaticGet() {
     return new Ordinals().two.ordinal();
   }
