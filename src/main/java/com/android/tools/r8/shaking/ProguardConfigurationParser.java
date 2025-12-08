@@ -1400,7 +1400,7 @@ public class ProguardConfigurationParser {
       }
     }
 
-    private ProguardMemberRuleReturnValue parseOptionalValueSpecification(
+    private ProguardMemberRuleValue parseOptionalValueSpecification(
         boolean allowValueSpecification, String symbolStart) throws ProguardRuleParserException {
       skipWhitespace();
       TextPosition positionStart = getPosition();
@@ -1412,11 +1412,11 @@ public class ProguardConfigurationParser {
       }
       skipWhitespace();
       if (acceptString("true")) {
-        return new ProguardMemberRuleReturnValue(true);
+        return new ProguardMemberRuleValue(true);
       } else if (acceptString("false")) {
-        return new ProguardMemberRuleReturnValue(false);
+        return new ProguardMemberRuleValue(false);
       } else if (acceptString("null")) {
-        return new ProguardMemberRuleReturnValue(Nullability.definitelyNull());
+        return new ProguardMemberRuleValue(Nullability.definitelyNull());
       }
       Integer integer = acceptInteger();
       if (integer != null) {
@@ -1430,18 +1430,18 @@ public class ProguardConfigurationParser {
             throw parseError("Expected integer value");
           }
         }
-        return new ProguardMemberRuleReturnValue(new LongInterval(min, max));
+        return new ProguardMemberRuleValue(new LongInterval(min, max));
       }
       String string = acceptQuotedJavaString();
       if (string != null) {
-        return new ProguardMemberRuleReturnValue(dexItemFactory.createString(string));
+        return new ProguardMemberRuleValue(dexItemFactory.createString(string));
       }
       Nullability nullability = Nullability.maybeNull();
       if (acceptString("@NonNull") || acceptString("_NONNULL_")) {
         nullability = Nullability.definitelyNotNull();
         skipWhitespace();
         if (!eof() && peekChar() == ';') {
-          return new ProguardMemberRuleReturnValue(nullability);
+          return new ProguardMemberRuleValue(nullability);
         }
       }
       String qualifiedFieldName = acceptQualifiedFieldName();
@@ -1452,7 +1452,7 @@ public class ProguardConfigurationParser {
                 javaTypeToDescriptor(qualifiedFieldName.substring(0, lastDotIndex)));
         DexString fieldName =
             dexItemFactory.createString(qualifiedFieldName.substring(lastDotIndex + 1));
-        return new ProguardMemberRuleReturnValue(fieldHolder, fieldName, nullability);
+        return new ProguardMemberRuleValue(fieldHolder, fieldName, nullability);
       }
       throw parseError("Expected qualified field");
     }
@@ -1494,7 +1494,7 @@ public class ProguardConfigurationParser {
         for (IdentifierPatternWithWildcards identifierPatternWithWildcards = parseClassName();
             identifierPatternWithWildcards != null;
             identifierPatternWithWildcards = acceptChar(',') ? parseClassName() : null, i++) {
-          ProguardMemberRuleReturnValue precondition =
+          ProguardMemberRuleValue precondition =
               parseOptionalValueSpecification(allowValueSpecification, "=");
           if (precondition != null) {
             ruleBuilder.setPrecondition(i, precondition);

@@ -2180,7 +2180,7 @@ public class RootSetUtils {
       if (rule.hasReturnValue() && rule.getReturnValue().isField()) {
         assert assumeValue.isSingleValue() || assumeValue.isUnknown();
         if (assumeValue.isUnknown()) {
-          ProguardMemberRuleReturnValue returnValue = rule.getReturnValue();
+          ProguardMemberRuleValue returnValue = rule.getReturnValue();
           options.reporter.warning(
               new AssumeValuesMissingStaticFieldDiagnostic.Builder()
                   .setField(returnValue.getFieldHolder(), returnValue.getFieldName())

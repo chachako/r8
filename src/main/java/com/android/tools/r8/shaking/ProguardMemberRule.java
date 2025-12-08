@@ -39,8 +39,8 @@ public class ProguardMemberRule {
     private ProguardTypeMatcher type;
     private ProguardNameMatcher name;
     private List<ProguardTypeMatcher> arguments;
-    private List<ProguardMemberRuleReturnValue> preconditions;
-    private ProguardMemberRuleReturnValue returnValue;
+    private List<ProguardMemberRuleValue> preconditions;
+    private ProguardMemberRuleValue returnValue;
 
     private Builder() {}
 
@@ -90,7 +90,7 @@ public class ProguardMemberRule {
       return this;
     }
 
-    public Builder setPrecondition(int i, ProguardMemberRuleReturnValue precondition) {
+    public Builder setPrecondition(int i, ProguardMemberRuleValue precondition) {
       if (preconditions == null) {
         preconditions = new ArrayList<>();
       }
@@ -102,7 +102,7 @@ public class ProguardMemberRule {
       return this;
     }
 
-    public Builder setReturnValue(ProguardMemberRuleReturnValue value) {
+    public Builder setReturnValue(ProguardMemberRuleValue value) {
       returnValue = value;
       return this;
     }
@@ -133,8 +133,8 @@ public class ProguardMemberRule {
   private final ProguardTypeMatcher type;
   private final ProguardNameMatcher name;
   private final List<ProguardTypeMatcher> arguments;
-  private final List<ProguardMemberRuleReturnValue> preconditions;
-  private final ProguardMemberRuleReturnValue returnValue;
+  private final List<ProguardMemberRuleValue> preconditions;
+  private final ProguardMemberRuleValue returnValue;
 
   public ProguardMemberRule(
       List<ProguardTypeMatcher> annotations,
@@ -144,8 +144,8 @@ public class ProguardMemberRule {
       ProguardTypeMatcher type,
       ProguardNameMatcher name,
       List<ProguardTypeMatcher> arguments,
-      List<ProguardMemberRuleReturnValue> preconditions,
-      ProguardMemberRuleReturnValue returnValue) {
+      List<ProguardMemberRuleValue> preconditions,
+      ProguardMemberRuleValue returnValue) {
     this.annotations = annotations;
     this.accessFlags = accessFlags;
     this.negatedAccessFlags = negatedAccessFlags;
@@ -206,7 +206,7 @@ public class ProguardMemberRule {
     return preconditions != null;
   }
 
-  public List<ProguardMemberRuleReturnValue> getPreconditions() {
+  public List<ProguardMemberRuleValue> getPreconditions() {
     return preconditions;
   }
 
@@ -214,12 +214,12 @@ public class ProguardMemberRule {
    * Resolves preconditions on the form {@code foo.bar.Baz.FIELD} to constants if the given field
    * refers to a static final field with a constant value.
    */
-  public List<ProguardMemberRuleReturnValue> getResolvedPreconditions(
+  public List<ProguardMemberRuleValue> getResolvedPreconditions(
       AppView<? extends AppInfoWithClassHierarchy> appView, DexClassAndMethod method) {
-    List<ProguardMemberRuleReturnValue> resolvedPreconditions = null;
+    List<ProguardMemberRuleValue> resolvedPreconditions = null;
     for (int i = 0; i < preconditions.size(); i++) {
-      ProguardMemberRuleReturnValue precondition = preconditions.get(i);
-      ProguardMemberRuleReturnValue resolvedPrecondition =
+      ProguardMemberRuleValue precondition = preconditions.get(i);
+      ProguardMemberRuleValue resolvedPrecondition =
           precondition != null && precondition.isField()
               ? precondition.resolveFieldValue(appView, method.getParameter(i))
               : precondition;
@@ -238,7 +238,7 @@ public class ProguardMemberRule {
     return resolvedPreconditions != null ? resolvedPreconditions : preconditions;
   }
 
-  public ProguardMemberRuleReturnValue getReturnValue() {
+  public ProguardMemberRuleValue getReturnValue() {
     return returnValue;
   }
 

@@ -23,7 +23,7 @@ import com.android.tools.r8.utils.LongInterval;
 import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 
-public class ProguardMemberRuleReturnValue {
+public class ProguardMemberRuleValue {
 
   private enum Type {
     BOOLEAN,
@@ -41,7 +41,7 @@ public class ProguardMemberRuleReturnValue {
   private final Nullability nullability;
   private final DexString stringValue;
 
-  ProguardMemberRuleReturnValue(boolean value) {
+  ProguardMemberRuleValue(boolean value) {
     this.type = Type.BOOLEAN;
     this.booleanValue = value;
     this.longInterval = null;
@@ -51,7 +51,7 @@ public class ProguardMemberRuleReturnValue {
     this.stringValue = null;
   }
 
-  ProguardMemberRuleReturnValue(DexString stringValue) {
+  ProguardMemberRuleValue(DexString stringValue) {
     this.type = Type.STRING;
     this.booleanValue = false;
     this.longInterval = null;
@@ -62,7 +62,7 @@ public class ProguardMemberRuleReturnValue {
   }
 
   @SuppressWarnings("InconsistentOverloads")
-  ProguardMemberRuleReturnValue(DexType fieldHolder, DexString fieldName, Nullability nullability) {
+  ProguardMemberRuleValue(DexType fieldHolder, DexString fieldName, Nullability nullability) {
     assert !nullability.isDefinitelyNull();
     this.type = Type.FIELD;
     this.booleanValue = false;
@@ -73,7 +73,7 @@ public class ProguardMemberRuleReturnValue {
     this.stringValue = null;
   }
 
-  ProguardMemberRuleReturnValue(Nullability nullability) {
+  ProguardMemberRuleValue(Nullability nullability) {
     assert nullability.isDefinitelyNull() || nullability.isDefinitelyNotNull();
     this.type = Type.NULLABILITY;
     this.booleanValue = false;
@@ -84,7 +84,7 @@ public class ProguardMemberRuleReturnValue {
     this.stringValue = null;
   }
 
-  ProguardMemberRuleReturnValue(LongInterval value) {
+  ProguardMemberRuleValue(LongInterval value) {
     this.type = Type.VALUE_RANGE;
     this.booleanValue = false;
     this.longInterval = value;
@@ -139,7 +139,7 @@ public class ProguardMemberRuleReturnValue {
     return fieldName;
   }
 
-  public ProguardMemberRuleReturnValue resolveFieldValue(AppView<?> appView, DexType valueType) {
+  public ProguardMemberRuleValue resolveFieldValue(AppView<?> appView, DexType valueType) {
     AbstractValue value = toAbstractValue(appView, valueType);
     if (valueType.isPrimitiveType()) {
       if (!value.isSingleNumberValue()) {
@@ -148,25 +148,24 @@ public class ProguardMemberRuleReturnValue {
       SingleNumberValue singleNumberValue = value.asSingleNumberValue();
       if (valueType.isBooleanType()) {
         if (singleNumberValue.isSingleBoolean()) {
-          return new ProguardMemberRuleReturnValue(singleNumberValue.isTrue());
+          return new ProguardMemberRuleValue(singleNumberValue.isTrue());
         }
       } else if (valueType.isByteType()
           || valueType.isCharType()
           || valueType.isIntType()
           || valueType.isShortType()) {
-        return new ProguardMemberRuleReturnValue(new LongInterval(singleNumberValue.getIntValue()));
+        return new ProguardMemberRuleValue(new LongInterval(singleNumberValue.getIntValue()));
       } else if (valueType.isLongType()) {
-        return new ProguardMemberRuleReturnValue(
-            new LongInterval(singleNumberValue.getLongValue()));
+        return new ProguardMemberRuleValue(new LongInterval(singleNumberValue.getLongValue()));
       } else {
         assert valueType.isDoubleType() || valueType.isFloatType();
       }
     } else {
       assert valueType.isReferenceType();
       if (value.isNull()) {
-        return new ProguardMemberRuleReturnValue(Nullability.definitelyNull());
+        return new ProguardMemberRuleValue(Nullability.definitelyNull());
       } else if (value.isSingleStringValue()) {
-        return new ProguardMemberRuleReturnValue(value.asSingleStringValue().getDexString());
+        return new ProguardMemberRuleValue(value.asSingleStringValue().getDexString());
       }
     }
     return this;
@@ -268,10 +267,10 @@ public class ProguardMemberRuleReturnValue {
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof ProguardMemberRuleReturnValue)) {
+    if (!(obj instanceof ProguardMemberRuleValue)) {
       return false;
     }
-    ProguardMemberRuleReturnValue other = (ProguardMemberRuleReturnValue) obj;
+    ProguardMemberRuleValue other = (ProguardMemberRuleValue) obj;
     return type == other.type
         && booleanValue == other.booleanValue
         && Objects.equals(longInterval, other.longInterval)

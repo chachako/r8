@@ -79,7 +79,7 @@ public class ProguardConfigurationUtils {
                     .setTypeMatcher(ProguardTypeMatcher.create(factory.intType))
                     .setName(IdentifierPatternWithWildcards.withoutWildcards("SDK_INT"))
                     .setReturnValue(
-                        new ProguardMemberRuleReturnValue(
+                        new ProguardMemberRuleValue(
                             new LongInterval(apiLevel.getLevel(), Integer.MAX_VALUE)))
                     .build()))
         .build();
