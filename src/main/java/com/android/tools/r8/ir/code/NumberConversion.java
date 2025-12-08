@@ -173,6 +173,9 @@ public class NumberConversion extends Unop {
       case INT_TO_SHORT:
         long rawIntToShortValue = (short) num.getIntValue();
         return valueFactory.createSingleNumberValue(rawIntToShortValue, typeElement);
+      case INT_TO_LONG:
+        long rawIntToLongValue = (long) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToLongValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }
