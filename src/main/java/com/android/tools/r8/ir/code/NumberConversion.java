@@ -179,6 +179,9 @@ public class NumberConversion extends Unop {
       case INT_TO_FLOAT:
         long rawIntToFloatValue = Float.floatToIntBits((float) num.getIntValue());
         return valueFactory.createSingleNumberValue(rawIntToFloatValue, typeElement);
+      case INT_TO_DOUBLE:
+        long rawIntToDoubleValue = Double.doubleToLongBits((double) num.getIntValue());
+        return valueFactory.createSingleNumberValue(rawIntToDoubleValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }
