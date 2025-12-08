@@ -169,6 +169,13 @@ public class ProguardMemberRuleReturnValue {
         if (holder != null) {
           DexEncodedField field = holder.lookupUniqueStaticFieldWithName(fieldName);
           if (field != null) {
+            if (field.isFinal() && field.hasExplicitStaticValue()) {
+              AbstractValue abstractValue =
+                  field.getStaticValue().toAbstractValue(abstractValueFactory);
+              if (abstractValue.isSingleValue()) {
+                return abstractValue;
+              }
+            }
             return abstractValueFactory.createSingleStatelessFieldValue(field.getReference());
           }
         }

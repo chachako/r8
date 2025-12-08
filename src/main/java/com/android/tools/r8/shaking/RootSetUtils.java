@@ -2174,7 +2174,7 @@ public class RootSetUtils {
     private void reportAssumeValuesWarningForMissingReturnField(
         ProguardConfigurationRule context, ProguardMemberRule rule, AbstractValue assumeValue) {
       if (rule.hasReturnValue() && rule.getReturnValue().isField()) {
-        assert assumeValue.isSingleFieldValue() || assumeValue.isUnknown();
+        assert assumeValue.isSingleValue() || assumeValue.isUnknown();
         if (assumeValue.isUnknown()) {
           ProguardMemberRuleReturnValue returnValue = rule.getReturnValue();
           options.reporter.warning(
