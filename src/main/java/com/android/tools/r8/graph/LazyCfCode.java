@@ -59,6 +59,7 @@ import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.MonitorType;
+import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
@@ -718,21 +719,49 @@ public class LazyCfCode extends Code {
           addInstruction(CfLogicalBinop.fromAsm(opcode));
           break;
         case Opcodes.I2L:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_LONG));
+          break;
         case Opcodes.I2F:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_FLOAT));
+          break;
         case Opcodes.I2D:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_DOUBLE));
+          break;
         case Opcodes.L2I:
+          addInstruction(new CfNumberConversion(NumberConversionType.LONG_TO_INT));
+          break;
         case Opcodes.L2F:
+          addInstruction(new CfNumberConversion(NumberConversionType.LONG_TO_FLOAT));
+          break;
         case Opcodes.L2D:
+          addInstruction(new CfNumberConversion(NumberConversionType.LONG_TO_DOUBLE));
+          break;
         case Opcodes.F2I:
+          addInstruction(new CfNumberConversion(NumberConversionType.FLOAT_TO_INT));
+          break;
         case Opcodes.F2L:
+          addInstruction(new CfNumberConversion(NumberConversionType.FLOAT_TO_LONG));
+          break;
         case Opcodes.F2D:
+          addInstruction(new CfNumberConversion(NumberConversionType.FLOAT_TO_DOUBLE));
+          break;
         case Opcodes.D2I:
+          addInstruction(new CfNumberConversion(NumberConversionType.DOUBLE_TO_INT));
+          break;
         case Opcodes.D2L:
+          addInstruction(new CfNumberConversion(NumberConversionType.DOUBLE_TO_LONG));
+          break;
         case Opcodes.D2F:
+          addInstruction(new CfNumberConversion(NumberConversionType.DOUBLE_TO_FLOAT));
+          break;
         case Opcodes.I2B:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_BYTE));
+          break;
         case Opcodes.I2C:
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_CHAR));
+          break;
         case Opcodes.I2S:
-          addInstruction(CfNumberConversion.fromAsm(opcode));
+          addInstruction(new CfNumberConversion(NumberConversionType.INT_TO_SHORT));
           break;
         case Opcodes.LCMP:
         case Opcodes.FCMPL:

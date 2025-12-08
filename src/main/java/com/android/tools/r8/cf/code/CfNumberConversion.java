@@ -75,10 +75,6 @@ public class CfNumberConversion extends CfInstruction {
     return type.getAsmOpcode();
   }
 
-  public static CfNumberConversion fromAsm(int opcode) {
-    return new CfNumberConversion(NumberConversionType.fromAsmOpcode(opcode));
-  }
-
   @Override
   public void buildIR(IRBuilder builder, CfState state, CfSourceCode code) {
     int source = state.pop().register;
