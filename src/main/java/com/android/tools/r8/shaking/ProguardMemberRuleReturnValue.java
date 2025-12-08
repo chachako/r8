@@ -28,6 +28,7 @@ public class ProguardMemberRuleReturnValue {
     BOOLEAN,
     FIELD,
     NULLABILITY,
+    STRING,
     VALUE_RANGE
   }
 
@@ -37,6 +38,7 @@ public class ProguardMemberRuleReturnValue {
   private final DexType fieldHolder;
   private final DexString fieldName;
   private final Nullability nullability;
+  private final DexString stringValue;
 
   ProguardMemberRuleReturnValue(boolean value) {
     this.type = Type.BOOLEAN;
@@ -45,6 +47,17 @@ public class ProguardMemberRuleReturnValue {
     this.fieldHolder = null;
     this.fieldName = null;
     this.nullability = null;
+    this.stringValue = null;
+  }
+
+  ProguardMemberRuleReturnValue(DexString stringValue) {
+    this.type = Type.STRING;
+    this.booleanValue = false;
+    this.longInterval = null;
+    this.fieldHolder = null;
+    this.fieldName = null;
+    this.nullability = Nullability.definitelyNotNull();
+    this.stringValue = stringValue;
   }
 
   @SuppressWarnings("InconsistentOverloads")
@@ -56,6 +69,7 @@ public class ProguardMemberRuleReturnValue {
     this.fieldHolder = fieldHolder;
     this.fieldName = fieldName;
     this.nullability = nullability;
+    this.stringValue = null;
   }
 
   ProguardMemberRuleReturnValue(Nullability nullability) {
@@ -66,6 +80,7 @@ public class ProguardMemberRuleReturnValue {
     this.fieldHolder = null;
     this.fieldName = null;
     this.nullability = nullability;
+    this.stringValue = null;
   }
 
   ProguardMemberRuleReturnValue(LongInterval value) {
@@ -75,6 +90,7 @@ public class ProguardMemberRuleReturnValue {
     this.fieldHolder = null;
     this.fieldName = null;
     this.nullability = getNullabilityForValueRange(value);
+    this.stringValue = null;
   }
 
   private static Nullability getNullabilityForValueRange(LongInterval value) {
@@ -99,6 +115,10 @@ public class ProguardMemberRuleReturnValue {
     return type == Type.NULLABILITY;
   }
 
+  public boolean isString() {
+    return type == Type.STRING;
+  }
+
   public boolean isValueRange() {
     return type == Type.VALUE_RANGE;
   }
@@ -119,12 +139,17 @@ public class ProguardMemberRuleReturnValue {
   }
 
   private boolean hasNullability() {
-    return isField() || isNullability() || isValueRange();
+    return isField() || isNullability() || isString() || isValueRange();
   }
 
   public Nullability getNullability() {
     assert hasNullability();
     return nullability;
+  }
+
+  public DexString getString() {
+    assert isString();
+    return stringValue;
   }
 
   public LongInterval getValueRange() {
@@ -153,6 +178,9 @@ public class ProguardMemberRuleReturnValue {
         return nullability.isDefinitelyNull()
             ? abstractValueFactory.createUncheckedNullValue()
             : AbstractValue.unknown();
+
+      case STRING:
+        return abstractValueFactory.createSingleStringValue(stringValue);
 
       case VALUE_RANGE:
         if (valueType.isReferenceType()) {
@@ -185,6 +213,8 @@ public class ProguardMemberRuleReturnValue {
         throw new Unimplemented("Unimplemented type: " + type);
       case NULLABILITY:
         throw new Unimplemented("Unimplemented type: " + type);
+      case STRING:
+        return value.isConstString(stringValue);
       case VALUE_RANGE:
         throw new Unimplemented("Unimplemented type: " + type);
       default:
@@ -205,12 +235,13 @@ public class ProguardMemberRuleReturnValue {
         && booleanValue == other.booleanValue
         && Objects.equals(longInterval, other.longInterval)
         && ObjectUtils.identical(fieldHolder, other.fieldHolder)
-        && nullability == other.nullability;
+        && nullability == other.nullability
+        && ObjectUtils.identical(stringValue, other.stringValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, booleanValue, longInterval, fieldHolder, nullability);
+    return Objects.hash(type, booleanValue, longInterval, fieldHolder, nullability, stringValue);
   }
 
   @Override
@@ -219,25 +250,28 @@ public class ProguardMemberRuleReturnValue {
   }
 
   public String getValueString() {
-    if (isBoolean()) {
-      return Boolean.toString(booleanValue);
-    } else if (isField()) {
-      StringBuilder result = new StringBuilder();
-      if (nullability.isDefinitelyNotNull()) {
-        result.append("@NonNull ");
-      }
-      result.append(fieldHolder.getTypeName()).append('.').append(fieldName);
-      return result.toString();
-    } else if (isNullability()) {
-      return nullability.isDefinitelyNull() ? "null" : "@NonNull";
-    } else {
-      assert isValueRange();
-      if (longInterval.isSingleValue()) {
-        return Long.toString(longInterval.getMin());
-      } else {
-        return longInterval.getMin() + ".." + longInterval.getMax();
-      }
+    switch (type) {
+      case BOOLEAN:
+        return Boolean.toString(booleanValue);
+      case FIELD:
+        StringBuilder result = new StringBuilder();
+        if (nullability.isDefinitelyNotNull()) {
+          result.append("@NonNull ");
+        }
+        result.append(fieldHolder.getTypeName()).append('.').append(fieldName);
+        return result.toString();
+      case NULLABILITY:
+        return nullability.isDefinitelyNull() ? "null" : "@NonNull";
+      case STRING:
+        return stringValue.toString();
+      case VALUE_RANGE:
+        if (longInterval.isSingleValue()) {
+          return Long.toString(longInterval.getMin());
+        } else {
+          return longInterval.getMin() + ".." + longInterval.getMax();
+        }
+      default:
+        throw new Unreachable("Unexpected type: " + type);
     }
-
   }
 }

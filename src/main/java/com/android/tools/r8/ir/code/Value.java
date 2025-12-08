@@ -865,9 +865,7 @@ public class Value implements Comparable<Value>, InstructionOrValue {
   }
 
   public boolean isConstNumber(long rawValue) {
-    return isConstant()
-        && getConstInstruction().isConstNumber()
-        && getConstInstruction().asConstNumber().getRawValue() == rawValue;
+    return isConstNumber() && getConstInstruction().asConstNumber().getRawValue() == rawValue;
   }
 
   public boolean isConstZero() {
@@ -876,6 +874,11 @@ public class Value implements Comparable<Value>, InstructionOrValue {
 
   public boolean isConstString() {
     return isConstant() && getConstInstruction().isConstString();
+  }
+
+  public boolean isConstString(DexString string) {
+    return isConstString()
+        && getConstInstruction().asConstString().getValue().isIdenticalTo(string);
   }
 
   public boolean isDexItemBasedConstString() {

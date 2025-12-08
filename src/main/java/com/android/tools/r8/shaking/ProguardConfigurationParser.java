@@ -1432,6 +1432,10 @@ public class ProguardConfigurationParser {
         }
         return new ProguardMemberRuleReturnValue(new LongInterval(min, max));
       }
+      String string = acceptQuotedJavaString();
+      if (string != null) {
+        return new ProguardMemberRuleReturnValue(dexItemFactory.createString(string));
+      }
       Nullability nullability = Nullability.maybeNull();
       if (acceptString("@NonNull") || acceptString("_NONNULL_")) {
         nullability = Nullability.definitelyNotNull();
@@ -1827,6 +1831,117 @@ public class ProguardConfigurationParser {
         return null;
       }
       return Integer.parseInt(s);
+    }
+
+    /**
+     * This method does not translate Unicode escapes such as "\u2022". Unicode escapes are
+     * translated by the Java compiler when reading input characters and are not part of the string
+     * literal specification. See also JLS
+     */
+    private String acceptQuotedJavaString() throws ProguardRuleParserException {
+      if (!acceptChar('"')) {
+        return null;
+      }
+      StringBuilder sb = new StringBuilder();
+      while (!eof()) {
+        char c = readChar();
+        if (c == '"') {
+          return sb.toString();
+        }
+        // If it's a newline, then error.
+        if (c == '\n') {
+          throw parseError("Unexpected line termination in string literal");
+        }
+        // If it's not an escape start, just append.
+        if (c != '\\') {
+          sb.append(c);
+          continue;
+        }
+        if (eof()) {
+          break;
+        }
+        // It is an escape sequence, look ahead.
+        c = readChar();
+        switch (c) {
+          case 'b':
+            sb.append('\b');
+            break;
+          case 't':
+            sb.append('\t');
+            break;
+          case 'n':
+            sb.append('\n');
+            break;
+          case 'f':
+            sb.append('\f');
+            break;
+          case 'r':
+            sb.append('\r');
+            break;
+          case '"':
+            sb.append('\"');
+            break;
+          case '\'':
+            sb.append('\'');
+            break;
+          case '\\':
+            sb.append('\\');
+            break;
+
+          // Octal handling (0-3 digits).
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+            sb.append(parseOctalEscape(c));
+            break;
+
+          default:
+            throw parseError("Illegal escape sequence: \\" + c);
+        }
+      }
+      throw parseError("Unexpected EOF while parsing string literal");
+    }
+
+    private char parseOctalEscape(char firstDigit) {
+      int firstDigitIndex = position - 1;
+
+      // We have at least 1 digit (the current char).
+      int octalLength = 1;
+
+      // Check for a 2nd digit.
+      if (acceptOctalDigit()) {
+        // Check for a 3rd digit. Valid 3-digit octals must start with 0, 1, 2 or 3.
+        // If it starts with 4-7, the max value is \77 (2 digits).
+        if (firstDigit <= '3' && acceptOctalDigit()) {
+          octalLength = 3;
+        } else {
+          octalLength = 2;
+        }
+      }
+
+      // Extract the substring (e.g., "123" or "0") and parse base-8 to int.
+      String octalSeq = getContentInRange(firstDigitIndex, firstDigitIndex + octalLength);
+      int value = Integer.parseInt(octalSeq, 8);
+
+      // Cast to char (UTF-16 unit).
+      return (char) value;
+    }
+
+    private boolean acceptOctalDigit() {
+      if (hasNextChar(this::isOctalDigit)) {
+        position++;
+        return true;
+      }
+      return false;
+    }
+
+    private boolean isOctalDigit(char c) {
+      return '0' <= c && c <= '7';
     }
 
     private boolean isClassName(int codePoint) {

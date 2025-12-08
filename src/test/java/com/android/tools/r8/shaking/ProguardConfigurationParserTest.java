@@ -4,8 +4,16 @@
 package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.DiagnosticsChecker.checkDiagnostics;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticPosition;
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
+import static com.android.tools.r8.PositionMatcher.positionColumn;
+import static com.android.tools.r8.PositionMatcher.positionLine;
 import static com.android.tools.r8.shaking.ProguardConfigurationSourceStrings.createConfigurationForTesting;
 import static com.android.tools.r8.utils.BooleanUtils.intValue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -3139,5 +3147,72 @@ public class ProguardConfigurationParserTest extends TestBase {
             "# Include 2",
             "# End of content from include2.txt"),
         StringUtils.replaceAll(parsedConfiguration, temp.getRoot().toString() + separator, ""));
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRule() {
+    String configuration = "-assumevalues class * { void m() return \"Hello, world!\"; }";
+    parser.parse(createConfigurationForTesting(configuration));
+    verifyParserEndsCleanly();
+
+    ProguardConfiguration config = builder.build();
+    ProguardAssumeValuesRule rule = (ProguardAssumeValuesRule) config.getRules().get(0);
+    assertTrue(rule.getMemberRule(0).hasReturnValue());
+    assertEquals(
+        "Hello, world!", rule.getMemberRule(0).getReturnValue().getValueString().toString());
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRuleWithEscapedCharacters() {
+    // Octal escape \123 is a valid example of a 3 digit octal.
+    // Octal escape \40 is a valid 2 digit octal that does not extend to a 3 digit octal because the
+    // first digit is not in [0;3].
+    String configuration =
+        "-assumevalues class * { void m() return \"Hello\\nworld!\\123\\400\"; }";
+    parser.parse(createConfigurationForTesting(configuration));
+    verifyParserEndsCleanly();
+
+    ProguardConfiguration config = builder.build();
+    ProguardAssumeValuesRule rule = (ProguardAssumeValuesRule) config.getRules().get(0);
+    assertTrue(rule.getMemberRule(0).hasReturnValue());
+    assertEquals(
+        "Hello\nworld!S 0", rule.getMemberRule(0).getReturnValue().getValueString().toString());
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRuleWithInvalidEscape() {
+    String configuration = "-assumevalues class * { void m() return \"\\9\"; }";
+    try {
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expected parse error");
+    } catch (RuntimeException e) {
+      assertEquals(1, handler.errors.size());
+      assertThat(
+          handler.errors.get(0),
+          allOf(
+              diagnosticType(ProguardRuleParserException.class),
+              diagnosticMessage(containsString("Illegal escape sequence: \\9")),
+              diagnosticPosition(positionLine(1)),
+              diagnosticPosition(positionColumn(44))));
+    }
+  }
+
+  @Test
+  public void parseAssumeValuesReturnStringRuleWithNewline() {
+    String configuration =
+        StringUtils.lines("-assumevalues class * { void m() return \"Hello", "world!\"; }");
+    try {
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expected parse error");
+    } catch (RuntimeException e) {
+      assertEquals(1, handler.errors.size());
+      assertThat(
+          handler.errors.get(0),
+          allOf(
+              diagnosticType(ProguardRuleParserException.class),
+              diagnosticMessage(containsString("Unexpected line termination in string literal")),
+              diagnosticPosition(positionLine(1)),
+              diagnosticPosition(positionColumn(48))));
+    }
   }
 }

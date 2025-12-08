@@ -26,6 +26,20 @@ public abstract class PositionMatcher extends TypeSafeMatcher<Position> {
     };
   }
 
+  public static Matcher<Position> positionColumn(int column) {
+    return new PositionMatcher() {
+      @Override
+      protected boolean matchesSafely(Position position) {
+        return position instanceof TextPosition && ((TextPosition) position).getColumn() == column;
+      }
+
+      @Override
+      public void describeTo(Description description) {
+        description.appendText("with column " + column);
+      }
+    };
+  }
+
   public static Matcher<Position> positionMethodName(String methodName) {
     return new PositionMatcher() {
       @Override
