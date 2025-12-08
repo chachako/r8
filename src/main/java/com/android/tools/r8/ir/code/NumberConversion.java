@@ -165,8 +165,11 @@ public class NumberConversion extends Unop {
 
     switch (type) {
       case INT_TO_BYTE:
-        long rawValue = (byte) num.getIntValue();
-        return valueFactory.createSingleNumberValue(rawValue, typeElement);
+        long rawIntToByteValue = (byte) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToByteValue, typeElement);
+      case INT_TO_CHAR:
+        long rawIntToCharValue = (char) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToCharValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }

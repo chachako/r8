@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized;
 import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
-public class IntToByteTest extends NumberConversionTestBase {
+public class IntToCharTest extends NumberConversionTestBase {
 
   @Parameterized.Parameter(0)
   public int input;
@@ -38,8 +38,8 @@ public class IntToByteTest extends NumberConversionTestBase {
     testConversion(
         mv -> {
           mv.visitLdcInsn(input);
-          mv.visitInsn(Opcodes.I2B);
-          mv.visitIntInsn(Opcodes.BIPUSH, (byte) input);
+          mv.visitInsn(Opcodes.I2C);
+          mv.visitLdcInsn((char) input);
           mv.visitInsn(Opcodes.ISUB);
         },
         NumericType.INT,
