@@ -170,6 +170,9 @@ public class NumberConversion extends Unop {
       case INT_TO_CHAR:
         long rawIntToCharValue = (char) num.getIntValue();
         return valueFactory.createSingleNumberValue(rawIntToCharValue, typeElement);
+      case INT_TO_SHORT:
+        long rawIntToShortValue = (short) num.getIntValue();
+        return valueFactory.createSingleNumberValue(rawIntToShortValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }
