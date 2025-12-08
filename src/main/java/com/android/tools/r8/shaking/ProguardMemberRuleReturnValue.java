@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
+import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.LongInterval;
@@ -136,6 +137,39 @@ public class ProguardMemberRuleReturnValue {
   public DexString getFieldName() {
     assert isField();
     return fieldName;
+  }
+
+  public ProguardMemberRuleReturnValue resolveFieldValue(AppView<?> appView, DexType valueType) {
+    AbstractValue value = toAbstractValue(appView, valueType);
+    if (valueType.isPrimitiveType()) {
+      if (!value.isSingleNumberValue()) {
+        return this;
+      }
+      SingleNumberValue singleNumberValue = value.asSingleNumberValue();
+      if (valueType.isBooleanType()) {
+        if (singleNumberValue.isSingleBoolean()) {
+          return new ProguardMemberRuleReturnValue(singleNumberValue.isTrue());
+        }
+      } else if (valueType.isByteType()
+          || valueType.isCharType()
+          || valueType.isIntType()
+          || valueType.isShortType()) {
+        return new ProguardMemberRuleReturnValue(new LongInterval(singleNumberValue.getIntValue()));
+      } else if (valueType.isLongType()) {
+        return new ProguardMemberRuleReturnValue(
+            new LongInterval(singleNumberValue.getLongValue()));
+      } else {
+        assert valueType.isDoubleType() || valueType.isFloatType();
+      }
+    } else {
+      assert valueType.isReferenceType();
+      if (value.isNull()) {
+        return new ProguardMemberRuleReturnValue(Nullability.definitelyNull());
+      } else if (value.isSingleStringValue()) {
+        return new ProguardMemberRuleReturnValue(value.asSingleStringValue().getDexString());
+      }
+    }
+    return this;
   }
 
   private boolean hasNullability() {

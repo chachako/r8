@@ -1782,7 +1782,9 @@ public class RootSetUtils {
           AssumeMethodInfoCollection.Builder methodInfoCollection =
               assumeInfoCollectionBuilder.getOrCreateMethodInfo(method.getReference());
           if (rule.hasPreconditions()) {
-            assumeInfo = methodInfoCollection.getOrCreateConditionalInfo(rule.getPreconditions());
+            assumeInfo =
+                methodInfoCollection.getOrCreateConditionalInfo(
+                    rule.getResolvedPreconditions(appView, method));
           } else {
             assumeInfo = methodInfoCollection.getOrCreateUnconditionalInfo();
           }
@@ -1819,7 +1821,9 @@ public class RootSetUtils {
         AssumeMethodInfoCollection.Builder methodInfoCollection =
             assumeInfoCollectionBuilder.getOrCreateMethodInfo(method.getReference());
         if (rule.hasPreconditions()) {
-          assumeInfo = methodInfoCollection.getOrCreateConditionalInfo(rule.getPreconditions());
+          assumeInfo =
+              methodInfoCollection.getOrCreateConditionalInfo(
+                  rule.getResolvedPreconditions(appView, method));
         } else {
           assumeInfo = methodInfoCollection.getOrCreateUnconditionalInfo();
         }

@@ -14,10 +14,18 @@ public class LongInterval {
   private final long min;
   private final long max;
 
+  public LongInterval(int value) {
+    this(value, value);
+  }
+
   public LongInterval(int min, int max) {
     assert min <= max;
     this.min = min;
     this.max = max;
+  }
+
+  public LongInterval(long value) {
+    this(value, value);
   }
 
   public LongInterval(long min, long max) {
