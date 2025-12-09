@@ -33,6 +33,7 @@ import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.ThrowingAction;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import java.io.File;
@@ -47,6 +48,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
@@ -117,6 +119,16 @@ public class ProguardConfigurationParser {
   // Just ignoring them would produce outputs incompatible with user expectations.
   private static final List<String> UNSUPPORTED_FLAG_OPTIONS =
       ImmutableList.of("skipnonpubliclibraryclasses");
+
+  static final Map<String, Integer> logLevelNames =
+      ImmutableMap.of(
+          "assert", 7,
+          "error", 6,
+          "warn", 5,
+          "info", 4,
+          "debug", 3,
+          "verbose", 2,
+          "none", 1);
 
   @Deprecated
   public static ImmutableList<ProguardConfigurationRule> parseMainDex(
@@ -897,9 +909,23 @@ public class ProguardConfigurationParser {
       skipWhitespace();
       // First parse the mandatory log level int.
       Integer maxRemovedAndroidLogLevel = acceptInteger();
-      if (maxRemovedAndroidLogLevel == null
-          || maxRemovedAndroidLogLevel < MaximumRemovedAndroidLogLevelRule.NONE) {
+      if (maxRemovedAndroidLogLevel != null
+          && maxRemovedAndroidLogLevel < MaximumRemovedAndroidLogLevelRule.NONE) {
         throw parseError("Expected integer greater than or equal to 1", getPosition());
+      }
+      if (maxRemovedAndroidLogLevel == null) {
+        if (options.isEnableNamedAndroidLogLevels()) {
+          String logLevelName = acceptString();
+          if (logLevelName == null) {
+            throw parseError("Expected log level", getPosition());
+          }
+          maxRemovedAndroidLogLevel = logLevelNames.get(logLevelName);
+          if (maxRemovedAndroidLogLevel == null) {
+            throw parseError("Unsupported log level", getPosition());
+          }
+        } else {
+          throw parseError("Expected integer greater than or equal to 1", getPosition());
+        }
       }
       MaximumRemovedAndroidLogLevelRule.Builder builder =
           MaximumRemovedAndroidLogLevelRule.builder()
@@ -1826,11 +1852,16 @@ public class ProguardConfigurationParser {
     }
 
     private Integer acceptInteger() {
+      final char minus = '-';
+      boolean negative = acceptChar(minus);
       String s = acceptString(Character::isDigit);
       if (s == null) {
+        if (negative) {
+          unacceptChar(minus);
+        }
         return null;
       }
-      return Integer.parseInt(s);
+      return Integer.parseInt((negative ? "-" : "") + s);
     }
 
     /**
@@ -2194,6 +2225,12 @@ public class ProguardConfigurationParser {
       }
       position = end;
       return contents.substring(start, end);
+    }
+
+    private void unacceptChar(char expected) {
+      assert position >= 1;
+      position--;
+      assert expected == contents.charAt(position);
     }
 
     private void unacceptString(String expected) {
