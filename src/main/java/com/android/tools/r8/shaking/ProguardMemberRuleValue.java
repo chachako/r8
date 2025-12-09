@@ -4,11 +4,11 @@
 
 package com.android.tools.r8.shaking;
 
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedField;
+import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
@@ -17,6 +17,8 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
+import com.android.tools.r8.ir.code.FieldGet;
+import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.LongInterval;
@@ -244,19 +246,46 @@ public class ProguardMemberRuleValue {
         : DynamicType.unknown();
   }
 
-  // TODO(b/409103321): Implement all cases.
-  public boolean test(Value value) {
+  public boolean test(AppView<?> appView, Value value) {
     switch (type) {
       case BOOLEAN:
         return value.isConstNumber(booleanValue ? 1 : 0);
       case FIELD:
-        throw new Unimplemented("Unimplemented type: " + type);
+        {
+          Value root = value.getAliasedValue();
+          if (root.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
+            FieldGet fieldGet = value.getDefinition().asFieldGet();
+            DexField field = fieldGet.getField();
+            if (field.getName().isIdenticalTo(getFieldName())) {
+              if (field.getHolderType().isIdenticalTo(getFieldHolder())) {
+                return true;
+              }
+              if (appView.hasClassHierarchy()) {
+                DexEncodedField resolvedField =
+                    appView.appInfoWithClassHierarchy().resolveField(field).getResolvedField();
+                return resolvedField != null
+                    && resolvedField.getHolderType().isIdenticalTo(getFieldHolder());
+              }
+            }
+          }
+          return false;
+        }
       case NULLABILITY:
-        throw new Unimplemented("Unimplemented type: " + type);
+        {
+          assert getNullability().isDefinitelyNotNull() || getNullability().isDefinitelyNull();
+          TypeElement type = value.getType();
+          return type.isReferenceType() && type.nullability() == getNullability();
+        }
       case STRING:
         return value.isConstString(stringValue);
       case VALUE_RANGE:
-        throw new Unimplemented("Unimplemented type: " + type);
+        {
+          if (value.isConstNumber()) {
+            long rawValue = value.getConstInstruction().asConstNumber().getRawValue();
+            return longInterval.containsValue(rawValue);
+          }
+          return false;
+        }
       default:
         throw new Unreachable("Unexpected type: " + type);
     }

@@ -53,24 +53,26 @@ public class AssumeMethodInfoCollection {
     return unconditionalInfo == null && conditionalInfos.isEmpty();
   }
 
-  public AssumeInfo lookup(InvokeMethod invoke) {
+  public AssumeInfo lookup(AppView<?> appView, InvokeMethod invoke) {
     if (conditionalInfos.isEmpty()) {
       return getUnconditionalInfo();
     }
     // TODO(b/409103321): Raise an error if there exists more than one match.
     for (Entry<List<ProguardMemberRuleValue>, AssumeInfo> entry : conditionalInfos.entrySet()) {
       List<ProguardMemberRuleValue> condition = entry.getKey();
-      if (test(invoke, condition)) {
+      if (test(appView, invoke, condition)) {
         return entry.getValue();
       }
     }
     return getUnconditionalInfo();
   }
 
-  private boolean test(InvokeMethod invoke, List<ProguardMemberRuleValue> conditions) {
+  private boolean test(
+      AppView<?> appView, InvokeMethod invoke, List<ProguardMemberRuleValue> conditions) {
     for (int parameterIndex = 0; parameterIndex < conditions.size(); parameterIndex++) {
       ProguardMemberRuleValue condition = conditions.get(parameterIndex);
-      if (condition != null && !condition.test(invoke.getArgumentForParameter(parameterIndex))) {
+      if (condition != null
+          && !condition.test(appView, invoke.getArgumentForParameter(parameterIndex))) {
         return false;
       }
     }

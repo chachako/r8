@@ -102,7 +102,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private AppInfoWithClassHierarchy appInfoForDesugaring;
   private AppServices appServices;
   private ArtProfileCollection artProfileCollection;
-  private AssumeInfoCollection assumeInfoCollection = AssumeInfoCollection.builder().build();
+  private AssumeInfoCollection assumeInfoCollection = AssumeInfoCollection.builder().build(this);
   private final DontWarnConfiguration dontWarnConfiguration;
   private final WholeProgramOptimizations wholeProgramOptimizations;
   private GraphLens codeLens = GraphLens.getIdentityLens();

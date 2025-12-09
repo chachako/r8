@@ -371,7 +371,7 @@ public class R8 {
                 .expandAdaptClassStringsPatterns()
                 .tracePartialCompilationDexingOutputClasses(executorService)
                 .build());
-        appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build());
+        appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
 
         // Compute the main dex rootset that will be the base of first and final main dex tracing
         // before building a new appview with only live classes (and invalidating subtypingInfo).

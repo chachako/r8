@@ -377,7 +377,7 @@ public final class D8 {
                   options.getMinApiLevel().getLevel(), Integer.MAX_VALUE))
           .setIsSideEffectFree();
     }
-    appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build());
+    appView.setAssumeInfoCollection(assumeInfoCollectionBuilder.build(appView));
   }
 
   private static void finalizeApplication(

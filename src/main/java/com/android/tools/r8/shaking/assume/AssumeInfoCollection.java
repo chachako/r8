@@ -28,14 +28,17 @@ import java.util.function.Consumer;
 
 public class AssumeInfoCollection {
 
+  private final AppView<?> appView;
   private final Map<DexField, AssumeInfo> fieldInfos;
   private final Map<DexMethod, AssumeMethodInfoCollection> methodInfos;
 
   AssumeInfoCollection(
+      AppView<?> appView,
       Map<DexField, AssumeInfo> fieldInfos,
       Map<DexMethod, AssumeMethodInfoCollection> methodInfos) {
     assert fieldInfos.values().stream().noneMatch(AssumeInfo::isEmpty);
     assert methodInfos.values().stream().noneMatch(AssumeMethodInfoCollection::isEmpty);
+    this.appView = appView;
     this.fieldInfos = fieldInfos;
     this.methodInfos = methodInfos;
   }
@@ -63,7 +66,7 @@ public class AssumeInfoCollection {
   }
 
   public AssumeInfo getMethod(DexMethod method, InvokeMethod invoke) {
-    return getMethod(method).lookup(invoke);
+    return getMethod(method).lookup(appView, invoke);
   }
 
   public AssumeInfo getMethod(DexClassAndMethod method, InvokeMethod invoke) {
@@ -121,7 +124,7 @@ public class AssumeInfoCollection {
           assert !rewrittenInfo.isEmpty();
           rewrittenMethodInfos.put(rewrittenMethod, rewrittenInfo);
         });
-    return new AssumeInfoCollection(rewrittenFieldInfos, rewrittenMethodInfos);
+    return new AssumeInfoCollection(appView, rewrittenFieldInfos, rewrittenMethodInfos);
   }
 
   public AssumeInfoCollection withoutPrunedItems(PrunedItems prunedItems, Timing timing) {
@@ -147,7 +150,7 @@ public class AssumeInfoCollection {
           }
         });
     AssumeInfoCollection result =
-        new AssumeInfoCollection(rewrittenFieldInfos, rewrittenMethodInfos);
+        new AssumeInfoCollection(appView, rewrittenFieldInfos, rewrittenMethodInfos);
     timing.end();
     return result;
   }
@@ -181,53 +184,9 @@ public class AssumeInfoCollection {
       return fieldInfos.isEmpty() && methodInfos.isEmpty();
     }
 
-    /*public AssumeInfo buildInfo(DexClassAndMember<?, ?> member) {
-      AssumeInfo.Builder builder = fieldInfos.get(member.getReference());
-      return builder != null ? builder.build() : AssumeInfo.empty();
-    }
-
-    private AssumeInfo.Builder getOrCreateAssumeInfo(DexClassAndField field) {
-      return getOrCreateAssumeInfo(field.getReference());
-    }
-
-    private AssumeInfo.Builder getOrCreateAssumeInfo(DexMethod method) {
-      return methodInfos.computeIfAbsent(method, ignoreKey(AssumeInfo::builder));
-    }
-
-    private AssumeInfo.Builder getOrCreateAssumeInfo(DexClassAndMethod method) {
-      return getOrCreateAssumeInfo(method.getReference());
-    }
-
-    public Builder meet(DexMember<?, ?> member, AssumeInfo assumeInfo) {
-      getOrCreateAssumeInfo(member).meet(assumeInfo);
-      return this;
-    }
-
-    public Builder meetAssumeType(DexClassAndMember<?, ?> member, DynamicType assumeType) {
-      getOrCreateAssumeInfo(member).meetAssumeType(assumeType);
-      return this;
-    }
-
-    public Builder meetAssumeValue(DexMember<?, ?> member, AbstractValue assumeValue) {
-      getOrCreateAssumeInfo(member).meetAssumeValue(assumeValue);
-      return this;
-    }
-
-    public Builder meetAssumeValue(DexClassAndMember<?, ?> member, AbstractValue assumeValue) {
-      return meetAssumeValue(member.getReference(), assumeValue);
-    }
-
-    public Builder setIsSideEffectFree(DexMember<?, ?> member) {
-      getOrCreateAssumeInfo(member).setIsSideEffectFree();
-      return this;
-    }
-
-    public Builder setIsSideEffectFree(DexClassAndMember<?, ?> member) {
-      return setIsSideEffectFree(member.getReference());
-    }*/
-
-    public AssumeInfoCollection build() {
+    public AssumeInfoCollection build(AppView<?> appView) {
       return new AssumeInfoCollection(
+          appView,
           MapUtils.newIdentityHashMap(
               builder ->
                   fieldInfos.forEach(
