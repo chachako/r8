@@ -6,6 +6,8 @@ package com.android.tools.r8.ir.optimize;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V14_0_0;
 import static com.android.tools.r8.ToolHelper.DexVm.Version.V15_0_0;
 
+import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NeverPropagateValue;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -49,6 +51,8 @@ public class B418719343Test extends TestBase {
   @Test
   public void testR8() throws Exception {
     testForR8(parameters)
+        .enableInliningAnnotations()
+        .enableMemberValuePropagationAnnotations()
         .addInnerClasses(getClass())
         .addKeepClassAndMembersRules(Main.class)
         .compile()
@@ -98,10 +102,16 @@ public class B418719343Test extends TestBase {
         do var9++;
         while (var9 < 10000);
       } catch (ArithmeticException exc3) {
-        fFld *= i25;
+        fFld *= intToFloat(i25);
       }
       long meth_res = i9 + i10 + i25 + FuzzerUtils.checkSum(byArr);
       return meth_res;
+    }
+
+    @NeverInline
+    @NeverPropagateValue
+    static float intToFloat(int i) {
+      return (float) i;
     }
 
     int iMeth(int i3, int i4) {
