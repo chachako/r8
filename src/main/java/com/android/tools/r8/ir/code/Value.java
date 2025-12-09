@@ -897,6 +897,10 @@ public class Value implements Comparable<Value>, InstructionOrValue {
     return isConstant() && getConstInstruction().isConstClass();
   }
 
+  public boolean isConstClass(DexType type) {
+    return isConstClass() && getConstInstruction().asConstClass().getType().isIdenticalTo(type);
+  }
+
   public boolean isConstant() {
     return definition.isOutConstant() && !hasLocalInfo();
   }

@@ -23,6 +23,8 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.LongInterval;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.google.common.collect.Lists;
+import java.util.List;
 import java.util.Objects;
 
 public class ProguardMemberRuleValue {
@@ -253,6 +255,8 @@ public class ProguardMemberRuleValue {
       case FIELD:
         {
           Value root = value.getAliasedValue();
+          // If the value is defined by a field-get instruction, then check if the field instruction
+          // matches the field in the condition.
           if (root.isDefinedByInstructionSatisfying(Instruction::isFieldGet)) {
             FieldGet fieldGet = value.getDefinition().asFieldGet();
             DexField field = fieldGet.getField();
@@ -265,6 +269,35 @@ public class ProguardMemberRuleValue {
                     appView.appInfoWithClassHierarchy().resolveField(field).getResolvedField();
                 return resolvedField != null
                     && resolvedField.getHolderType().isIdenticalTo(getFieldHolder());
+              }
+            }
+            return false;
+          }
+
+          // Otherwise lookup the field in the condition and check if it has a constant value.
+          // If so, check if the value matches the constant value.
+          if (appView.hasClassHierarchy()
+              && root.isDefinedByInstructionSatisfying(Instruction::isConstInstruction)) {
+            DexClass fieldHolder = appView.definitionFor(getFieldHolder());
+            if (fieldHolder != null) {
+              List<DexEncodedField> fields =
+                  Lists.newArrayList(
+                      fieldHolder.fields(f -> f.getName().isIdenticalTo(getFieldName())));
+              if (fields.size() == 1) {
+                DexEncodedField field = fields.get(0);
+                AbstractValue fieldValue = field.getOptimizationInfo().getAbstractValue();
+                if (fieldValue.isSingleValue()) {
+                  if (fieldValue.isNull()) {
+                    return value.getType().isReferenceType()
+                        && value.getType().nullability().isDefinitelyNull();
+                  } else if (fieldValue.isSingleConstClassValue()) {
+                    return value.isConstClass(fieldValue.asSingleConstClassValue().getType());
+                  } else if (fieldValue.isSingleNumberValue()) {
+                    return value.isConstNumber(fieldValue.asSingleNumberValue().getValue());
+                  } else if (fieldValue.isSingleStringValue()) {
+                    return value.isConstString(fieldValue.asSingleStringValue().getDexString());
+                  }
+                }
               }
             }
           }
@@ -304,13 +337,15 @@ public class ProguardMemberRuleValue {
         && booleanValue == other.booleanValue
         && Objects.equals(longInterval, other.longInterval)
         && ObjectUtils.identical(fieldHolder, other.fieldHolder)
+        && ObjectUtils.identical(fieldName, other.fieldName)
         && nullability == other.nullability
         && ObjectUtils.identical(stringValue, other.stringValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, booleanValue, longInterval, fieldHolder, nullability, stringValue);
+    return Objects.hash(
+        type, booleanValue, longInterval, fieldHolder, fieldName, nullability, stringValue);
   }
 
   @Override
