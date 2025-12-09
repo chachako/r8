@@ -27,6 +27,7 @@ import com.android.tools.r8.shaking.ProguardTypeMatcher.ClassOrType;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.ProguardWildcard.Pattern;
 import com.android.tools.r8.utils.AbortException;
+import com.android.tools.r8.utils.CharPredicate;
 import com.android.tools.r8.utils.IdentifierUtils;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.LongInterval;
@@ -54,7 +55,6 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 
 public class ProguardConfigurationParser {
 
@@ -1393,7 +1393,8 @@ public class ProguardConfigurationParser {
                   }
                   // Parse "return ..." if present.
                   ruleBuilder.setReturnValue(
-                      parseOptionalValueSpecification(allowValueSpecification, "return"));
+                      parseOptionalValueSpecification(
+                          allowValueSpecification, "return", c -> c == ';'));
                 } else {
                   throw parseError("Expected field or method name");
                 }
@@ -1410,7 +1411,7 @@ public class ProguardConfigurationParser {
     }
 
     private ProguardMemberRuleValue parseOptionalValueSpecification(
-        boolean allowValueSpecification, String symbolStart) {
+        boolean allowValueSpecification, String symbolStart, CharPredicate endPredicate) {
       skipWhitespace();
       TextPosition positionStart = getPosition();
       if (!acceptString(symbolStart)) {
@@ -1449,7 +1450,7 @@ public class ProguardConfigurationParser {
       if (acceptString("@NonNull") || acceptString("_NONNULL_")) {
         nullability = Nullability.definitelyNotNull();
         skipWhitespace();
-        if (!eof() && peekChar() == ';') {
+        if (!eof() && endPredicate.test(peekChar())) {
           return new ProguardMemberRuleValue(nullability);
         }
       }
@@ -1502,7 +1503,8 @@ public class ProguardConfigurationParser {
             identifierPatternWithWildcards != null;
             identifierPatternWithWildcards = acceptChar(',') ? parseClassName() : null, i++) {
           ProguardMemberRuleValue precondition =
-              parseOptionalValueSpecification(allowValueSpecification, "=");
+              parseOptionalValueSpecification(
+                  allowValueSpecification, "=", c -> c == ',' || c == ')');
           if (precondition != null) {
             ruleBuilder.setPrecondition(i, precondition);
           }
@@ -1739,7 +1741,7 @@ public class ProguardConfigurationParser {
       return peekChar() == c;
     }
 
-    private boolean hasNextChar(Predicate<Character> predicate) {
+    private boolean hasNextChar(CharPredicate predicate) {
       if (eof()) {
         return false;
       }

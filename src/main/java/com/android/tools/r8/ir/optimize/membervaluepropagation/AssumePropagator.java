@@ -44,7 +44,8 @@ public class AssumePropagator extends MemberValuePropagation<AppInfoWithClassHie
       if (resolutionResult != null) {
         DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
         AssumeInfo lookup =
-            AssumeInfoLookup.lookupAssumeInfo(appView, invoke, resolutionResult, singleTarget);
+            AssumeInfoLookup.lookupAssumeInfo(
+                appView, invoke, context, resolutionResult, singleTarget);
         applyAssumeInfo(code, affectedValues, blocks, iterator, invoke, lookup);
       }
     }

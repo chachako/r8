@@ -266,7 +266,8 @@ public class AssumeInserter {
             .getSingleDispatchTarget();
     if (invoke.hasUsedOutValue() && invoke.getOutType().isReferenceType()) {
       AssumeInfo assumeInfo =
-          AssumeInfoLookup.lookupAssumeInfo(appView, invoke, resolutionResult, singleTarget);
+          AssumeInfoLookup.lookupAssumeInfo(
+              appView, invoke, code.context(), resolutionResult, singleTarget);
       if (assumeInfo.getAssumeType().getNullability().isDefinitelyNotNull()) {
         assumedValuesBuilder.addNonNullValueKnownToDominateAllUsers(invoke, invoke.outValue());
       }

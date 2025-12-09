@@ -6,6 +6,7 @@ package com.android.tools.r8.shaking.assume;
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.code.InvokeMethod;
@@ -53,18 +54,26 @@ public class AssumeMethodInfoCollection {
     return unconditionalInfo == null && conditionalInfos.isEmpty();
   }
 
-  public AssumeInfo lookup(AppView<?> appView, InvokeMethod invoke) {
-    if (conditionalInfos.isEmpty()) {
-      return getUnconditionalInfo();
-    }
-    // TODO(b/409103321): Raise an error if there exists more than one match.
+  public AssumeInfo lookup(AppView<?> appView, InvokeMethod invoke, ProgramMethod context) {
+    AssumeInfo result = unconditionalInfo;
     for (Entry<List<ProguardMemberRuleValue>, AssumeInfo> entry : conditionalInfos.entrySet()) {
       List<ProguardMemberRuleValue> condition = entry.getKey();
       if (test(appView, invoke, condition)) {
-        return entry.getValue();
+        AssumeInfo assumeInfo = entry.getValue();
+        if (result != null && !result.equals(assumeInfo)) {
+          throw appView
+              .reporter()
+              .fatalError(
+                  "Call to "
+                      + invoke.getInvokedMethod().toSmaliString()
+                      + " in "
+                      + context.getReference().toSmaliString()
+                      + " matches different assume rules");
+        }
+        result = assumeInfo;
       }
     }
-    return getUnconditionalInfo();
+    return result != null ? result : AssumeInfo.empty();
   }
 
   private boolean test(

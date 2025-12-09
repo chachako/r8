@@ -144,7 +144,7 @@ public class R8MemberValuePropagation extends MemberValuePropagation<AppInfoWith
 
     DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
     AssumeInfo lookup =
-        AssumeInfoLookup.lookupAssumeInfo(appView, invoke, resolutionResult, singleTarget);
+        AssumeInfoLookup.lookupAssumeInfo(appView, invoke, context, resolutionResult, singleTarget);
     if (applyAssumeInfo(code, affectedValues, blocks, iterator, invoke, lookup)) {
       return iterator;
     }

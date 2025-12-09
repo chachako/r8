@@ -13,6 +13,7 @@ import com.android.tools.r8.graph.DexClassAndMember;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
@@ -65,12 +66,13 @@ public class AssumeInfoCollection {
     return methodInfos.getOrDefault(method, AssumeMethodInfoCollection.empty());
   }
 
-  public AssumeInfo getMethod(DexMethod method, InvokeMethod invoke) {
-    return getMethod(method).lookup(appView, invoke);
+  public AssumeInfo getMethod(DexMethod method, InvokeMethod invoke, ProgramMethod context) {
+    return getMethod(method).lookup(appView, invoke, context);
   }
 
-  public AssumeInfo getMethod(DexClassAndMethod method, InvokeMethod invoke) {
-    return getMethod(method.getReference(), invoke);
+  public AssumeInfo getMethod(
+      DexClassAndMethod method, InvokeMethod invoke, ProgramMethod context) {
+    return getMethod(method.getReference(), invoke, context);
   }
 
   public boolean isEmpty() {

@@ -534,9 +534,11 @@ public class DefaultInliningOracle implements InliningOracle {
     }
 
     AssumeInfoCollection assumeInfo = appView.getAssumeInfoCollection();
-    if (assumeInfo.getMethod(invoke.getInvokedMethod(), invoke).isSideEffectFree()
-        || assumeInfo.getMethod(resolutionResult.getResolutionPair(), invoke).isSideEffectFree()
-        || assumeInfo.getMethod(singleTargetReference, invoke).isSideEffectFree()) {
+    if (assumeInfo.getMethod(invoke.getInvokedMethod(), invoke, method).isSideEffectFree()
+        || assumeInfo
+            .getMethod(resolutionResult.getResolutionPair(), invoke, method)
+            .isSideEffectFree()
+        || assumeInfo.getMethod(singleTargetReference, invoke, method).isSideEffectFree()) {
       return !singleTarget.getDefinition().getOptimizationInfo().forceInline();
     }
 

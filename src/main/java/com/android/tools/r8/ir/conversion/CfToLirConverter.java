@@ -155,7 +155,8 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
         DexEncodedMethod resolvedMethod =
             invoke.resolveMethod(appView, code.context()).getResolvedMethod();
         if (resolvedMethod != null) {
-          assumeInfo = assumeInfoCollection.getMethod(resolvedMethod.getReference(), invoke);
+          assumeInfo =
+              assumeInfoCollection.getMethod(resolvedMethod.getReference(), invoke, code.context());
         }
       } else {
         continue;
