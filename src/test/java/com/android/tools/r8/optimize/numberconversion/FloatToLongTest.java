@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized;
 import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
-public class FloatToIntTest extends NumberConversionTestBase {
+public class FloatToLongTest extends NumberConversionTestBase {
 
   @Parameterized.Parameter(0)
   public float input;
@@ -55,11 +55,11 @@ public class FloatToIntTest extends NumberConversionTestBase {
     testConversion(
         mv -> {
           mv.visitLdcInsn(input);
-          mv.visitInsn(Opcodes.F2I);
-          mv.visitLdcInsn((int) input);
-          mv.visitInsn(Opcodes.ISUB);
+          mv.visitInsn(Opcodes.F2L);
+          mv.visitLdcInsn((long) input);
+          mv.visitInsn(Opcodes.LSUB);
         },
-        NumericType.INT,
+        NumericType.LONG,
         0);
   }
 }
