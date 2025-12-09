@@ -35,9 +35,26 @@ public class ResolveToProgramMethodThroughClasspathTest extends TestBase {
         .addKeepClassRules(I.class)
         .enableInliningAnnotations()
         .compile()
-        .addRunClasspathClasses(B.class)
+        .applyIf(
+            parameters.isCfRuntime(),
+            cr -> cr.addRunClasspathClasses(B.class),
+            cr ->
+                // Desugar B and add to classpath.
+                cr.addRunClasspathFiles(
+                    testForD8()
+                        .addProgramClasses(B.class)
+                        .addClasspathClasses(I.class, A.class)
+                        .release()
+                        .setMinApi(parameters)
+                        .compile()
+                        .writeToZip()))
         .run(parameters.getRuntime(), Main.class)
-        .assertFailureWithErrorThatThrows(NoSuchMethodError.class);
+        .assertSuccessWithOutputLines(
+            "classMethod",
+            parameters.canUseDefaultAndStaticInterfaceMethods()
+                ? "interfaceMethod"
+                : "AbstractMethodError",
+            "staticClassMethod");
   }
 
   static class Main {
@@ -45,7 +62,11 @@ public class ResolveToProgramMethodThroughClasspathTest extends TestBase {
     public static void main(String[] args) {
       B b = new B();
       b.classMethod();
-      b.interfaceMethod();
+      try {
+        b.interfaceMethod();
+      } catch (AbstractMethodError e) {
+        System.out.println("AbstractMethodError");
+      }
       B.staticClassMethod();
     }
   }

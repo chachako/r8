@@ -3634,18 +3634,6 @@ public class Enqueuer {
             return;
           }
           SingleResolutionResult<?> resolution = resolutionResult.asSingleResolution();
-          // Note that all virtual methods derived from library methods are kept regardless of
-          // being reachable, so the following only needs to consider reachable targets in the
-          // program.
-          // TODO(b/70160030): Revise this to support tree shaking library methods on
-          //  non-escaping types.
-          DexProgramClass initialResolutionHolder =
-              resolution.getInitialResolutionHolder().asProgramClass();
-          if (initialResolutionHolder == null) {
-            recordMethodReference(method, context);
-            return;
-          }
-
           ProgramMethod resolvedMethod = resolution.getResolvedProgramMethod();
           if (resolvedMethod == null) {
             // TODO(b/70160030): If the resolution is on a library method, then the keep edge
@@ -3655,12 +3643,36 @@ public class Enqueuer {
             return;
           }
 
+          // Note that all virtual methods derived from library methods are kept regardless of
+          // being reachable, so the following only needs to consider reachable targets in the
+          // program.
+          // TODO(b/70160030): Revise this to support tree shaking library and classpath methods on
+          //  non-escaping types.
+          DexClass initialResolutionHolder = resolution.getInitialResolutionHolder();
+          if (initialResolutionHolder.isClasspathClass()
+              && resolution.getResolvedHolder().isProgramClass()) {
+            // Implicitly treat the classpath class as instantiated.
+            markMethodAsTargeted(resolvedMethod, reason);
+            markVirtualDispatchMethodTargetAsLive(
+                resolvedMethod,
+                programMethod ->
+                    graphReporter.reportReachableMethodAsLive(
+                        resolvedMethod.getReference(), programMethod));
+            return;
+          }
+
+          DexProgramClass initialProgramResolutionHolder = initialResolutionHolder.asProgramClass();
+          if (initialProgramResolutionHolder == null) {
+            recordMethodReference(method, context);
+            return;
+          }
+
           // If the method has already been marked, just report the new reason for the resolved
           // target and save the context to ensure correct lookup of virtual dispatch targets.
           ResolutionSearchKey resolutionSearchKey =
               new ResolutionSearchKey(method, interfaceInvoke);
           ProgramMethodSet seenContexts =
-              getReachableVirtualTargets(initialResolutionHolder).get(resolutionSearchKey);
+              getReachableVirtualTargets(initialProgramResolutionHolder).get(resolutionSearchKey);
           if (seenContexts != null) {
             seenContexts.add(context);
             graphReporter.registerMethod(resolution.getResolvedMethod(), reason);
@@ -3677,7 +3689,7 @@ public class Enqueuer {
 
           // The method resolved and is accessible, so currently live overrides become live.
           reachableVirtualTargets
-              .computeIfAbsent(initialResolutionHolder, ignoreArgument(HashMap::new))
+              .computeIfAbsent(initialProgramResolutionHolder, ignoreArgument(HashMap::new))
               .computeIfAbsent(resolutionSearchKey, ignoreArgument(ProgramMethodSet::create))
               .add(context);
 
