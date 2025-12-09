@@ -4,9 +4,6 @@
 
 package com.android.tools.r8.ir.code;
 
-import com.android.tools.r8.errors.Unreachable;
-import com.android.tools.r8.lightir.LirOpcodes;
-
 public enum NumberConversionType {
   INT_TO_BYTE(NumericType.INT, NumericType.BYTE, org.objectweb.asm.Opcodes.I2B),
   INT_TO_CHAR(NumericType.INT, NumericType.CHAR, org.objectweb.asm.Opcodes.I2C),
@@ -44,42 +41,5 @@ public enum NumberConversionType {
     this.from = from;
     this.to = to;
     this.asmOpcode = asmOpcode;
-  }
-
-  public static NumberConversionType fromLirOpcode(int lirOpcode) {
-    switch (lirOpcode) {
-      case LirOpcodes.I2L:
-        return INT_TO_LONG;
-      case LirOpcodes.I2F:
-        return INT_TO_FLOAT;
-      case LirOpcodes.I2D:
-        return INT_TO_DOUBLE;
-      case LirOpcodes.L2I:
-        return LONG_TO_INT;
-      case LirOpcodes.L2F:
-        return LONG_TO_FLOAT;
-      case LirOpcodes.L2D:
-        return LONG_TO_DOUBLE;
-      case LirOpcodes.F2I:
-        return FLOAT_TO_INT;
-      case LirOpcodes.F2L:
-        return FLOAT_TO_LONG;
-      case LirOpcodes.F2D:
-        return FLOAT_TO_DOUBLE;
-      case LirOpcodes.D2I:
-        return DOUBLE_TO_INT;
-      case LirOpcodes.D2L:
-        return DOUBLE_TO_LONG;
-      case LirOpcodes.D2F:
-        return DOUBLE_TO_FLOAT;
-      case LirOpcodes.I2B:
-        return INT_TO_BYTE;
-      case LirOpcodes.I2C:
-        return INT_TO_CHAR;
-      case LirOpcodes.I2S:
-        return INT_TO_SHORT;
-      default:
-        throw new Unreachable("Unexpected number conversion LIR opcode " + lirOpcode);
-    }
   }
 }
