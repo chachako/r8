@@ -6,12 +6,15 @@ package com.android.tools.r8.retrace.stacksamples;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.retrace.RetraceElement;
 import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.StringUtils;
@@ -131,7 +134,6 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
   @Override
   void testRetrace(R8TestCompileResultBase<?> compileResult) throws Exception {
     // Expected: `A.<init>` should retrace to `void A.<init>(int)`.
-    // TODO(b/460808033): Assert that this is a synthetic method.
     {
       RetraceMethodElement retraceResult =
           getSingleRetraceMethodElement(
@@ -143,6 +145,7 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
               "<init>",
               "(I)V"),
           retraceResult.getRetracedMethod().asKnown().getMethodReference());
+      assertTrue(retraceResult.isCompilerSynthesized());
     }
 
     // Expected: `a.c` should retrace to `void A.foo()`.
@@ -155,6 +158,7 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
       assertEquals(
           Reference.methodFromMethod(A.class.getDeclaredMethod("foo")),
           retraceResult.getRetracedMethod().asKnown().getMethodReference());
+      assertFalse(retraceResult.isCompilerSynthesized());
     }
 
     // Expected: `a.b` should retrace to `void B.bar()`.
@@ -167,16 +171,19 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
       assertEquals(
           Reference.methodFromMethod(B.class.getDeclaredMethod("bar")),
           retraceResult.getRetracedMethod().asKnown().getMethodReference());
+      assertFalse(retraceResult.isCompilerSynthesized());
     }
 
     // Expected: `a.a` should retrace to {`void A.baz()`, `void B.baz()`}.
     {
-      Set<MethodReference> retraceResult =
+      List<RetraceMethodElement> retraceResult =
           getRetraceMethodElements(
-                  Reference.classFromTypeName(obfuscatedClassName),
-                  obfuscatedMethodNameBaz,
-                  compileResult)
-              .stream()
+              Reference.classFromTypeName(obfuscatedClassName),
+              obfuscatedMethodNameBaz,
+              compileResult);
+      assertTrue(retraceResult.stream().noneMatch(RetraceElement::isCompilerSynthesized));
+      Set<MethodReference> retracedMethods =
+          retraceResult.stream()
               .map(
                   retraceMethodElement ->
                       retraceMethodElement.getRetracedMethod().asKnown().getMethodReference())
@@ -185,7 +192,7 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
           ImmutableSet.of(
               Reference.methodFromMethod(A.class.getDeclaredMethod("baz")),
               Reference.methodFromMethod(B.class.getDeclaredMethod("baz"))),
-          retraceResult);
+          retracedMethods);
     }
   }
 

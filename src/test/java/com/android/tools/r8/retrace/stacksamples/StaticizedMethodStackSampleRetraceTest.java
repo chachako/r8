@@ -3,9 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.retrace.stacksamples;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isStatic;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.references.Reference;
@@ -13,10 +16,11 @@ import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSampleRetraceTestBase {
+public class StaticizedMethodStackSampleRetraceTest extends StackSampleRetraceTestBase {
 
   private static final String obfuscatedClassName = "a";
   private static final String obfuscatedMethodName = "a";
@@ -36,7 +40,10 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
   public void test() throws Exception {
     runTest(
         testBuilder ->
-            testBuilder.addProgramClassFileData(programClassFileData).enableInliningAnnotations());
+            testBuilder
+                .addProgramClassFileData(programClassFileData)
+                .enableInliningAnnotations()
+                .enableNeverClassInliningAnnotations());
   }
 
   @Override
@@ -47,36 +54,28 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
   @Override
   String getExpectedMap() {
     return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.MethodWithInlinePositionsStackSampleRetraceTest$Main"
-            + " -> a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithInlinePositionsStackSampleRetraceTest.java\"}",
-        "    1:1:void foo():54:54 -> a",
-        "    1:1:void test():50 -> a",
-        "    2:2:void bar():59:59 -> a",
-        "    2:2:void foo():55 -> a",
-        "    2:2:void test():50 -> a",
-        "    3:3:void baz():64:64 -> a",
-        "    3:3:void bar():60 -> a",
-        "    3:3:void foo():55 -> a",
-        "    3:3:void test():50 -> a",
+        "com.android.tools.r8.retrace.stacksamples.StaticizedMethodStackSampleRetraceTest$Main ->"
+            + " a:",
+        "# {\"id\":\"sourceFile\",\"fileName\":\"StaticizedMethodStackSampleRetraceTest.java\"}",
+        "    1:1:void test():50:50 -> a",
         "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 
   @Override
   String getExpectedOutput() {
-    return StringUtils.lines("foo", "bar", "baz");
+    return StringUtils.lines("foo");
   }
 
   @Override
   void inspectCode(CodeInspector inspector) {
-    // Verify all methods have been inlined into the test method.
+    // Verify Main.test is renamed to a.a and has been made static.
     ClassSubject mainClass = inspector.clazz(Main.class);
     assertEquals(2, mainClass.allMethods().size());
-
-    // Verify Main.test is renamed to a.a.
     assertEquals(obfuscatedClassName, mainClass.getFinalName());
-    assertEquals(
-        obfuscatedMethodName, mainClass.uniqueMethodWithOriginalName("test").getFinalName());
+
+    MethodSubject testMethod = mainClass.uniqueMethodWithOriginalName("test");
+    assertEquals(obfuscatedMethodName, testMethod.getFinalName());
+    assertThat(testMethod, isStatic());
   }
 
   @Override
@@ -91,29 +90,16 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
     assertFalse(retraceResult.isCompilerSynthesized());
   }
 
+  @NeverClassInline
   static class Main {
 
     public static void main(String[] args) {
-      test();
+      new Main().test();
     }
 
     @NeverInline
-    static void test() {
-      foo();
-    }
-
-    static void foo() {
+    void test() {
       System.out.println("foo");
-      bar();
-    }
-
-    static void bar() {
-      System.out.println("bar");
-      baz();
-    }
-
-    static void baz() {
-      System.out.println("baz");
     }
   }
 }

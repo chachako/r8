@@ -3,9 +3,10 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.retrace.stacksamples;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
+import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestCompileResultBase;
 import com.android.tools.r8.references.Reference;
@@ -13,10 +14,11 @@ import com.android.tools.r8.retrace.RetraceMethodElement;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSampleRetraceTestBase {
+public class MethodWithRemovedArgumentStackSampleRetraceTest extends StackSampleRetraceTestBase {
 
   private static final String obfuscatedClassName = "a";
   private static final String obfuscatedMethodName = "a";
@@ -36,7 +38,10 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
   public void test() throws Exception {
     runTest(
         testBuilder ->
-            testBuilder.addProgramClassFileData(programClassFileData).enableInliningAnnotations());
+            testBuilder
+                .addProgramClassFileData(programClassFileData)
+                .enableInliningAnnotations()
+                .enableNeverClassInliningAnnotations());
   }
 
   @Override
@@ -47,73 +52,53 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
   @Override
   String getExpectedMap() {
     return StringUtils.joinLines(
-        "com.android.tools.r8.retrace.stacksamples.MethodWithInlinePositionsStackSampleRetraceTest$Main"
+        "com.android.tools.r8.retrace.stacksamples.MethodWithRemovedArgumentStackSampleRetraceTest$Main"
             + " -> a:",
-        "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithInlinePositionsStackSampleRetraceTest.java\"}",
-        "    1:1:void foo():54:54 -> a",
-        "    1:1:void test():50 -> a",
-        "    2:2:void bar():59:59 -> a",
-        "    2:2:void foo():55 -> a",
-        "    2:2:void test():50 -> a",
-        "    3:3:void baz():64:64 -> a",
-        "    3:3:void bar():60 -> a",
-        "    3:3:void foo():55 -> a",
-        "    3:3:void test():50 -> a",
+        "# {\"id\":\"sourceFile\",\"fileName\":\"MethodWithRemovedArgumentStackSampleRetraceTest.java\"}",
+        "    1:1:void test(java.lang.Object):50:50 -> a",
+        "      # {\"id\":\"com.android.tools.r8.residualsignature\",\"signature\":\"()V\"}",
         "    1:4:void main(java.lang.String[]):45:45 -> main");
   }
 
   @Override
   String getExpectedOutput() {
-    return StringUtils.lines("foo", "bar", "baz");
+    return StringUtils.lines("foo");
   }
 
   @Override
   void inspectCode(CodeInspector inspector) {
-    // Verify all methods have been inlined into the test method.
+    // Verify Main.test is renamed to a.a and that the unused argument has been removed.
     ClassSubject mainClass = inspector.clazz(Main.class);
     assertEquals(2, mainClass.allMethods().size());
-
-    // Verify Main.test is renamed to a.a.
     assertEquals(obfuscatedClassName, mainClass.getFinalName());
-    assertEquals(
-        obfuscatedMethodName, mainClass.uniqueMethodWithOriginalName("test").getFinalName());
+
+    MethodSubject testMethod = mainClass.uniqueMethodWithOriginalName("test");
+    assertEquals(obfuscatedMethodName, testMethod.getFinalName());
+    assertEquals(0, testMethod.getParameters().size());
   }
 
   @Override
   void testRetrace(R8TestCompileResultBase<?> compileResult) throws Exception {
-    // Expected: `a.a` should retrace to `void Main.test()`.
+    // Expected: `a.a` should retrace to `void Main.test(Object)`.
     RetraceMethodElement retraceResult =
         getSingleRetraceMethodElement(
             Reference.classFromTypeName(obfuscatedClassName), obfuscatedMethodName, compileResult);
     assertEquals(
-        Reference.methodFromMethod(Main.class.getDeclaredMethod("test")),
+        Reference.methodFromMethod(Main.class.getDeclaredMethod("test", Object.class)),
         retraceResult.getRetracedMethod().asKnown().getMethodReference());
     assertFalse(retraceResult.isCompilerSynthesized());
   }
 
+  @NeverClassInline
   static class Main {
 
     public static void main(String[] args) {
-      test();
+      test(null);
     }
 
     @NeverInline
-    static void test() {
-      foo();
-    }
-
-    static void foo() {
+    static void test(Object unused) {
       System.out.println("foo");
-      bar();
-    }
-
-    static void bar() {
-      System.out.println("bar");
-      baz();
-    }
-
-    static void baz() {
-      System.out.println("baz");
     }
   }
 }
