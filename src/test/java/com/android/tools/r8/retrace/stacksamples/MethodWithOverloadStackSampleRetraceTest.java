@@ -77,7 +77,6 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
     return Main.class;
   }
 
-  // TODO(b/462362930): Should use pc encoding.
   @Override
   String getExpectedMap() {
     if (keep) {

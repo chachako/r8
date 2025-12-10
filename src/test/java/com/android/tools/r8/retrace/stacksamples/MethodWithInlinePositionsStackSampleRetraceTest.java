@@ -43,7 +43,6 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
     return Main.class;
   }
 
-  // TODO(b/462362930): Should use pc encoding.
   @Override
   String getExpectedMap() {
     return StringUtils.joinLines(
