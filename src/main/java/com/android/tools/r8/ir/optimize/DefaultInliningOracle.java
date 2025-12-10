@@ -533,12 +533,11 @@ public class DefaultInliningOracle implements InliningOracle {
       return true;
     }
 
-    AssumeInfoCollection assumeInfo = appView.getAssumeInfoCollection();
-    if (assumeInfo.getMethod(invoke.getInvokedMethod(), invoke, method).isSideEffectFree()
-        || assumeInfo
-            .getMethod(resolutionResult.getResolutionPair(), invoke, method)
-            .isSideEffectFree()
-        || assumeInfo.getMethod(singleTargetReference, invoke, method).isSideEffectFree()) {
+    // Check for -assume rules. If an invoke *may* be classified as having no side effects, or the
+    // invoke *may* have a specified return value, then do not inline.
+    if (neverInlineDueToAssume(invoke.getInvokedMethod())
+        || neverInlineDueToAssume(resolutionResult.getResolvedMethod().getReference())
+        || neverInlineDueToAssume(singleTargetReference)) {
       return !singleTarget.getDefinition().getOptimizationInfo().forceInline();
     }
 
@@ -548,6 +547,13 @@ public class DefaultInliningOracle implements InliningOracle {
     }
 
     return false;
+  }
+
+  private boolean neverInlineDueToAssume(DexMethod target) {
+    AssumeInfoCollection assumeInfoCollection = appView.getAssumeInfoCollection();
+    return assumeInfoCollection.hasAssumeInfoThatMatches(
+        target,
+        assumeInfo -> assumeInfo.isSideEffectFree() || !assumeInfo.getAssumeValue().isUnknown());
   }
 
   public InlineAction.Builder computeForInvokeWithReceiver(

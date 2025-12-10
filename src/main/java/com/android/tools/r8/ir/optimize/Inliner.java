@@ -1159,7 +1159,6 @@ public class Inliner {
                   blockIterator,
                   iterator,
                   invoke,
-                  affectedValues,
                   blocksToRemove,
                   classInitializationAnalysis,
                   inlineeStack));
@@ -1170,6 +1169,7 @@ public class Inliner {
     code.removeAllDeadAndTrivialPhis(affectedValues);
     affectedValues.narrowingWithAssumeRemoval(appView, code);
     assert code.isConsistentSSAAllowingRedundantBlocks(appView);
+    new R8MemberValuePropagation(appView).run(code);
   }
 
   private void inlineInvoke(
@@ -1183,7 +1183,6 @@ public class Inliner {
       BasicBlockIterator blockIterator,
       InstructionListIterator iterator,
       InvokeMethod invoke,
-      AffectedValues affectedValues,
       Set<BasicBlock> blocksToRemove,
       ClassInitializationAnalysis classInitializationAnalysis,
       Deque<BasicBlock> inlineeStack) {
@@ -1306,7 +1305,7 @@ public class Inliner {
 
     timing.begin("Post process inlinee");
     classInitializationAnalysis.notifyCodeHasChanged();
-    postProcessInlineeBlocks(code, blockIterator, block, affectedValues, blocksToRemove, timing);
+    postProcessInlineeBlocks(code, blockIterator, block, blocksToRemove, timing);
     timing.end();
 
     // The synthetic and bridge flags are maintained only if the inlinee has also these flags.
@@ -1387,14 +1386,12 @@ public class Inliner {
       IRCode code,
       BasicBlockIterator blockIterator,
       BasicBlock block,
-      AffectedValues affectedValues,
       Set<BasicBlock> blocksToRemove,
       Timing timing) {
     BasicBlock state = IteratorUtils.peekNext(blockIterator);
 
+    // Insert assume instructions in the inlinee blocks.
     Set<BasicBlock> inlineeBlocks = Sets.newIdentityHashSet();
-
-    // Run member value propagation on the inlinee blocks.
     rewindBlockIterator(
         blockIterator,
         block,
@@ -1403,10 +1400,6 @@ public class Inliner {
             inlineeBlocks.add(inlineeBlock);
           }
         });
-    applyMemberValuePropagationToInlinee(code, blockIterator, affectedValues, inlineeBlocks);
-
-    // Add non-null IRs only to the inlinee blocks.
-    rewindBlockIterator(blockIterator, block);
     insertAssumeInstructions(code, blockIterator, inlineeBlocks, timing);
 
     // Restore the old state of the iterator.
@@ -1421,16 +1414,6 @@ public class Inliner {
     boolean keepRedundantBlocks = true; // since we have a live block iterator
     new AssumeInserter(appView, keepRedundantBlocks)
         .insertAssumeInstructionsInBlocks(code, blockIterator, inlineeBlocks::contains, timing);
-    assert !blockIterator.hasNext();
-  }
-
-  private void applyMemberValuePropagationToInlinee(
-      IRCode code,
-      BasicBlockIterator blockIterator,
-      AffectedValues affectedValues,
-      Set<BasicBlock> inlineeBlocks) {
-    new R8MemberValuePropagation(appView)
-        .run(code, blockIterator, affectedValues, inlineeBlocks::contains);
     assert !blockIterator.hasNext();
   }
 

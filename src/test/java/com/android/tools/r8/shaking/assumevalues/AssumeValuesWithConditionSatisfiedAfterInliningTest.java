@@ -39,8 +39,7 @@ public class AssumeValuesWithConditionSatisfiedAfterInliningTest extends TestBas
         .enableMemberValuePropagationAnnotations()
         .compile()
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/409103321): Should be "Hello, world!".
-        .assertSuccessWithOutputLines("null, world!");
+        .assertSuccessWithOutputLines("Hello, world!");
   }
 
   static class Main {
@@ -60,6 +59,7 @@ public class AssumeValuesWithConditionSatisfiedAfterInliningTest extends TestBas
       return "b";
     }
 
+    @NeverPropagateValue
     static String greeting(String unused) {
       return null;
     }

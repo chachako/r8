@@ -22,6 +22,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class AssumeMethodInfoCollection {
 
@@ -30,6 +31,10 @@ public class AssumeMethodInfoCollection {
 
   private final AssumeInfo unconditionalInfo;
   private final Map<List<ProguardMemberRuleValue>, AssumeInfo> conditionalInfos;
+
+  private AssumeMethodInfoCollection(AssumeInfo unconditionalInfo) {
+    this(unconditionalInfo, Collections.emptyMap());
+  }
 
   private AssumeMethodInfoCollection(
       AssumeInfo unconditionalInfo,
@@ -48,6 +53,18 @@ public class AssumeMethodInfoCollection {
 
   public AssumeInfo getUnconditionalInfo() {
     return unconditionalInfo != null ? unconditionalInfo : AssumeInfo.empty();
+  }
+
+  public boolean hasAssumeInfoThatMatches(Predicate<AssumeInfo> predicate) {
+    if (unconditionalInfo != null && predicate.test(unconditionalInfo)) {
+      return true;
+    }
+    for (AssumeInfo assumeInfo : conditionalInfos.values()) {
+      if (predicate.test(assumeInfo)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public boolean isEmpty() {
@@ -104,6 +121,10 @@ public class AssumeMethodInfoCollection {
             assumeInfo -> assumeInfo.rewrittenWithLens(appView, graphLens),
             (condition, value, otherValue) -> value);
     return new AssumeMethodInfoCollection(rewrittenUnconditionalInfo, rewrittenConditionalInfos);
+  }
+
+  public AssumeMethodInfoCollection unsetConditionalAssumeRules() {
+    return conditionalInfos.isEmpty() ? this : new AssumeMethodInfoCollection(unconditionalInfo);
   }
 
   public AssumeMethodInfoCollection withoutPrunedItems(PrunedItems prunedItems) {

@@ -63,6 +63,7 @@ public class DivisionToShiftIntTest extends TestBase {
           "0");
 
   private static final int EXPECTED_DIVISION_COUNT = 31;
+  private static final int EXPECTED_DIVISION_COUNT_AFTER_INLINING = 0;
 
   @Parameterized.Parameter(0)
   public TestParameters parameters;
@@ -113,16 +114,19 @@ public class DivisionToShiftIntTest extends TestBase {
                   assertEquals(EXPECTED_DIVISION_COUNT, divideUnsignedCallCount(mainMethod));
                 }
               } else {
+                long backportCallCount = backportCallCount(syntheticItemsTestUtils, mainMethod);
+                long divisionCount =
+                    mainMethod.streamInstructions().filter(InstructionSubject::isDivision).count();
                 if (isBackportInlined) {
-                  long divisionCount =
-                      mainMethod
-                          .streamInstructions()
-                          .filter(InstructionSubject::isDivision)
-                          .count();
-                  assertEquals(EXPECTED_DIVISION_COUNT, divisionCount);
+                  assertEquals(0, backportCallCount);
+                  assertEquals(
+                      parameters.isCfRuntime()
+                          ? EXPECTED_DIVISION_COUNT_AFTER_INLINING
+                          : EXPECTED_DIVISION_COUNT,
+                      divisionCount);
                 } else {
-                  long backportCallCount = backportCallCount(syntheticItemsTestUtils, mainMethod);
                   assertEquals(EXPECTED_DIVISION_COUNT, backportCallCount);
+                  assertEquals(0, divisionCount);
                 }
               }
             })

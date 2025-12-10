@@ -23,9 +23,12 @@ import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class AssumeInfoCollection {
 
@@ -73,6 +76,10 @@ public class AssumeInfoCollection {
   public AssumeInfo getMethod(
       DexClassAndMethod method, InvokeMethod invoke, ProgramMethod context) {
     return getMethod(method.getReference(), invoke, context);
+  }
+
+  public boolean hasAssumeInfoThatMatches(DexMethod method, Predicate<AssumeInfo> predicate) {
+    return getMethod(method).hasAssumeInfoThatMatches(predicate);
   }
 
   public boolean isEmpty() {
@@ -127,6 +134,20 @@ public class AssumeInfoCollection {
           rewrittenMethodInfos.put(rewrittenMethod, rewrittenInfo);
         });
     return new AssumeInfoCollection(appView, rewrittenFieldInfos, rewrittenMethodInfos);
+  }
+
+  public void unsetConditionalAssumeRules() {
+    Iterator<Entry<DexMethod, AssumeMethodInfoCollection>> iterator =
+        methodInfos.entrySet().iterator();
+    while (iterator.hasNext()) {
+      Entry<DexMethod, AssumeMethodInfoCollection> entry = iterator.next();
+      AssumeMethodInfoCollection rewrittenInfo = entry.getValue().unsetConditionalAssumeRules();
+      if (rewrittenInfo.isEmpty()) {
+        iterator.remove();
+      } else {
+        entry.setValue(rewrittenInfo);
+      }
+    }
   }
 
   public AssumeInfoCollection withoutPrunedItems(PrunedItems prunedItems, Timing timing) {

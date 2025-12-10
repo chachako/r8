@@ -287,6 +287,17 @@ public class IRConverter {
     return inliner;
   }
 
+  /**
+   * Clears the assume info that is conditional on the value of invoke arguments after the first
+   * optimization pass. This avoids the need to lens rewrite the conditions (e.g., due to unused
+   * argument removal, constant argument removal, or enum unboxing). This also avoids that the
+   * application of conditional assume rules become somewhat arbitrary, due to the fact that only a
+   * subset of the program methods are reprocessed in the second optimization pass.
+   */
+  public void unsetConditionalAssumeRules() {
+    appView.getAssumeInfoCollection().unsetConditionalAssumeRules();
+  }
+
   public void unsetEnumUnboxer() {
     enumUnboxer = EnumUnboxer.empty();
   }

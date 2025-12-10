@@ -283,6 +283,7 @@ public class PrimaryR8IRConverter extends IRConverter {
       throws ExecutionException {
     pruneItems(executorService);
     unsetFieldAccessAnalysis();
+    unsetConditionalAssumeRules();
     if (inliner != null) {
       inliner.onLastWaveDone(postMethodProcessorBuilder, executorService, timing);
     }
