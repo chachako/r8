@@ -37,7 +37,7 @@ public class ReserveNameInClasspathSubclassTest extends TestBase {
         .addClasspathClasses(B.class)
         .addKeepClassAndMembersRules(Main.class)
         // Since B extends A.
-        .addKeepClassRules(A.class)
+        .addKeepClassAndDefaultConstructor(A.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
         .setMinApi(parameters)
