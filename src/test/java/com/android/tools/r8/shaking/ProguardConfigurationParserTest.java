@@ -22,7 +22,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -35,7 +34,6 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.position.Position;
-import com.android.tools.r8.position.TextPosition;
 import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.shaking.ProguardClassNameList.SingleClassNameList;
 import com.android.tools.r8.shaking.ProguardConfiguration.ProcessKotlinNullChecks;
@@ -3385,22 +3383,14 @@ public class ProguardConfigurationParserTest extends TestBase {
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
       assertEquals(1, handler.errors.size());
-      Diagnostic error = handler.errors.get(0);
-      assertTrue(error instanceof ProguardRuleParserErrorDiagnostic);
-      assertTrue(error.getPosition() instanceof TextPosition);
-      TextPosition position = (TextPosition) error.getPosition();
-      assertEquals(1, position.getLine());
-      assertEquals(48, position.getColumn());
-      assertThat(
-          error.getDiagnosticMessage(),
-          containsString("Unexpected line termination in string literal"));
       assertThat(
           handler.errors.get(0),
           allOf(
               diagnosticType(ProguardRuleParserErrorDiagnostic.class),
               diagnosticMessage(containsString("Unexpected line termination in string literal")),
               diagnosticPosition(positionLine(1)),
-              diagnosticPosition(positionColumn(48))));
+              diagnosticPosition(
+                  positionColumn(48 + BooleanUtils.intValue(ToolHelper.isWindows())))));
     }
   }
 }
