@@ -72,6 +72,7 @@ import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -636,8 +637,7 @@ public class LazyCfCode extends Code {
         case Opcodes.FCONST_1:
         case Opcodes.FCONST_2:
           addInstruction(
-              new CfConstNumber(
-                  Float.floatToRawIntBits(opcode - Opcodes.FCONST_0), ValueType.FLOAT));
+              new CfConstNumber(LongUtils.encodeFloat(opcode - Opcodes.FCONST_0), ValueType.FLOAT));
           break;
         case Opcodes.DCONST_0:
         case Opcodes.DCONST_1:
@@ -1064,7 +1064,7 @@ public class LazyCfCode extends Code {
       } else if (cst instanceof Integer) {
         addInstruction(new CfConstNumber((Integer) cst, ValueType.INT));
       } else if (cst instanceof Float) {
-        long i = Float.floatToRawIntBits((Float) cst);
+        long i = LongUtils.encodeFloat((Float) cst);
         addInstruction(new CfConstNumber(i, ValueType.FLOAT));
       } else if (cst instanceof Handle) {
         addInstruction(

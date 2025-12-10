@@ -20,6 +20,8 @@ import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.SingleConstant;
 import com.android.tools.r8.ir.code.WideConstant;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.IntUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
@@ -78,17 +80,17 @@ public class ConstantFoldingTest extends SmaliTestBase {
     }
   }
 
-  private long floatBits(float f) {
-    return Float.floatToIntBits(f);
-  }
-
   private long doubleBits(double d) {
     return Double.doubleToLongBits(d);
   }
 
   private ImmutableList<Long> arguments = ImmutableList.of(1L, 2L, 3L, 4L);
-  private ImmutableList<Long> floatArguments = ImmutableList.of(
-      floatBits(1.0f), floatBits(2.0f), floatBits(3.0f), floatBits(4.0f));
+  private ImmutableList<Long> floatArguments =
+      ImmutableList.of(
+          LongUtils.encodeFloat(1.0f),
+          LongUtils.encodeFloat(2.0f),
+          LongUtils.encodeFloat(3.0f),
+          LongUtils.encodeFloat(4.0f));
   private ImmutableList<Long> doubleArguments = ImmutableList.of(
       doubleBits(1.0), doubleBits(2.0), doubleBits(3.0), doubleBits(4.0));
 
@@ -153,39 +155,47 @@ public class ConstantFoldingTest extends SmaliTestBase {
     // Add tests.
     addBinopTest(testBuilder, new BinopTestData("int", "add", arguments, 10L));
     addBinopTest(testBuilder, new BinopTestData("long", "add", arguments, 10L));
-    addBinopTest(testBuilder,
-        new BinopTestData("float", "add", floatArguments, floatBits(10.0f)));
+    addBinopTest(
+        testBuilder,
+        new BinopTestData("float", "add", floatArguments, LongUtils.encodeFloat(10.0f)));
     addBinopTest(testBuilder,
         new BinopTestData("double", "add", doubleArguments, doubleBits(10.0)));
 
     // Mul tests.
     addBinopTest(testBuilder, new BinopTestData("int", "mul", arguments, 24L));
     addBinopTest(testBuilder, new BinopTestData("long", "mul", arguments, 24L));
-    addBinopTest(testBuilder,
-        new BinopTestData("float", "mul", floatArguments, floatBits(24.0f)));
+    addBinopTest(
+        testBuilder,
+        new BinopTestData("float", "mul", floatArguments, LongUtils.encodeFloat(24.0f)));
     addBinopTest(testBuilder,
         new BinopTestData("double", "mul", doubleArguments, doubleBits(24.0)));
 
     // Sub tests.
     addBinopTest(testBuilder, new BinopTestData("int", "sub", arguments.reverse(), -2L));
     addBinopTest(testBuilder, new BinopTestData("long", "sub", arguments.reverse(), -2L));
-    addBinopTest(testBuilder,
-        new BinopTestData("float", "sub", floatArguments.reverse(), floatBits(-2.0f)));
+    addBinopTest(
+        testBuilder,
+        new BinopTestData("float", "sub", floatArguments.reverse(), LongUtils.encodeFloat(-2.0f)));
     addBinopTest(testBuilder,
         new BinopTestData("double", "sub", doubleArguments.reverse(), doubleBits(-2.0)));
 
     // Div tests.
     {
       ImmutableList<Long> arguments = ImmutableList.of(2L, 24L, 48L, 4L);
-      ImmutableList<Long> floatArguments = ImmutableList.of(
-          floatBits(2.0f), floatBits(24.0f), floatBits(48.0f), floatBits(4.0f));
+      ImmutableList<Long> floatArguments =
+          ImmutableList.of(
+              LongUtils.encodeFloat(2.0f),
+              LongUtils.encodeFloat(24.0f),
+              LongUtils.encodeFloat(48.0f),
+              LongUtils.encodeFloat(4.0f));
       ImmutableList<Long> doubleArguments = ImmutableList.of(
           doubleBits(2.0), doubleBits(24.0), doubleBits(48.0), doubleBits(4.0));
 
       addBinopTest(testBuilder, new BinopTestData("int", "div", arguments, 1L));
       addBinopTest(testBuilder, new BinopTestData("long", "div", arguments, 1L));
-      addBinopTest(testBuilder,
-          new BinopTestData("float", "div", floatArguments, floatBits(1.0f)));
+      addBinopTest(
+          testBuilder,
+          new BinopTestData("float", "div", floatArguments, LongUtils.encodeFloat(1.0f)));
       addBinopTest(testBuilder,
           new BinopTestData("double", "div", doubleArguments, doubleBits(1.0)));
     }
@@ -193,15 +203,20 @@ public class ConstantFoldingTest extends SmaliTestBase {
     // Rem tests.
     {
       ImmutableList<Long> arguments = ImmutableList.of(10L, 6L, 3L, 2L);
-      ImmutableList<Long> floatArguments = ImmutableList.of(
-          floatBits(10.0f), floatBits(6.0f), floatBits(3.0f), floatBits(2.0f));
+      ImmutableList<Long> floatArguments =
+          ImmutableList.of(
+              LongUtils.encodeFloat(10.0f),
+              LongUtils.encodeFloat(6.0f),
+              LongUtils.encodeFloat(3.0f),
+              LongUtils.encodeFloat(2.0f));
       ImmutableList<Long> doubleArguments = ImmutableList.of(
           doubleBits(10.0), doubleBits(6.0), doubleBits(3.0), doubleBits(2.0));
 
       addBinopTest(testBuilder, new BinopTestData("int", "rem", arguments, 2L));
       addBinopTest(testBuilder, new BinopTestData("long", "rem", arguments, 2L));
-      addBinopTest(testBuilder,
-          new BinopTestData("float", "rem", floatArguments, floatBits(2.0f)));
+      addBinopTest(
+          testBuilder,
+          new BinopTestData("float", "rem", floatArguments, LongUtils.encodeFloat(2.0f)));
       addBinopTest(testBuilder,
           new BinopTestData("double", "rem", doubleArguments, doubleBits(2.0)));
     }
@@ -320,10 +335,22 @@ public class ConstantFoldingTest extends SmaliTestBase {
     addUnopTest(testBuilder, new UnopTestData("int", "neg", -2L, 2L));
     addUnopTest(testBuilder, new UnopTestData("long", "neg", 2L, -2L));
     addUnopTest(testBuilder, new UnopTestData("long", "neg", -2L, 2L));
-    addUnopTest(testBuilder, new UnopTestData("float", "neg", floatBits(2.0f), floatBits(-2.0f)));
-    addUnopTest(testBuilder, new UnopTestData("float", "neg", floatBits(-2.0f), floatBits(2.0f)));
-    addUnopTest(testBuilder, new UnopTestData("float", "neg", floatBits(0.0f), floatBits(-0.0f)));
-    addUnopTest(testBuilder, new UnopTestData("float", "neg", floatBits(-0.0f), floatBits(0.0f)));
+    addUnopTest(
+        testBuilder,
+        new UnopTestData(
+            "float", "neg", LongUtils.encodeFloat(2.0f), LongUtils.encodeFloat(-2.0f)));
+    addUnopTest(
+        testBuilder,
+        new UnopTestData(
+            "float", "neg", LongUtils.encodeFloat(-2.0f), LongUtils.encodeFloat(2.0f)));
+    addUnopTest(
+        testBuilder,
+        new UnopTestData(
+            "float", "neg", LongUtils.encodeFloat(0.0f), LongUtils.encodeFloat(-0.0f)));
+    addUnopTest(
+        testBuilder,
+        new UnopTestData(
+            "float", "neg", LongUtils.encodeFloat(-0.0f), LongUtils.encodeFloat(0.0f)));
     addUnopTest(testBuilder, new UnopTestData("double", "neg", doubleBits(2.0), doubleBits(-2.0)));
     addUnopTest(testBuilder, new UnopTestData("double", "neg", doubleBits(-2.0), doubleBits(2.0)));
     addUnopTest(testBuilder, new UnopTestData("double", "neg", doubleBits(0.0), doubleBits(-0.0)));
@@ -728,9 +755,13 @@ public class ConstantFoldingTest extends SmaliTestBase {
     } else {
       cmpInstruction = "    cmpg-float v0, v0, v1";
     }
-    builder.addStaticMethod("int", name, Collections.emptyList(), 2,
-        "    const v0, 0x" + Integer.toHexString(Float.floatToRawIntBits(test.a)),
-        "    const v1, 0x" + Integer.toHexString(Float.floatToRawIntBits(test.b)),
+    builder.addStaticMethod(
+        "int",
+        name,
+        Collections.emptyList(),
+        2,
+        "    const v0, 0x" + Integer.toHexString(IntUtils.encodeFloat(test.a)),
+        "    const v1, 0x" + Integer.toHexString(IntUtils.encodeFloat(test.b)),
         cmpInstruction,
         "    " + ifOpcode[test.type.ordinal()] + " v0, :label_2",
         "    const v0, 0",
@@ -738,8 +769,7 @@ public class ConstantFoldingTest extends SmaliTestBase {
         "    return v0",
         ":label_2",
         "  const v0, 1",
-        "  goto :label_1"
-    );
+        "  goto :label_1");
   }
 
   private void cmpFloatMethodChecker(DexEncodedMethod method, Object parameters) {

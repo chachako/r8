@@ -12,6 +12,7 @@ import static org.junit.Assert.assertNotEquals;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import org.junit.Test;
@@ -53,7 +54,7 @@ public class ClassInitializerDefaultsPropagationTest extends TestBase {
     assertEquals(0, classSubject.allFields().size());
 
     // Verify that there are two distinct numbers in the code.
-    long floatValue = Float.floatToIntBits(42.42f);
+    long floatValue = LongUtils.encodeFloat(42.42f);
     long doubleValue = Double.doubleToLongBits(42.42d);
     assertNotEquals(floatValue, doubleValue);
     assertEquals(

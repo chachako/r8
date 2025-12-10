@@ -12,6 +12,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.code.ValueFactory;
+import com.android.tools.r8.utils.IntUtils;
 
 public class SingleBoxedFloatValue extends SingleBoxedPrimitiveValue {
 
@@ -93,6 +94,6 @@ public class SingleBoxedFloatValue extends SingleBoxedPrimitiveValue {
 
   @Override
   public String toString() {
-    return "SingleBoxedFloatValue(" + Float.intBitsToFloat(value) + ")";
+    return "SingleBoxedFloatValue(" + IntUtils.decodeFloat(value) + ")";
   }
 }

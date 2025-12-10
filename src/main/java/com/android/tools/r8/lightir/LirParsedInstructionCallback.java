@@ -25,6 +25,7 @@ import com.android.tools.r8.lightir.LirBuilder.NameComputationPayload;
 import com.android.tools.r8.lightir.LirBuilder.RecordFieldValuesPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
+import com.android.tools.r8.utils.IntUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -596,7 +597,7 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
       case LirOpcodes.FCONST_2:
         {
           float value = opcode - LirOpcodes.FCONST_0;
-          onConstFloat(Float.floatToRawIntBits(value));
+          onConstFloat(IntUtils.encodeFloat(value));
           return;
         }
       case LirOpcodes.FCONST:

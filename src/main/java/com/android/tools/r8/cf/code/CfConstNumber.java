@@ -19,6 +19,7 @@ import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.optimize.interfaces.analysis.CfAnalysisConfig;
 import com.android.tools.r8.optimize.interfaces.analysis.CfFrameState;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
@@ -86,7 +87,7 @@ public class CfConstNumber extends CfInstruction {
 
   public float getFloatValue() {
     assert type == ValueType.FLOAT;
-    return Float.intBitsToFloat((int) value);
+    return LongUtils.decodeFloat(value);
   }
 
   public double getDoubleValue() {
@@ -224,7 +225,7 @@ public class CfConstNumber extends CfInstruction {
   }
 
   public static boolean isNegativeZeroFloat(float value) {
-    return Float.floatToIntBits(value) == Float.floatToIntBits(-0.0f);
+    return LongUtils.encodeFloat(value) == LongUtils.encodeFloat(-0.0f);
   }
 
   @Override

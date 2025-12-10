@@ -13,6 +13,7 @@ import com.android.tools.r8.inspector.Inspector;
 import com.android.tools.r8.inspector.ValueInspector;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.Reference;
+import com.android.tools.r8.utils.IntUtils;
 import com.android.tools.r8.utils.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -143,8 +144,8 @@ public class FieldValueTypesInspectionTest extends TestBase {
                 if (isFloat) {
                   assertEquals(Reference.FLOAT, reference.getFieldType());
                   assertEquals(
-                      Float.floatToRawIntBits(TestClass.f),
-                      Float.floatToRawIntBits(value.asFloatValue().getFloatValue()));
+                      IntUtils.encodeFloat(TestClass.f),
+                      IntUtils.encodeFloat(value.asFloatValue().getFloatValue()));
                 } else {
                   assertNull(value.asFloatValue());
                 }

@@ -17,6 +17,7 @@ import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.LongUtils;
 
 public class Neg extends Unop {
 
@@ -99,7 +100,7 @@ public class Neg extends Unop {
       } else if (type == NumericType.LONG) {
         newConst = -sourceConst.getLongValue();
       } else if (type == NumericType.FLOAT) {
-        newConst = Float.floatToIntBits(-sourceConst.getFloatValue());
+        newConst = LongUtils.encodeFloat(-sourceConst.getFloatValue());
       } else {
         assert type == NumericType.DOUBLE;
         newConst = Double.doubleToLongBits(-sourceConst.getDoubleValue());

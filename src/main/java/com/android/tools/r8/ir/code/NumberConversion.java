@@ -31,6 +31,7 @@ import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.LongUtils;
 import java.util.Set;
 
 public class NumberConversion extends Unop {
@@ -177,7 +178,7 @@ public class NumberConversion extends Unop {
         long rawIntToLongValue = (long) num.getIntValue();
         return valueFactory.createSingleNumberValue(rawIntToLongValue, typeElement);
       case INT_TO_FLOAT:
-        long rawIntToFloatValue = Float.floatToIntBits((float) num.getIntValue());
+        long rawIntToFloatValue = LongUtils.encodeFloat((float) num.getIntValue());
         return valueFactory.createSingleNumberValue(rawIntToFloatValue, typeElement);
       case INT_TO_DOUBLE:
         long rawIntToDoubleValue = Double.doubleToLongBits((double) num.getIntValue());
@@ -186,7 +187,7 @@ public class NumberConversion extends Unop {
         long rawLongToIntValue = (int) num.getLongValue();
         return valueFactory.createSingleNumberValue(rawLongToIntValue, typeElement);
       case LONG_TO_FLOAT:
-        long rawLongToFloatValue = Float.floatToIntBits((float) num.getLongValue());
+        long rawLongToFloatValue = LongUtils.encodeFloat((float) num.getLongValue());
         return valueFactory.createSingleNumberValue(rawLongToFloatValue, typeElement);
       case LONG_TO_DOUBLE:
         long rawLongToDoubleValue = Double.doubleToLongBits((double) num.getLongValue());

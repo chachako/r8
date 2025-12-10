@@ -13,6 +13,7 @@ import com.android.tools.r8.ir.analysis.value.SingleNumberValue;
 import com.android.tools.r8.ir.conversion.CfBuilder;
 import com.android.tools.r8.ir.conversion.DexBuilder;
 import com.android.tools.r8.lightir.LirBuilder;
+import com.android.tools.r8.utils.LongUtils;
 
 public abstract class ArithmeticBinop extends Binop {
 
@@ -150,7 +151,7 @@ public abstract class ArithmeticBinop extends Binop {
         newConst = foldLongs(leftConst.getLongValue(), rightConst.getLongValue());
       } else if (type == NumericType.FLOAT) {
         float result = foldFloat(leftConst.getFloatValue(), rightConst.getFloatValue());
-        newConst = Float.floatToIntBits(result);
+        newConst = LongUtils.encodeFloat(result);
       } else {
         assert type == NumericType.DOUBLE;
         double result = foldDouble(leftConst.getDoubleValue(), rightConst.getDoubleValue());

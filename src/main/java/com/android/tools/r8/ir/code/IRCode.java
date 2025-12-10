@@ -36,6 +36,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.IteratorUtils;
 import com.android.tools.r8.utils.LinkedHashSetUtils;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.SetUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
@@ -1253,7 +1254,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   }
 
   public ConstNumber createFloatConstant(float value, DebugLocalInfo local) {
-    return createNumberConstant(Float.floatToIntBits(value), TypeElement.getFloat(), local);
+    return createNumberConstant(LongUtils.encodeFloat(value), TypeElement.getFloat(), local);
   }
 
   public ConstNumber createBooleanConstant(boolean value) {

@@ -8,9 +8,9 @@ public class NegativeZeroTest {
 
   public static void main(String[] args) {
     System.out.println(-0.0f);
-    System.out.println(Float.floatToIntBits(-0.0f));
-    System.out.println(Float.floatToIntBits(0.0f));
-    if (Float.floatToIntBits(-0.0f) == Float.floatToIntBits(0.0f)) {
+    System.out.println(Float.floatToRawIntBits(-0.0f));
+    System.out.println(Float.floatToRawIntBits(0.0f));
+    if (Float.floatToRawIntBits(-0.0f) == Float.floatToRawIntBits(0.0f)) {
       throw new AssertionError("Negative float not preserved");
     }
     if (Double.doubleToLongBits(-0.0) == Double.doubleToLongBits(0.0)) {

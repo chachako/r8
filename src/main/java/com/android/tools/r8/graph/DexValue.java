@@ -24,6 +24,7 @@ import com.android.tools.r8.ir.desugar.constantdynamic.ConstantDynamicReference;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.EncodedValueUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
@@ -1124,7 +1125,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
 
     @Override
     public long getRawValue() {
-      return Float.floatToIntBits(value);
+      return LongUtils.encodeFloat(value);
     }
 
     @Override

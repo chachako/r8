@@ -20,6 +20,7 @@ import com.android.tools.r8.ir.code.ValueFactory;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.OptionalBool;
 
 public class SingleNumberValue extends SingleConstValue
@@ -112,7 +113,7 @@ public class SingleNumberValue extends SingleConstValue
   }
 
   public float getFloatValue() {
-    return Float.intBitsToFloat((int) value);
+    return LongUtils.decodeFloat(value);
   }
 
   public int getIntValue() {

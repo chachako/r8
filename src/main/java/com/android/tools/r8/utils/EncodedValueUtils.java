@@ -3,8 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import com.android.tools.r8.dex.DexReader;
 import com.android.tools.r8.dex.DexOutputBuffer;
+import com.android.tools.r8.dex.DexReader;
 
 public class EncodedValueUtils {
 
@@ -107,16 +107,16 @@ public class EncodedValueUtils {
   public static float parseFloat(DexReader dexReader, int numberOfBytes) {
     long bits =
         parseUnsigned(dexReader, numberOfBytes) << ((Float.BYTES - numberOfBytes) * Byte.SIZE);
-    return Float.intBitsToFloat((int) bits);
+    return LongUtils.decodeFloat(bits);
   }
 
   public static int putFloat(DexOutputBuffer outputBuffer, float value) {
-    long bits = ((long) Float.floatToIntBits(value)) << 32;
+    long bits = LongUtils.encodeFloat(value) << 32;
     return EncodedValueUtils.putBitsFromRightZeroExtended(outputBuffer, bits, Float.BYTES);
   }
 
   public static byte[] encodeFloat(float value) {
-    long tmp = ((long) Float.floatToIntBits(value)) << 32;
+    long tmp = LongUtils.encodeFloat(value) << 32;
     byte[] result = EncodedValueUtils.encodeBitsFromRightZeroExtended(tmp);
     assert result.length <= Float.BYTES;
     return result;
