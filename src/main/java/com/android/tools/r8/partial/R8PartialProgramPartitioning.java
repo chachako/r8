@@ -25,20 +25,22 @@ public class R8PartialProgramPartitioning {
     R8PartialProgramPartitioning partioning = new R8PartialProgramPartitioning();
     partialCompilationConfiguration.partition(
         app, partioning.d8Classes::add, partioning.r8Classes::add);
-    // Collect all transitive superclasses of all D8 classes and treat these as D8 classes.
-    WorkList<DexClass> worklist = WorkList.newIdentityWorkList(partioning.d8Classes);
-    worklist.process(
-        clazz ->
-            clazz.forEachImmediateSuperClassMatching(
-                app,
-                (supertype, superclass) -> superclass != null && !superclass.isLibraryClass(),
-                (supertype, superclass) -> {
-                  if (superclass.isProgramClass()
-                      && partioning.r8Classes.remove(superclass.asProgramClass())) {
-                    partioning.d8Classes.add(superclass.asProgramClass());
-                  }
-                  worklist.addIfNotSeen(superclass);
-                }));
+    if (partialCompilationConfiguration.excludeSuperclassesOfExcludedClasses) {
+      // Collect all transitive superclasses of all D8 classes and treat these as D8 classes.
+      WorkList<DexClass> worklist = WorkList.newIdentityWorkList(partioning.d8Classes);
+      worklist.process(
+          clazz ->
+              clazz.forEachImmediateSuperClassMatching(
+                  app,
+                  (supertype, superclass) -> superclass != null && !superclass.isLibraryClass(),
+                  (supertype, superclass) -> {
+                    if (superclass.isProgramClass()
+                        && partioning.r8Classes.remove(superclass.asProgramClass())) {
+                      partioning.d8Classes.add(superclass.asProgramClass());
+                    }
+                    worklist.addIfNotSeen(superclass);
+                  }));
+    }
     return partioning;
   }
 

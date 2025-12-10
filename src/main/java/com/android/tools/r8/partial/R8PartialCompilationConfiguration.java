@@ -20,6 +20,7 @@ import com.android.tools.r8.utils.ConsumerUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.SystemPropertyUtils;
 import com.google.common.base.Splitter;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +47,9 @@ public class R8PartialCompilationConfiguration {
   public Consumer<InternalOptions> d8DexOptionsConsumer = ConsumerUtils.emptyConsumer();
   public Consumer<InternalOptions> r8OptionsConsumer = ConsumerUtils.emptyConsumer();
 
+  public boolean excludeSuperclassesOfExcludedClasses =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.partial.excludeSuperclassesOfExcludedClasses", false);
   public boolean printPartitioningForTesting = false;
 
   private static final R8PartialCompilationConfiguration disabledConfiguration =
