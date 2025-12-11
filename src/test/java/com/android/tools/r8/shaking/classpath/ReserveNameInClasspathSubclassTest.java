@@ -9,6 +9,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.android.tools.r8.NeverClassInline;
 import com.android.tools.r8.NeverInline;
+import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -31,7 +32,16 @@ public class ReserveNameInClasspathSubclassTest extends TestBase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testJvm() throws Exception {
+    parameters.assumeJvmTestParameters();
+    testForJvm(parameters)
+        .addInnerClasses(getClass())
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("A", "A", "A");
+  }
+
+  @Test
+  public void testR8() throws Exception {
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, A.class)
         .addClasspathClasses(B.class)
@@ -40,19 +50,39 @@ public class ReserveNameInClasspathSubclassTest extends TestBase {
         .addKeepClassAndDefaultConstructor(A.class)
         .enableInliningAnnotations()
         .enableNeverClassInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
         .setMinApi(parameters)
         .compile()
         .inspect(
             inspector -> {
               ClassSubject aClassSubject = inspector.clazz(A.class);
               assertThat(aClassSubject, isPresent());
-              // TODO(b/418131194): Should not be "a".
-              assertEquals("a", aClassSubject.uniqueMethodWithOriginalName("b").getFinalName());
+              assertEquals("b", aClassSubject.uniqueMethodWithOriginalName("b").getFinalName());
             })
         .addRunClasspathClasses(B.class)
         .run(parameters.getRuntime(), Main.class)
-        // TODO(b/418131194): Should be "A", "B".
-        .assertSuccessWithOutputLines("A", "A");
+        .assertSuccessWithOutputLines("A", "A", "A");
+  }
+
+  @Test
+  public void testPartial() throws Exception {
+    parameters.assumeDexRuntime();
+    testForR8Partial(parameters)
+        .addR8IncludedClasses(Main.class, A.class)
+        .addR8ExcludedClasses(B.class)
+        .addKeepClassAndMembersRules(Main.class)
+        .enableInliningAnnotations()
+        .enableNeverClassInliningAnnotations()
+        .enableNoMethodStaticizingAnnotations()
+        .compile()
+        .inspect(
+            inspector -> {
+              ClassSubject aClassSubject = inspector.clazz(A.class);
+              assertThat(aClassSubject, isPresent());
+              assertEquals("b", aClassSubject.uniqueMethodWithOriginalName("b").getFinalName());
+            })
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("A", "A", "A");
   }
 
   static class Main {
@@ -60,6 +90,7 @@ public class ReserveNameInClasspathSubclassTest extends TestBase {
     public static void main(String[] args) {
       new A().b();
       new B().b();
+      (System.currentTimeMillis() > 0 ? new B() : new A()).b();
     }
   }
 
@@ -67,6 +98,7 @@ public class ReserveNameInClasspathSubclassTest extends TestBase {
   static class A {
 
     @NeverInline
+    @NoMethodStaticizing
     public void b() {
       System.out.println("A");
     }
