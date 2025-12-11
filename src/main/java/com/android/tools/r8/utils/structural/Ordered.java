@@ -64,4 +64,8 @@ public interface Ordered<T extends Ordered<T>> extends Equatable<T>, Comparable<
   default boolean isBetweenBothIncluded(T lower, T upper) {
     return isGreaterThanOrEqualTo(lower) && isLessThanOrEqualTo(upper);
   }
+
+  default boolean isBetweenNoneIncluded(T lower, T upper) {
+    return isGreaterThan(lower) && isLessThan(upper);
+  }
 }
