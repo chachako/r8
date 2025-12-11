@@ -11,6 +11,7 @@ import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
@@ -50,7 +51,7 @@ public class BoxedDoubleReturnPropagationTest extends TestBase {
                   mainMethodSubject
                       .streamInstructions()
                       .anyMatch(
-                          instruction -> instruction.isConstNumber(Double.doubleToLongBits(1))));
+                          instruction -> instruction.isConstNumber(LongUtils.encodeDouble(1))));
 
               MethodSubject nullTest =
                   inspector.clazz(Main.class).uniqueMethodWithOriginalName("nullTest");

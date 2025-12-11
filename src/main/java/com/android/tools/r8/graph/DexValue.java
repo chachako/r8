@@ -1228,7 +1228,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
 
     @Override
     public long getRawValue() {
-      return Double.doubleToRawLongBits(value);
+      return LongUtils.encodeDouble(value);
     }
 
     @Override

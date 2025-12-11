@@ -55,7 +55,7 @@ public class ClassInitializerDefaultsPropagationTest extends TestBase {
 
     // Verify that there are two distinct numbers in the code.
     long floatValue = LongUtils.encodeFloat(42.42f);
-    long doubleValue = Double.doubleToLongBits(42.42d);
+    long doubleValue = LongUtils.encodeDouble(42.42d);
     assertNotEquals(floatValue, doubleValue);
     assertEquals(
         2,

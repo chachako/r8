@@ -26,6 +26,7 @@ import com.android.tools.r8.lightir.LirBuilder.RecordFieldValuesPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.IntUtils;
+import com.android.tools.r8.utils.LongUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -624,12 +625,12 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
         }
       case LirOpcodes.DCONST_0:
         {
-          onConstDouble(Double.doubleToRawLongBits(0));
+          onConstDouble(LongUtils.encodeDouble(0));
           return;
         }
       case LirOpcodes.DCONST_1:
         {
-          onConstDouble(Double.doubleToRawLongBits(1));
+          onConstDouble(LongUtils.encodeDouble(1));
           return;
         }
       case LirOpcodes.DCONST:

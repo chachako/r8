@@ -22,6 +22,7 @@ import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.IntUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.StringUtils;
 import java.util.Arrays;
 import java.util.List;
@@ -172,7 +173,7 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
 
   @Override
   public void onConstDouble(long value) {
-    appendOutValue().append(Double.longBitsToDouble(value));
+    appendOutValue().append(LongUtils.decodeDouble(value));
   }
 
   @Override

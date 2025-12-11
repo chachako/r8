@@ -109,7 +109,7 @@ public class SingleNumberValue extends SingleConstValue
   }
 
   public double getDoubleValue() {
-    return Double.longBitsToDouble(value);
+    return LongUtils.decodeDouble(value);
   }
 
   public float getFloatValue() {

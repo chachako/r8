@@ -92,7 +92,7 @@ public class CfConstNumber extends CfInstruction {
 
   public double getDoubleValue() {
     assert type == ValueType.DOUBLE;
-    return Double.longBitsToDouble(value);
+    return LongUtils.decodeDouble(value);
   }
 
   @Override
@@ -221,7 +221,7 @@ public class CfConstNumber extends CfInstruction {
   }
 
   public static boolean isNegativeZeroDouble(double value) {
-    return Double.doubleToLongBits(value) == Double.doubleToLongBits(-0.0);
+    return LongUtils.encodeDouble(value) == LongUtils.encodeDouble(-0.0);
   }
 
   public static boolean isNegativeZeroFloat(float value) {

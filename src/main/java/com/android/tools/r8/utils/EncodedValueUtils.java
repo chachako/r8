@@ -125,16 +125,16 @@ public class EncodedValueUtils {
   public static double parseDouble(DexReader dexReader, int numberOfBytes) {
     long bits =
         parseUnsigned(dexReader, numberOfBytes) << ((Double.BYTES - numberOfBytes) * Byte.SIZE);
-    return Double.longBitsToDouble(bits);
+    return LongUtils.decodeDouble(bits);
   }
 
   public static int putDouble(DexOutputBuffer outputBuffer, double value) {
-    long bits = Double.doubleToLongBits(value);
+    long bits = LongUtils.encodeDouble(value);
     return EncodedValueUtils.putBitsFromRightZeroExtended(outputBuffer, bits, Double.BYTES);
   }
 
   public static byte[] encodeDouble(double value) {
-    long tmp = Double.doubleToLongBits(value);
+    long tmp = LongUtils.encodeDouble(value);
     byte[] result = EncodedValueUtils.encodeBitsFromRightZeroExtended(tmp);
     assert result.length <= Double.BYTES;
     return result;

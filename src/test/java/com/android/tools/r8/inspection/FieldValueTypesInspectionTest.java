@@ -14,6 +14,7 @@ import com.android.tools.r8.inspector.ValueInspector;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.IntUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -152,8 +153,8 @@ public class FieldValueTypesInspectionTest extends TestBase {
                 if (isDouble) {
                   assertEquals(Reference.DOUBLE, reference.getFieldType());
                   assertEquals(
-                      Double.doubleToRawLongBits(TestClass.d),
-                      Double.doubleToRawLongBits(value.asDoubleValue().getDoubleValue()));
+                      LongUtils.encodeDouble(TestClass.d),
+                      LongUtils.encodeDouble(value.asDoubleValue().getDoubleValue()));
                 } else {
                   assertNull(value.asDoubleValue());
                 }

@@ -181,7 +181,7 @@ public class NumberConversion extends Unop {
         long rawIntToFloatValue = LongUtils.encodeFloat((float) num.getIntValue());
         return valueFactory.createSingleNumberValue(rawIntToFloatValue, typeElement);
       case INT_TO_DOUBLE:
-        long rawIntToDoubleValue = Double.doubleToLongBits((double) num.getIntValue());
+        long rawIntToDoubleValue = LongUtils.encodeDouble((double) num.getIntValue());
         return valueFactory.createSingleNumberValue(rawIntToDoubleValue, typeElement);
       case LONG_TO_INT:
         long rawLongToIntValue = (int) num.getLongValue();
@@ -190,7 +190,7 @@ public class NumberConversion extends Unop {
         long rawLongToFloatValue = LongUtils.encodeFloat((float) num.getLongValue());
         return valueFactory.createSingleNumberValue(rawLongToFloatValue, typeElement);
       case LONG_TO_DOUBLE:
-        long rawLongToDoubleValue = Double.doubleToLongBits((double) num.getLongValue());
+        long rawLongToDoubleValue = LongUtils.encodeDouble((double) num.getLongValue());
         return valueFactory.createSingleNumberValue(rawLongToDoubleValue, typeElement);
       case FLOAT_TO_INT:
         long rawFloatToIntValue = (int) num.getFloatValue();

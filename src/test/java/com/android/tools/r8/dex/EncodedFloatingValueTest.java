@@ -11,6 +11,7 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.EncodedValueUtils;
 import com.android.tools.r8.utils.IntUtils;
+import com.android.tools.r8.utils.LongUtils;
 import java.util.Arrays;
 import java.util.Collection;
 import org.junit.Assert;
@@ -33,10 +34,10 @@ public class EncodedFloatingValueTest {
         0.0,
         1.0,
         0.5,
-        Double.longBitsToDouble(1), // Lowest bit is 1 in double
-        Double.longBitsToDouble(0x10), // Bits on byte boundary are 1.
-        Double.longBitsToDouble(0x08),
-        Double.longBitsToDouble(4607071218809329336L), // Test a real long (regression).
+        LongUtils.decodeDouble(1), // Lowest bit is 1 in double
+        LongUtils.decodeDouble(0x10), // Bits on byte boundary are 1.
+        LongUtils.decodeDouble(0x08),
+        LongUtils.decodeDouble(4607071218809329336L), // Test a real long (regression).
         (double) (IntUtils.decodeFloat(1)), // Lowest bit is 1 in float
         (double) (IntUtils.decodeFloat(0x10)), // Bits on byte boundary are 1
         (double) (IntUtils.decodeFloat(0x08)));

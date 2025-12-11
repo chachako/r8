@@ -643,7 +643,7 @@ public class LazyCfCode extends Code {
         case Opcodes.DCONST_1:
           addInstruction(
               new CfConstNumber(
-                  Double.doubleToRawLongBits(opcode - Opcodes.DCONST_0), ValueType.DOUBLE));
+                  LongUtils.encodeDouble(opcode - Opcodes.DCONST_0), ValueType.DOUBLE));
           break;
         case Opcodes.IALOAD:
         case Opcodes.LALOAD:
@@ -1059,7 +1059,7 @@ public class LazyCfCode extends Code {
       } else if (cst instanceof Long) {
         addInstruction(new CfConstNumber((Long) cst, ValueType.LONG));
       } else if (cst instanceof Double) {
-        long l = Double.doubleToRawLongBits((Double) cst);
+        long l = LongUtils.encodeDouble((Double) cst);
         addInstruction(new CfConstNumber(l, ValueType.DOUBLE));
       } else if (cst instanceof Integer) {
         addInstruction(new CfConstNumber((Integer) cst, ValueType.INT));

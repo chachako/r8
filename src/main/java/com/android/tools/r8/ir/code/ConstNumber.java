@@ -106,7 +106,7 @@ public class ConstNumber extends ConstInstruction {
 
   public double getDoubleValue() {
     assert outType() == ValueType.DOUBLE;
-    return Double.longBitsToDouble(value);
+    return LongUtils.decodeDouble(value);
   }
 
   public long getRawValue() {

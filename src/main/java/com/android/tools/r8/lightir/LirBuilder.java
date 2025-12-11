@@ -43,6 +43,7 @@ import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.IntUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.LongUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
@@ -67,8 +68,8 @@ public class LirBuilder<V, EV> {
   private static final int FLOAT_0 = IntUtils.encodeFloat(0);
   private static final int FLOAT_1 = IntUtils.encodeFloat(1);
   private static final int FLOAT_2 = IntUtils.encodeFloat(2);
-  private static final long DOUBLE_0 = Double.doubleToRawLongBits(0);
-  private static final long DOUBLE_1 = Double.doubleToRawLongBits(1);
+  private static final long DOUBLE_0 = LongUtils.encodeDouble(0);
+  private static final long DOUBLE_1 = LongUtils.encodeDouble(1);
 
   private final boolean useDexEstimationStrategy;
   private final DexItemFactory factory;

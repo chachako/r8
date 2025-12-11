@@ -16,4 +16,15 @@ public class LongUtils {
   public static float decodeFloat(long value) {
     return Float.intBitsToFloat((int) value);
   }
+
+  /** Encode the bits of a double value losslessly. */
+  public static long encodeDouble(double value) {
+    // Important not to use doubleToLongBits since that confuses NaN representations.
+    return Double.doubleToRawLongBits(value);
+  }
+
+  /** Decode the bits of a double value losslessly. */
+  public static double decodeDouble(long value) {
+    return Double.longBitsToDouble(value);
+  }
 }

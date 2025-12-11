@@ -1250,7 +1250,7 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   }
 
   public ConstNumber createDoubleConstant(double value, DebugLocalInfo local) {
-    return createNumberConstant(Double.doubleToLongBits(value), TypeElement.getDouble(), local);
+    return createNumberConstant(LongUtils.encodeDouble(value), TypeElement.getDouble(), local);
   }
 
   public ConstNumber createFloatConstant(float value, DebugLocalInfo local) {

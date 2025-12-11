@@ -13,7 +13,7 @@ public class NegativeZeroTest {
     if (Float.floatToRawIntBits(-0.0f) == Float.floatToRawIntBits(0.0f)) {
       throw new AssertionError("Negative float not preserved");
     }
-    if (Double.doubleToLongBits(-0.0) == Double.doubleToLongBits(0.0)) {
+    if (Double.doubleToRawLongBits(-0.0) == Double.doubleToRawLongBits(0.0)) {
       throw new AssertionError("Negative double not preserved");
     }
   }

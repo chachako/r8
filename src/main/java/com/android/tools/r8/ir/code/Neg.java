@@ -103,7 +103,7 @@ public class Neg extends Unop {
         newConst = LongUtils.encodeFloat(-sourceConst.getFloatValue());
       } else {
         assert type == NumericType.DOUBLE;
-        newConst = Double.doubleToLongBits(-sourceConst.getDoubleValue());
+        newConst = LongUtils.encodeDouble(-sourceConst.getDoubleValue());
       }
       return appView.abstractValueFactory().createSingleNumberValue(newConst, getOutType());
     }
