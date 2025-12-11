@@ -30,13 +30,17 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.StateCloner
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.UnknownMethodState;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.ValueState;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.collections.DexMethodSignatureSet;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+// TODO(b/190154391): Consider computing effectively final methods to avoid propagating argument
+//  information for a method below its lowermost definition.
 public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropagator {
 
   class PropagationState {
@@ -101,8 +105,6 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
       timing.end();
 
       // Add the argument information that is inactive until a given upper bound.
-      // TODO(b/422947619): When we do not activate, we basically just copy down.
-      //  Instead of copying down we could simply add a pointer to the data in the parent state.
       timing.begin("Process inactive until upper bound");
       Map<ClassTypeElement, Boolean> greaterThanOrEqualToCache = new HashMap<>();
       parentState.inactiveUntilUpperBound.forEach(
@@ -117,69 +119,82 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
               timing.begin("Forward inactive");
               addInactiveUntilUpperBound(bounds, inactiveMethodStates, finalMethods);
               timing.end();
-              return;
-            }
-
-            // The upper bound is the current class, thus this inactive information now becomes
-            // active.
-            timing.begin("Promote inactive to active");
-            if (bounds.hasDynamicLowerBoundType()) {
-              // For class methods with sibling interface methods, we can have lower bound type
-              // information on the sibling interface method. When this information is propagated
-              // down to the common subtype, then there is no need to propagate the information
-              // any further, since the common subtype is already below the lower bound.
-              //
-              // Note that this does not imply that the information stored on the sibling
-              // interface method is not applied. The information is propagated to the class
-              // method that implements the interface method below.
-              ClassTypeElement lowerBound = bounds.getDynamicLowerBoundType();
-              if (lowerBound.lessThanOrEqual(clazz, appViewWithLiveness, immediateSubtypingInfo)) {
-                DexType activeUntilLowerBoundType =
-                    lowerBound.toDexType(appViewWithLiveness.dexItemFactory());
-                addActiveUntilCurrentClassOrLowerBound(
-                    activeUntilLowerBoundType, inactiveMethodStates, clazz, finalMethods);
-              } else {
-                timing.end();
-                return;
-              }
             } else {
-              addActive(inactiveMethodStates, finalMethods);
+              promoteInactiveToActive(clazz, bounds, inactiveMethodStates, finalMethods);
             }
-            timing.end();
+          });
+      timing.end();
 
-            timing.begin("Process inactive method states");
-            inactiveMethodStates.forEach(
-                (signature, methodState) -> {
-                  SingleResolutionResult<?> resolutionResult =
-                      appViewWithLiveness
-                          .appInfo()
-                          .resolveMethodOnLegacy(clazz, signature)
-                          .asSingleResolution();
+      timing.begin("Process inactive method states");
+      MapUtils.removeOrDefault(inactiveMethodStates, clazz, Collections.emptyMap())
+          .forEach(
+              (bounds, inactiveMethodStates) ->
+                  promoteInactiveToActive(clazz, bounds, inactiveMethodStates, finalMethods));
+      timing.end();
+    }
 
-                  // Find the first virtual method in the super class hierarchy.
-                  while (resolutionResult != null
-                      && resolutionResult.getResolvedMethod().belongsToDirectPool()) {
-                    resolutionResult =
-                        appViewWithLiveness
-                            .appInfo()
-                            .resolveMethodOnClassLegacy(
-                                resolutionResult.getResolvedHolder().getSuperType(), signature)
-                            .asSingleResolution();
-                  }
+    private void promoteInactiveToActive(
+        DexProgramClass clazz,
+        DynamicTypeWithUpperBound bounds,
+        MethodStateCollectionBySignature inactiveMethodStates,
+        DexMethodSignatureSet finalMethods) {
+      // The upper bound is the current class, thus this inactive information now becomes active.
+      timing.begin("Promote inactive to active");
+      if (bounds.hasDynamicLowerBoundType()) {
+        // For class methods with sibling interface methods, we can have lower bound type
+        // information on the sibling interface method. When this information is propagated
+        // down to the common subtype, then there is no need to propagate the information
+        // any further, since the common subtype is already below the lower bound.
+        //
+        // Note that this does not imply that the information stored on the sibling
+        // interface method is not applied. The information is propagated to the class
+        // method that implements the interface method below.
+        ClassTypeElement lowerBound = bounds.getDynamicLowerBoundType();
+        if (lowerBound.lessThanOrEqual(clazz, appViewWithLiveness, immediateSubtypingInfo)) {
+          DexType activeUntilLowerBoundType =
+              lowerBound.toDexType(appViewWithLiveness.dexItemFactory());
+          addActiveUntilCurrentClassOrLowerBound(
+              activeUntilLowerBoundType, inactiveMethodStates, clazz, finalMethods);
+        } else {
+          timing.end();
+          return;
+        }
+      } else {
+        addActive(inactiveMethodStates, finalMethods);
+      }
+      timing.end();
 
-                  // Propagate the argument information to the method on the super class.
-                  if (resolutionResult != null
-                      && resolutionResult.getResolvedHolder().isProgramClass()
-                      && resolutionResult.getResolvedHolder() != clazz
-                      && resolutionResult.getResolvedMethod().hasCode()) {
-                    DexProgramClass resolvedHolder =
-                        resolutionResult.getResolvedHolder().asProgramClass();
-                    PropagationState propagationState = propagationStates.get(resolvedHolder);
-                    propagationState.addActiveUntilCurrentClass(
-                        resolutionResult.getResolvedProgramMethod(), methodState);
-                  }
-                });
-            timing.end();
+      timing.begin("Process inactive method states");
+      inactiveMethodStates.forEach(
+          (signature, methodState) -> {
+            SingleResolutionResult<?> resolutionResult =
+                appViewWithLiveness
+                    .appInfo()
+                    .resolveMethodOnLegacy(clazz, signature)
+                    .asSingleResolution();
+
+            // Find the first virtual method in the super class hierarchy.
+            while (resolutionResult != null
+                && resolutionResult.getResolvedMethod().belongsToDirectPool()) {
+              resolutionResult =
+                  appViewWithLiveness
+                      .appInfo()
+                      .resolveMethodOnClassLegacy(
+                          resolutionResult.getResolvedHolder().getSuperType(), signature)
+                      .asSingleResolution();
+            }
+
+            // Propagate the argument information to the method on the super class.
+            if (resolutionResult != null
+                && resolutionResult.getResolvedHolder().isProgramClass()
+                && resolutionResult.getResolvedHolder() != clazz
+                && resolutionResult.getResolvedMethod().hasCode()) {
+              DexProgramClass resolvedHolder =
+                  resolutionResult.getResolvedHolder().asProgramClass();
+              PropagationState propagationState = propagationStates.get(resolvedHolder);
+              propagationState.addActiveUntilCurrentClass(
+                  resolutionResult.getResolvedProgramMethod(), methodState);
+            }
           });
       timing.end();
     }
@@ -410,6 +425,11 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
   // a given node.
   final Map<DexProgramClass, PropagationState> propagationStates = new IdentityHashMap<>();
 
+  // Stores argument information for virtual methods that is currently inactive, but should be
+  // propagated to all overrides below a given upper bound.
+  final Map<DexProgramClass, Map<DynamicTypeWithUpperBound, MethodStateCollectionBySignature>>
+      inactiveMethodStates = new IdentityHashMap<>();
+
   public VirtualDispatchMethodArgumentPropagator(
       AppView<AppInfoWithLiveness> appView,
       ImmediateProgramSubtypingInfo immediateSubtypingInfo,
@@ -493,8 +513,8 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
                         .getType()
                         .toTypeElement(appViewWithLiveness)
                         .lessThanOrEqualUpToNullability(upperBound, appViewWithLiveness);
-                    propagationState.addInactiveUntilUpperBound(
-                        bounds, method, methodStateForBounds);
+                    addInactiveUntilUpperBound(
+                        bounds, method, methodStateForBounds, propagationState);
                   }
                 }
               });
@@ -503,6 +523,36 @@ public class VirtualDispatchMethodArgumentPropagator extends MethodArgumentPropa
 
     assert propagationState.verifyActiveUntilLowerBoundRelevance(clazz);
     propagationStates.put(clazz, propagationState);
+  }
+
+  private void addInactiveUntilUpperBound(
+      DynamicTypeWithUpperBound upperBound,
+      ProgramMethod method,
+      MethodState methodState,
+      PropagationState propagationState) {
+    boolean isFinal =
+        method.getAccessFlags().isFinal() && !method.getAccessFlags().isPackagePrivate();
+    if (isFinal) {
+      return;
+    }
+    assert upperBound.getDynamicUpperBoundType().isClassType();
+    ClassTypeElement upperBoundClassType = upperBound.getDynamicUpperBoundType().asClassType();
+    DexType upperBoundType = upperBoundClassType.toDexType(appView.dexItemFactory());
+    // If the conversion to DexType is lossless, then move the given method state to the specified
+    // type. This avoids needing to copy the method state downwards as well as type bound checks.
+    // Otherwise, we record that the method state needs to be carried downwards from the
+    // current point.
+    if (upperBoundClassType.equalUpToNullability(upperBoundType.toTypeElement(appView))) {
+      DexProgramClass upperBoundClass = asProgramClassOrNull(appView.definitionFor(upperBoundType));
+      if (upperBoundClass != null) {
+        inactiveMethodStates
+            .computeIfAbsent(upperBoundClass, ignoreKey(HashMap::new))
+            .computeIfAbsent(upperBound, ignoreKey(MethodStateCollectionBySignature::create))
+            .addMethodState(appViewWithLiveness, method, methodState);
+      }
+    } else {
+      propagationState.addInactiveUntilUpperBound(upperBound, method, methodState);
+    }
   }
 
   private boolean isUpperBoundSatisfied(ClassTypeElement upperBound, DexProgramClass currentClass) {
