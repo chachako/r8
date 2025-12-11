@@ -25,7 +25,7 @@ public class ResolveToProgramMethodThroughClasspathTest extends TestBase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testR8() throws Exception {
     testForR8(parameters)
         .addProgramClasses(Main.class, I.class, A.class)
         .addClasspathClasses(B.class)
@@ -55,6 +55,18 @@ public class ResolveToProgramMethodThroughClasspathTest extends TestBase {
                 ? "interfaceMethod"
                 : "AbstractMethodError",
             "staticClassMethod");
+  }
+
+  @Test
+  public void testR8Partial() throws Exception {
+    testForR8Partial(parameters)
+        .addR8IncludedClasses(Main.class, I.class, A.class)
+        .addR8ExcludedClasses(B.class)
+        .addKeepMainRule(Main.class)
+        .enableInliningAnnotations()
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("classMethod", "interfaceMethod", "staticClassMethod");
   }
 
   static class Main {

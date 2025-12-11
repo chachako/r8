@@ -24,7 +24,7 @@ public class VirtualDispatchToProgramMethodThroughClasspathClassTest extends Tes
   }
 
   @Test
-  public void test() throws Exception {
+  public void testR8() throws Exception {
     testForR8(parameters.getBackend())
         .addProgramClasses(Main.class, A.class, C.class)
         .addClasspathClasses(B.class)
@@ -37,6 +37,17 @@ public class VirtualDispatchToProgramMethodThroughClasspathClassTest extends Tes
         .run(parameters.getRuntime(), Main.class)
         // TODO(b/418131194): Should be "A", "B", "C".
         .assertSuccessWithOutputLines("A", "A", "A");
+  }
+
+  @Test
+  public void testR8Partial() throws Exception {
+    testForR8Partial(parameters)
+        .addR8IncludedClasses(Main.class, A.class, C.class)
+        .addR8ExcludedClasses(B.class)
+        .addKeepClassAndMembersRules(Main.class)
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("A", "B", "C");
   }
 
   static class Main {

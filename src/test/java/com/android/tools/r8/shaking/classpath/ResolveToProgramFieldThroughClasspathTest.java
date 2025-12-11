@@ -24,7 +24,7 @@ public class ResolveToProgramFieldThroughClasspathTest extends TestBase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testR8() throws Exception {
     testForR8(parameters)
         .addProgramClasses(Main.class, A.class)
         .addClasspathClasses(B.class)
@@ -41,6 +41,17 @@ public class ResolveToProgramFieldThroughClasspathTest extends TestBase {
         .addRunClasspathClasses(B.class)
         .run(parameters.getRuntime(), Main.class)
         .assertFailureWithErrorThatThrows(NoSuchFieldError.class);
+  }
+
+  @Test
+  public void testR8Partial() throws Exception {
+    testForR8Partial(parameters)
+        .addR8IncludedClasses(Main.class, A.class)
+        .addR8ExcludedClasses(B.class)
+        .addKeepMainRule(Main.class)
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("field", "staticField");
   }
 
   static class Main {
