@@ -4,7 +4,6 @@
 
 package com.android.tools.r8.shaking.assume;
 
-
 import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
 import com.android.tools.r8.graph.AppView;
@@ -13,6 +12,7 @@ import com.android.tools.r8.graph.DexClassAndMember;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.MethodResolutionResult.SingleResolutionResult;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.PrunedItems;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -107,6 +107,21 @@ public class AssumeInfoCollection {
 
   public boolean isSideEffectFree(DexClassAndMethod method) {
     return isSideEffectFree(method.getReference());
+  }
+
+  public boolean neverInlineDueToAssume(
+      InvokeMethod invoke,
+      SingleResolutionResult<?> resolutionResult,
+      DexClassAndMethod singleTarget) {
+    return neverInlineDueToAssume(invoke.getInvokedMethod())
+        || neverInlineDueToAssume(resolutionResult.getResolvedMethod().getReference())
+        || (singleTarget != null && neverInlineDueToAssume(singleTarget.getReference()));
+  }
+
+  private boolean neverInlineDueToAssume(DexMethod target) {
+    return hasAssumeInfoThatMatches(
+        target,
+        assumeInfo -> assumeInfo.isSideEffectFree() || !assumeInfo.getAssumeValue().isUnknown());
   }
 
   public AssumeInfoCollection rewrittenWithLens(

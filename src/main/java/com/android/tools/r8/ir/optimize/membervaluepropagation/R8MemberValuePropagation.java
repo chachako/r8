@@ -149,6 +149,12 @@ public class R8MemberValuePropagation extends MemberValuePropagation<AppInfoWith
       return iterator;
     }
 
+    if (appView
+        .getAssumeInfoCollection()
+        .neverInlineDueToAssume(invoke, resolutionResult, singleTarget)) {
+      return iterator;
+    }
+
     // No Proguard rule could replace the instruction check for knowledge about the return value.
     if (singleTarget != null && !mayPropagateValueFor(singleTarget)) {
       return iterator;

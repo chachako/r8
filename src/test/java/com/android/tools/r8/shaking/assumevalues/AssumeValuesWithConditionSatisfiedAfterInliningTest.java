@@ -59,7 +59,6 @@ public class AssumeValuesWithConditionSatisfiedAfterInliningTest extends TestBas
       return "b";
     }
 
-    @NeverPropagateValue
     static String greeting(String unused) {
       return null;
     }
