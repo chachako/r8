@@ -105,6 +105,8 @@ public class EncodedValueUtils {
   }
 
   public static float parseFloat(DexReader dexReader, int numberOfBytes) {
+    assert 0 <= numberOfBytes;
+    assert numberOfBytes <= Float.BYTES;
     long bits =
         parseUnsigned(dexReader, numberOfBytes) << ((Float.BYTES - numberOfBytes) * Byte.SIZE);
     return LongUtils.decodeFloat(bits);
