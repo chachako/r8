@@ -201,6 +201,9 @@ public class NumberConversion extends Unop {
       case DOUBLE_TO_INT:
         long rawDoubleToIntValue = (int) num.getDoubleValue();
         return valueFactory.createSingleNumberValue(rawDoubleToIntValue, typeElement);
+      case DOUBLE_TO_LONG:
+        long rawDoubleToLongValue = (long) num.getDoubleValue();
+        return valueFactory.createSingleNumberValue(rawDoubleToLongValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }
