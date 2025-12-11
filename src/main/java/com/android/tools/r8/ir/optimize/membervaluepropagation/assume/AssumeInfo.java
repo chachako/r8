@@ -12,21 +12,31 @@ import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.SingleFieldValue;
+import com.android.tools.r8.shaking.ProguardConfigurationRule;
+import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 public class AssumeInfo {
 
   private static final AssumeInfo EMPTY =
-      new AssumeInfo(DynamicType.unknown(), AbstractValue.unknown(), false);
+      new AssumeInfo(DynamicType.unknown(), AbstractValue.unknown(), false, Collections.emptySet());
 
   private final DynamicType assumeType;
   private final AbstractValue assumeValue;
   private final boolean isSideEffectFree;
+  private final Set<ProguardConfigurationRule> origins;
 
-  private AssumeInfo(DynamicType assumeType, AbstractValue assumeValue, boolean isSideEffectFree) {
+  private AssumeInfo(
+      DynamicType assumeType,
+      AbstractValue assumeValue,
+      boolean isSideEffectFree,
+      Set<ProguardConfigurationRule> origins) {
     this.assumeType = assumeType;
     this.assumeValue = assumeValue;
     this.isSideEffectFree = isSideEffectFree;
+    this.origins = origins;
   }
 
   public static Builder builder() {
@@ -34,10 +44,13 @@ public class AssumeInfo {
   }
 
   public static AssumeInfo create(
-      DynamicType assumeType, AbstractValue assumeValue, boolean isSideEffectFree) {
+      DynamicType assumeType,
+      AbstractValue assumeValue,
+      boolean isSideEffectFree,
+      Set<ProguardConfigurationRule> origins) {
     return assumeType.isUnknown() && assumeValue.isUnknown() && !isSideEffectFree
         ? empty()
-        : new AssumeInfo(assumeType, assumeValue, isSideEffectFree);
+        : new AssumeInfo(assumeType, assumeValue, isSideEffectFree, origins);
   }
 
   public static AssumeInfo empty() {
@@ -54,6 +67,10 @@ public class AssumeInfo {
 
   public AbstractValue getAssumeValue() {
     return assumeValue;
+  }
+
+  public Set<ProguardConfigurationRule> getOrigins() {
+    return origins;
   }
 
   @SuppressWarnings("ReferenceEquality")
@@ -74,7 +91,8 @@ public class AssumeInfo {
     AbstractValue meetValue = internalMeetValue(assumeValue, other.assumeValue);
     boolean meetIsSideEffectFree =
         internalMeetIsSideEffectFree(isSideEffectFree, other.isSideEffectFree);
-    return AssumeInfo.create(meetType, meetValue, meetIsSideEffectFree);
+    return AssumeInfo.create(
+        meetType, meetValue, meetIsSideEffectFree, Sets.union(origins, other.origins));
   }
 
   private static DynamicType internalMeetType(DynamicType type, DynamicType other) {
@@ -120,7 +138,7 @@ public class AssumeInfo {
       if (rewrittenField != field) {
         SingleFieldValue rewrittenAssumeValue =
             appView.abstractValueFactory().createSingleStatelessFieldValue(rewrittenField);
-        return create(assumeType, rewrittenAssumeValue, isSideEffectFree);
+        return create(assumeType, rewrittenAssumeValue, isSideEffectFree, origins);
       }
     }
     return this;
@@ -133,7 +151,7 @@ public class AssumeInfo {
     // assumed value.
     if (assumeValue.isSingleFieldValue()
         && prunedItems.isRemoved(assumeValue.asSingleFieldValue().getField())) {
-      return create(assumeType, AbstractValue.unknown(), isSideEffectFree);
+      return create(assumeType, AbstractValue.unknown(), isSideEffectFree, origins);
     }
     return this;
   }
@@ -163,6 +181,15 @@ public class AssumeInfo {
     private DynamicType assumeType = DynamicType.unknown();
     private AbstractValue assumeValue = AbstractValue.unknown();
     private boolean isSideEffectFree = false;
+    private Set<ProguardConfigurationRule> origins = Collections.emptySet();
+
+    public Builder addOrigin(ProguardConfigurationRule origin) {
+      if (origins.isEmpty()) {
+        origins = Sets.newIdentityHashSet();
+      }
+      origins.add(origin);
+      return this;
+    }
 
     public Builder meet(Builder builder) {
       return meetAssumeType(builder.assumeType)
@@ -191,7 +218,7 @@ public class AssumeInfo {
     }
 
     public AssumeInfo build() {
-      return create(assumeType, assumeValue, isSideEffectFree);
+      return create(assumeType, assumeValue, isSideEffectFree, origins);
     }
 
     public boolean isEqualTo(Builder builder) {

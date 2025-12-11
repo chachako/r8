@@ -14,6 +14,7 @@ import com.android.tools.r8.ir.optimize.membervaluepropagation.assume.AssumeInfo
 import com.android.tools.r8.shaking.ProguardMemberRuleValue;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ObjectUtils;
+import com.android.tools.r8.utils.StringUtils;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -85,7 +86,24 @@ public class AssumeMethodInfoCollection {
                       + invoke.getInvokedMethod().toSmaliString()
                       + " in "
                       + context.getReference().toSmaliString()
-                      + " matches different assume rules");
+                      + " matches different assume rules from "
+                      + StringUtils.join(
+                          ", ",
+                          result.getOrigins(),
+                          o ->
+                              o.getOrigin().toString()
+                                  + " ("
+                                  + o.getPosition().getDescription()
+                                  + ")")
+                      + " and "
+                      + StringUtils.join(
+                          ", ",
+                          assumeInfo.getOrigins(),
+                          o ->
+                              o.getOrigin().toString()
+                                  + " ("
+                                  + o.getPosition().getDescription()
+                                  + ")"));
         }
         result = assumeInfo;
       }

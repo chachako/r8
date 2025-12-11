@@ -1800,7 +1800,7 @@ public class RootSetUtils {
           assumeInfo.meetAssumeType(assumeType).meetAssumeValue(assumeValue);
           reportAssumeValuesWarningForMissingReturnField(context, rule, assumeValue);
         }
-        assumeInfo.setIsSideEffectFree();
+        assumeInfo.addOrigin(context).setIsSideEffectFree();
       }
       context.markAsUsed();
     }
@@ -1831,7 +1831,7 @@ public class RootSetUtils {
       DexType valueType = member.getReference().apply(DexField::getType, DexMethod::getReturnType);
       DynamicType assumeType = rule.getReturnValue().toDynamicType(appView, valueType);
       AbstractValue assumeValue = rule.getReturnValue().toAbstractValue(appView, valueType);
-      assumeInfo.meetAssumeType(assumeType).meetAssumeValue(assumeValue);
+      assumeInfo.addOrigin(context).meetAssumeType(assumeType).meetAssumeValue(assumeValue);
       reportAssumeValuesWarningForMissingReturnField(context, rule, assumeValue);
       context.markAsUsed();
     }
