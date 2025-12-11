@@ -11,7 +11,9 @@ import com.android.tools.r8.D8TestBuilder;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.dex.container.DexContainerFormatTestBase;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.DexVersion;
 import java.nio.file.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,8 +48,7 @@ public class ReadDexV040Test extends TestBase {
       D8TestBuilder builder = testForD8().addProgramFiles(dexV040).setMinApi(apiLevel);
       // This succeeds for 'B', as that is considered "default" even if specified explicitly, and
       // in that case the API level is derived from reading DEX content.
-      if (apiLevel.isBetweenNoneIncluded(AndroidApiLevel.B, AndroidApiLevel.BAKLAVA)) {
-        // TODO(b/467918037): Should pass from R.
+      if (apiLevel.isBetweenNoneIncluded(AndroidApiLevel.B, AndroidApiLevel.R)) {
         assertThrows(
             CompilationFailedException.class,
             () ->
@@ -59,7 +60,14 @@ public class ReadDexV040Test extends TestBase {
                                     + apiLevel.name()
                                     + "'."))));
       } else {
-        builder.compile();
+        Path dex = builder.compile().writeToZip();
+        if (apiLevel.isEqualTo(AndroidApiLevel.B)
+            || apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.BAKLAVA)) {
+          // No API levels will currently set container DEX.
+          DexContainerFormatTestBase.validateDex(dex, 1, DexVersion.V39);
+        } else {
+          DexContainerFormatTestBase.validateDex(dex, 1, apiLevel.getDexVersion());
+        }
       }
     }
   }

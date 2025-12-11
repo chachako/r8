@@ -61,6 +61,10 @@ public enum DexVersion implements Ordered<DexVersion> {
   }
 
   public boolean matchesApiLevel(AndroidApiLevel androidApiLevel) {
+    if (dexVersion == DexVersion.V40.dexVersion) {
+      // getDexVersion does not handle V40. See b/269089718.
+      return androidApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.R);
+    }
     return getDexVersion(androidApiLevel).dexVersion >= dexVersion;
   }
 
