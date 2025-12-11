@@ -3044,13 +3044,13 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseMaximumRemovedAndroidLogLevelWithoutClassSpecification() {
     for (LogLevel logLevel :
         new LogLevel[] {
-          new LogLevel(7, "assert", MaximumRemovedAndroidLogLevelRule.ASSERT),
-          new LogLevel(6, "error", MaximumRemovedAndroidLogLevelRule.ERROR),
-          new LogLevel(5, "warn", MaximumRemovedAndroidLogLevelRule.WARN),
-          new LogLevel(4, "info", MaximumRemovedAndroidLogLevelRule.INFO),
-          new LogLevel(3, "debug", MaximumRemovedAndroidLogLevelRule.DEBUG),
-          new LogLevel(2, "verbose", MaximumRemovedAndroidLogLevelRule.VERBOSE),
-          new LogLevel(1, "none", MaximumRemovedAndroidLogLevelRule.NONE)
+          new LogLevel(7, "ASSERT", MaximumRemovedAndroidLogLevelRule.ASSERT),
+          new LogLevel(6, "ERROR", MaximumRemovedAndroidLogLevelRule.ERROR),
+          new LogLevel(5, "WARN", MaximumRemovedAndroidLogLevelRule.WARN),
+          new LogLevel(4, "INFO", MaximumRemovedAndroidLogLevelRule.INFO),
+          new LogLevel(3, "DEBUG", MaximumRemovedAndroidLogLevelRule.DEBUG),
+          new LogLevel(2, "VERBOSE", MaximumRemovedAndroidLogLevelRule.VERBOSE),
+          new LogLevel(1, "NONE", MaximumRemovedAndroidLogLevelRule.NONE)
         }) {
       reset();
       String configuration =
@@ -3110,7 +3110,16 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     try {
       resetAllowNamedAndroidLogLevels();
-      String configuration = StringUtils.lines("-maximumremovedandroidloglevel WARN");
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel warn");
+      parser.parse(createConfigurationForTesting(configuration));
+      fail("Expect to fail due to unsupported value.");
+    } catch (RuntimeException e) {
+      checkDiagnostics(handler.errors, null, 1, 36, "Unsupported log level");
+    }
+
+    try {
+      resetAllowNamedAndroidLogLevels();
+      String configuration = StringUtils.lines("-maximumremovedandroidloglevel Warn");
       parser.parse(createConfigurationForTesting(configuration));
       fail("Expect to fail due to unsupported value.");
     } catch (RuntimeException e) {
@@ -3122,13 +3131,13 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseMaximumRemovedAndroidLogLevelWithClassSpecification() {
     for (LogLevel logLevel :
         new LogLevel[] {
-          new LogLevel(7, "assert", MaximumRemovedAndroidLogLevelRule.ASSERT),
-          new LogLevel(6, "error", MaximumRemovedAndroidLogLevelRule.ERROR),
-          new LogLevel(5, "warn", MaximumRemovedAndroidLogLevelRule.WARN),
-          new LogLevel(4, "info", MaximumRemovedAndroidLogLevelRule.INFO),
-          new LogLevel(3, "debug", MaximumRemovedAndroidLogLevelRule.DEBUG),
-          new LogLevel(2, "verbose", MaximumRemovedAndroidLogLevelRule.VERBOSE),
-          new LogLevel(1, "none", MaximumRemovedAndroidLogLevelRule.NONE)
+          new LogLevel(7, "ASSERT", MaximumRemovedAndroidLogLevelRule.ASSERT),
+          new LogLevel(6, "ERROR", MaximumRemovedAndroidLogLevelRule.ERROR),
+          new LogLevel(5, "WARN", MaximumRemovedAndroidLogLevelRule.WARN),
+          new LogLevel(4, "INFO", MaximumRemovedAndroidLogLevelRule.INFO),
+          new LogLevel(3, "DEBUG", MaximumRemovedAndroidLogLevelRule.DEBUG),
+          new LogLevel(2, "VERBOSE", MaximumRemovedAndroidLogLevelRule.VERBOSE),
+          new LogLevel(1, "NONE", MaximumRemovedAndroidLogLevelRule.NONE)
         }) {
       for (String input : new String[] {"class * { <methods>; }", "@Foo class * { <methods>; }"}) {
         for (boolean testNamedAndroidLogLevels : BooleanUtils.values()) {
@@ -3193,7 +3202,16 @@ public class ProguardConfigurationParserTest extends TestBase {
 
       try {
         resetAllowNamedAndroidLogLevels();
-        String configuration = StringUtils.lines("-maximumremovedandroidloglevel WARN " + input);
+        String configuration = StringUtils.lines("-maximumremovedandroidloglevel warn " + input);
+        parser.parse(createConfigurationForTesting(configuration));
+        fail("Expect to fail due to unsupported value.");
+      } catch (RuntimeException e) {
+        checkDiagnostics(handler.errors, null, 1, 36, "Unsupported log level");
+      }
+
+      try {
+        resetAllowNamedAndroidLogLevels();
+        String configuration = StringUtils.lines("-maximumremovedandroidloglevel Warn " + input);
         parser.parse(createConfigurationForTesting(configuration));
         fail("Expect to fail due to unsupported value.");
       } catch (RuntimeException e) {

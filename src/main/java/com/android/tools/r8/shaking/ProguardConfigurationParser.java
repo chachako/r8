@@ -124,13 +124,13 @@ public class ProguardConfigurationParser {
 
   static final Map<String, Integer> logLevelNames =
       ImmutableMap.of(
-          "assert", 7,
-          "error", 6,
-          "warn", 5,
-          "info", 4,
-          "debug", 3,
-          "verbose", 2,
-          "none", 1);
+          "ASSERT", 7,
+          "ERROR", 6,
+          "WARN", 5,
+          "INFO", 4,
+          "DEBUG", 3,
+          "VERBOSE", 2,
+          "NONE", 1);
 
   @Deprecated
   public static ImmutableList<ProguardConfigurationRule> parseMainDex(
