@@ -63,7 +63,7 @@ public class ProguardConfigurationParserOptions {
     private boolean enableKeepRuntimeInvisibleAnnotations = true;
     private boolean enableTestingOptions;
     private boolean forceProguardCompatibility = false;
-    private boolean enableNamedAndroidLogLevels = false;
+    private boolean enableNamedAndroidLogLevels = true;
 
     public Builder readEnvironment() {
       enableLegacyFullModeForKeepRules =
