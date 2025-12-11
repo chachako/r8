@@ -91,8 +91,8 @@ public class ConstantFoldingTest extends SmaliTestBase {
           LongUtils.encodeFloat(2.0f),
           LongUtils.encodeFloat(3.0f),
           LongUtils.encodeFloat(4.0f));
-  private ImmutableList<Long> doubleArguments = ImmutableList.of(
-      doubleBits(1.0), doubleBits(2.0), doubleBits(3.0), doubleBits(4.0));
+  private ImmutableList<Long> doubleArguments =
+      ImmutableList.of(doubleBits(1.0), doubleBits(2.0), doubleBits(3.0), doubleBits(4.0));
 
   private void binopMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     BinopTestData test = (BinopTestData) parameters;
@@ -123,7 +123,9 @@ public class ConstantFoldingTest extends SmaliTestBase {
     source.append("v" + ((test.values.size() - 1) * factor));
 
     builder.addStaticMethod(
-        test.type, name, Collections.singletonList(test.type),
+        test.type,
+        name,
+        Collections.singletonList(test.type),
         test.values.size() * factor,
         source.toString());
   }
@@ -135,14 +137,12 @@ public class ConstantFoldingTest extends SmaliTestBase {
     assertEquals(2, code.instructions.length);
     if (wide) {
       assertTrue(code.instructions[0] instanceof WideConstant);
-      assertEquals(test.result.longValue(),
-          ((WideConstant) code.instructions[0]).decodedValue());
+      assertEquals(test.result.longValue(), ((WideConstant) code.instructions[0]).decodedValue());
       assertTrue(code.instructions[1] instanceof DexReturnWide);
     } else {
       assertTrue(code.instructions[0] instanceof SingleConstant);
       assertEquals(
-          test.result.longValue(),
-          (long) ((SingleConstant) code.instructions[0]).decodedValue());
+          test.result.longValue(), (long) ((SingleConstant) code.instructions[0]).decodedValue());
       assertTrue(code.instructions[1] instanceof DexReturn);
     }
   }
@@ -158,8 +158,8 @@ public class ConstantFoldingTest extends SmaliTestBase {
     addBinopTest(
         testBuilder,
         new BinopTestData("float", "add", floatArguments, LongUtils.encodeFloat(10.0f)));
-    addBinopTest(testBuilder,
-        new BinopTestData("double", "add", doubleArguments, doubleBits(10.0)));
+    addBinopTest(
+        testBuilder, new BinopTestData("double", "add", doubleArguments, doubleBits(10.0)));
 
     // Mul tests.
     addBinopTest(testBuilder, new BinopTestData("int", "mul", arguments, 24L));
@@ -167,8 +167,8 @@ public class ConstantFoldingTest extends SmaliTestBase {
     addBinopTest(
         testBuilder,
         new BinopTestData("float", "mul", floatArguments, LongUtils.encodeFloat(24.0f)));
-    addBinopTest(testBuilder,
-        new BinopTestData("double", "mul", doubleArguments, doubleBits(24.0)));
+    addBinopTest(
+        testBuilder, new BinopTestData("double", "mul", doubleArguments, doubleBits(24.0)));
 
     // Sub tests.
     addBinopTest(testBuilder, new BinopTestData("int", "sub", arguments.reverse(), -2L));
@@ -176,7 +176,8 @@ public class ConstantFoldingTest extends SmaliTestBase {
     addBinopTest(
         testBuilder,
         new BinopTestData("float", "sub", floatArguments.reverse(), LongUtils.encodeFloat(-2.0f)));
-    addBinopTest(testBuilder,
+    addBinopTest(
+        testBuilder,
         new BinopTestData("double", "sub", doubleArguments.reverse(), doubleBits(-2.0)));
 
     // Div tests.
@@ -188,16 +189,16 @@ public class ConstantFoldingTest extends SmaliTestBase {
               LongUtils.encodeFloat(24.0f),
               LongUtils.encodeFloat(48.0f),
               LongUtils.encodeFloat(4.0f));
-      ImmutableList<Long> doubleArguments = ImmutableList.of(
-          doubleBits(2.0), doubleBits(24.0), doubleBits(48.0), doubleBits(4.0));
+      ImmutableList<Long> doubleArguments =
+          ImmutableList.of(doubleBits(2.0), doubleBits(24.0), doubleBits(48.0), doubleBits(4.0));
 
       addBinopTest(testBuilder, new BinopTestData("int", "div", arguments, 1L));
       addBinopTest(testBuilder, new BinopTestData("long", "div", arguments, 1L));
       addBinopTest(
           testBuilder,
           new BinopTestData("float", "div", floatArguments, LongUtils.encodeFloat(1.0f)));
-      addBinopTest(testBuilder,
-          new BinopTestData("double", "div", doubleArguments, doubleBits(1.0)));
+      addBinopTest(
+          testBuilder, new BinopTestData("double", "div", doubleArguments, doubleBits(1.0)));
     }
 
     // Rem tests.
@@ -209,16 +210,16 @@ public class ConstantFoldingTest extends SmaliTestBase {
               LongUtils.encodeFloat(6.0f),
               LongUtils.encodeFloat(3.0f),
               LongUtils.encodeFloat(2.0f));
-      ImmutableList<Long> doubleArguments = ImmutableList.of(
-          doubleBits(10.0), doubleBits(6.0), doubleBits(3.0), doubleBits(2.0));
+      ImmutableList<Long> doubleArguments =
+          ImmutableList.of(doubleBits(10.0), doubleBits(6.0), doubleBits(3.0), doubleBits(2.0));
 
       addBinopTest(testBuilder, new BinopTestData("int", "rem", arguments, 2L));
       addBinopTest(testBuilder, new BinopTestData("long", "rem", arguments, 2L));
       addBinopTest(
           testBuilder,
           new BinopTestData("float", "rem", floatArguments, LongUtils.encodeFloat(2.0f)));
-      addBinopTest(testBuilder,
-          new BinopTestData("double", "rem", doubleArguments, doubleBits(2.0)));
+      addBinopTest(
+          testBuilder, new BinopTestData("double", "rem", doubleArguments, doubleBits(2.0)));
     }
   }
 
@@ -304,9 +305,7 @@ public class ConstantFoldingTest extends SmaliTestBase {
     source.append(wide ? "return-wide v0" : "return v0");
 
     builder.addStaticMethod(
-        test.type, name, Collections.singletonList(test.type),
-        wide ? 2 : 1,
-        source.toString());
+        test.type, name, Collections.singletonList(test.type), wide ? 2 : 1, source.toString());
   }
 
   private void unopMethodChecker(DexEncodedMethod method, Object parameters) {
@@ -401,7 +400,9 @@ public class ConstantFoldingTest extends SmaliTestBase {
   private void logicalOperatorMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     LogicalOperatorTestData test = (LogicalOperatorTestData) parameters;
     builder.addStaticMethod(
-        "int", name, Collections.singletonList("int"),
+        "int",
+        name,
+        Collections.singletonList("int"),
         4,
         "    const v0, " + test.values[0],
         "    const v1, " + test.values[1],
@@ -424,15 +425,16 @@ public class ConstantFoldingTest extends SmaliTestBase {
   }
 
   private void addLogicalOperatorsFoldTests(SmaliBuilderWithCheckers testBuilder) {
-    int[][] testValues = new int[][]{
-        new int[]{0x00, 0x00, 0x00, 0x00},
-        new int[]{0x0b, 0x06, 0x03, 0x00},
-        new int[]{0x0f, 0x07, 0x03, 0x01},
-        new int[]{0x08, 0x04, 0x02, 0x01},
-    };
+    int[][] testValues =
+        new int[][] {
+          new int[] {0x00, 0x00, 0x00, 0x00},
+          new int[] {0x0b, 0x06, 0x03, 0x00},
+          new int[] {0x0f, 0x07, 0x03, 0x01},
+          new int[] {0x08, 0x04, 0x02, 0x01},
+        };
 
     for (int[] values : testValues) {
-      for (String op : new String[]{"and", "or", "xor"}) {
+      for (String op : new String[] {"and", "or", "xor"}) {
         testBuilder.addTest(
             this::logicalOperatorMethodBuilder,
             this::logicalOperatorMethodChecker,
@@ -449,7 +451,6 @@ public class ConstantFoldingTest extends SmaliTestBase {
     ShiftTestData(String op, int[] values) {
       this.values = values;
       this.op = op;
-
 
       int v0 = values[0];
       int v1 = values[1];
@@ -483,7 +484,9 @@ public class ConstantFoldingTest extends SmaliTestBase {
   private void shiftOperatorMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     ShiftTestData data = (ShiftTestData) parameters;
     builder.addStaticMethod(
-        "int", name, Collections.singletonList("int"),
+        "int",
+        name,
+        Collections.singletonList("int"),
         4,
         "    const v0, " + data.values[0],
         "    const v1, " + data.values[1],
@@ -493,8 +496,7 @@ public class ConstantFoldingTest extends SmaliTestBase {
         "    " + data.op + "-int/2addr v0, v1    ",
         "    " + data.op + "-int/2addr v0, v2    ",
         "    " + data.op + "-int/2addr v0, v3    ",
-        "    return v0\n                    "
-    );
+        "    return v0\n                    ");
   }
 
   private void shiftOperatorMethodChecker(DexEncodedMethod method, Object parameters) {
@@ -507,16 +509,17 @@ public class ConstantFoldingTest extends SmaliTestBase {
   }
 
   public void addShiftOperatorsFolding(SmaliBuilderWithCheckers testBuilder) {
-    int[][] testValues = new int[][]{
-        new int[]{0x01, 0x01, 0x01, 0x01},
-        new int[]{0x01, 0x02, 0x03, 0x04},
-        new int[]{0x7f000000, 0x01, 0x2, 0x03},
-        new int[]{0x80000000, 0x01, 0x2, 0x03},
-        new int[]{0xffffffff, 0x01, 0x2, 0x03},
-    };
+    int[][] testValues =
+        new int[][] {
+          new int[] {0x01, 0x01, 0x01, 0x01},
+          new int[] {0x01, 0x02, 0x03, 0x04},
+          new int[] {0x7f000000, 0x01, 0x2, 0x03},
+          new int[] {0x80000000, 0x01, 0x2, 0x03},
+          new int[] {0xffffffff, 0x01, 0x2, 0x03},
+        };
 
     for (int[] values : testValues) {
-      for (String op : new String[]{"shl", "shr", "ushr"}) {
+      for (String op : new String[] {"shl", "shr", "ushr"}) {
         testBuilder.addTest(
             this::shiftOperatorMethodBuilder,
             this::shiftOperatorMethodChecker,
@@ -567,7 +570,9 @@ public class ConstantFoldingTest extends SmaliTestBase {
       SmaliBuilder builder, String name, Object parameters) {
     ShiftWideTestData data = (ShiftWideTestData) parameters;
     builder.addStaticMethod(
-    "long", name, Collections.singletonList("long"),
+        "long",
+        name,
+        Collections.singletonList("long"),
         5,
         "    const-wide v0, 0x" + Long.toHexString(data.values[0]) + "L",
         "    const v2, " + data.values[1],
@@ -577,8 +582,7 @@ public class ConstantFoldingTest extends SmaliTestBase {
         "    " + data.op + "-long/2addr v0, v2    ",
         "    " + data.op + "-long/2addr v0, v3    ",
         "    " + data.op + "-long/2addr v0, v4    ",
-        "    return-wide v0\n                    "
-    );
+        "    return-wide v0\n                    ");
   }
 
   private void shiftOperatorWideMethodChecker(DexEncodedMethod method, Object parameters) {
@@ -591,18 +595,19 @@ public class ConstantFoldingTest extends SmaliTestBase {
   }
 
   public void addShiftOperatorsFoldingWide(SmaliBuilderWithCheckers testBuilder) {
-    long[][] testValues = new long[][]{
-        new long[]{0x01, 0x01, 0x01, 0x01},
-        new long[]{0x01, 0x02, 0x03, 0x04},
-        new long[]{0x7f0000000000L, 0x01, 0x2, 0x03},
-        new long[]{0x800000000000L, 0x01, 0x2, 0x03},
-        new long[]{0x7f00000000000000L, 0x01, 0x2, 0x03},
-        new long[]{0x8000000000000000L, 0x01, 0x2, 0x03},
-        new long[]{0xffffffffffffffffL, 0x01, 0x2, 0x03},
-    };
+    long[][] testValues =
+        new long[][] {
+          new long[] {0x01, 0x01, 0x01, 0x01},
+          new long[] {0x01, 0x02, 0x03, 0x04},
+          new long[] {0x7f0000000000L, 0x01, 0x2, 0x03},
+          new long[] {0x800000000000L, 0x01, 0x2, 0x03},
+          new long[] {0x7f00000000000000L, 0x01, 0x2, 0x03},
+          new long[] {0x8000000000000000L, 0x01, 0x2, 0x03},
+          new long[] {0xffffffffffffffffL, 0x01, 0x2, 0x03},
+        };
 
     for (long[] values : testValues) {
-      for (String op : new String[]{"shl", "shr", "ushr"}) {
+      for (String op : new String[] {"shl", "shr", "ushr"}) {
         testBuilder.addTest(
             this::shiftOperatorWideMethodBuilder,
             this::shiftOperatorWideMethodChecker,
@@ -613,7 +618,10 @@ public class ConstantFoldingTest extends SmaliTestBase {
 
   private void notIntMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     Integer value = (Integer) parameters;
-    builder.addStaticMethod("int", name, Collections.emptyList(),
+    builder.addStaticMethod(
+        "int",
+        name,
+        Collections.emptyList(),
         1,
         "    const v0, " + value,
         "    not-int v0, v0",
@@ -635,7 +643,10 @@ public class ConstantFoldingTest extends SmaliTestBase {
 
   private void notLongMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     Long value = (Long) parameters;
-    builder.addStaticMethod("long", name, Collections.emptyList(),
+    builder.addStaticMethod(
+        "long",
+        name,
+        Collections.emptyList(),
         2,
         "    const-wide v0, 0x" + Long.toHexString(value) + "L",
         "    not-long v0, v0",
@@ -652,19 +663,23 @@ public class ConstantFoldingTest extends SmaliTestBase {
 
   private void addNotLongFoldTests(SmaliBuilderWithCheckers testBuilder) {
     ImmutableList.of(
-        0L,
-        1L,
-        0xffL,
-        0xffffffffffffffffL,
-        0x00ffffffffffffffL,
-        0xff00000000000000L,
-        0x8000000000000000L
-    ).forEach(v -> testBuilder.addTest(this::notLongMethodBuilder, this::notLongMethodChecker, v));
+            0L,
+            1L,
+            0xffL,
+            0xffffffffffffffffL,
+            0x00ffffffffffffffL,
+            0xff00000000000000L,
+            0x8000000000000000L)
+        .forEach(
+            v -> testBuilder.addTest(this::notLongMethodBuilder, this::notLongMethodChecker, v));
   }
 
   private void negIntMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     Integer value = (Integer) parameters;
-    builder.addStaticMethod("int", name, Collections.emptyList(),
+    builder.addStaticMethod(
+        "int",
+        name,
+        Collections.emptyList(),
         1,
         "    const v0, " + value,
         "    neg-int v0, v0",
@@ -687,7 +702,9 @@ public class ConstantFoldingTest extends SmaliTestBase {
   private void negLongMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     Long value = (Long) parameters;
     builder.addStaticMethod(
-        "long", name, Collections.emptyList(),
+        "long",
+        name,
+        Collections.emptyList(),
         2,
         "    const-wide v0, 0x" + Long.toHexString(value) + "L",
         "    neg-long v0, v0",
@@ -704,14 +721,15 @@ public class ConstantFoldingTest extends SmaliTestBase {
 
   private void addNegLongFoldTests(SmaliBuilderWithCheckers testBuilder) {
     ImmutableList.of(
-        0L,
-        1L,
-        0xffL,
-        0xffffffffffffffffL,
-        0x00ffffffffffffffL,
-        0xff00000000000000L,
-        0x8000000000000000L
-    ).forEach(v -> testBuilder.addTest(this::negLongMethodBuilder, this::negLongMethodChecker, v));
+            0L,
+            1L,
+            0xffL,
+            0xffffffffffffffffL,
+            0x00ffffffffffffffL,
+            0xff00000000000000L,
+            0x8000000000000000L)
+        .forEach(
+            v -> testBuilder.addTest(this::negLongMethodBuilder, this::negLongMethodChecker, v));
   }
 
   class FloatTestData {
@@ -728,13 +746,27 @@ public class ConstantFoldingTest extends SmaliTestBase {
       this.type = type;
       this.bias = bias;
       switch (type) {
-        case EQ: expected = a == b; break;
-        case NE: expected = a != b; break;
-        case LE: expected = a <= b; break;
-        case GE: expected = a >= b; break;
-        case LT: expected = a < b; break;
-        case GT: expected = a > b; break;
-        default: expected = false; assert false;
+        case EQ:
+          expected = a == b;
+          break;
+        case NE:
+          expected = a != b;
+          break;
+        case LE:
+          expected = a <= b;
+          break;
+        case GE:
+          expected = a >= b;
+          break;
+        case LT:
+          expected = a < b;
+          break;
+        case GT:
+          expected = a > b;
+          break;
+        default:
+          expected = false;
+          assert false;
       }
     }
   }
@@ -776,20 +808,15 @@ public class ConstantFoldingTest extends SmaliTestBase {
     FloatTestData test = (FloatTestData) parameters;
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
-    assertConstValue(test.expected ? 1: 0, code.instructions[0]);
+    assertConstValue(test.expected ? 1 : 0, code.instructions[0]);
     assertTrue(code.instructions[1] instanceof DexReturn);
   }
 
   private void addCmpFloatFoldTests(SmaliBuilderWithCheckers testBuilder) {
-    float[] testValues = new float[]{
-        Float.NEGATIVE_INFINITY,
-        -100.0f,
-        -0.0f,
-        0.0f,
-        100.0f,
-        Float.POSITIVE_INFINITY,
-        Float.NaN
-    };
+    float[] testValues =
+        new float[] {
+          Float.NEGATIVE_INFINITY, -100.0f, -0.0f, 0.0f, 100.0f, Float.POSITIVE_INFINITY, Float.NaN
+        };
 
     // Build the test configuration.
     for (int i = 0; i < testValues.length; i++) {
@@ -839,13 +866,27 @@ public class ConstantFoldingTest extends SmaliTestBase {
       this.type = type;
       this.bias = bias;
       switch (type) {
-        case EQ: expected = a == b; break;
-        case NE: expected = a != b; break;
-        case LE: expected = a <= b; break;
-        case GE: expected = a >= b; break;
-        case LT: expected = a < b; break;
-        case GT: expected = a > b; break;
-        default: expected = false; assert false;
+        case EQ:
+          expected = a == b;
+          break;
+        case NE:
+          expected = a != b;
+          break;
+        case LE:
+          expected = a <= b;
+          break;
+        case GE:
+          expected = a >= b;
+          break;
+        case LT:
+          expected = a < b;
+          break;
+        case GT:
+          expected = a > b;
+          break;
+        default:
+          expected = false;
+          assert false;
       }
     }
   }
@@ -866,7 +907,11 @@ public class ConstantFoldingTest extends SmaliTestBase {
     } else {
       cmpInstruction = "    cmpg-double v0, v0, v2";
     }
-    builder.addStaticMethod("int", name, Collections.emptyList(), 4,
+    builder.addStaticMethod(
+        "int",
+        name,
+        Collections.emptyList(),
+        4,
         "    const-wide v0, 0x" + Long.toHexString(Double.doubleToRawLongBits(test.a)) + "L",
         "    const-wide v2, 0x" + Long.toHexString(Double.doubleToRawLongBits(test.b)) + "L",
         cmpInstruction,
@@ -876,28 +921,28 @@ public class ConstantFoldingTest extends SmaliTestBase {
         "    return v0",
         ":label_2",
         "  const v0, 1",
-        "  goto :label_1"
-    );
+        "  goto :label_1");
   }
 
   private void cmpDoubleMethodChecker(DexEncodedMethod method, Object parameters) {
     DoubleTestData test = (DoubleTestData) parameters;
     DexCode code = method.getCode().asDexCode();
     assertEquals(2, code.instructions.length);
-    assertConstValue(test.expected ? 1: 0, code.instructions[0]);
+    assertConstValue(test.expected ? 1 : 0, code.instructions[0]);
     assertTrue(code.instructions[1] instanceof DexReturn);
   }
 
   private void addCmpDoubleFoldTests(SmaliBuilderWithCheckers testBuilder) {
-    double[] testValues = new double[]{
-        Double.NEGATIVE_INFINITY,
-        -100.0f,
-        -0.0f,
-        0.0f,
-        100.0f,
-        Double.POSITIVE_INFINITY,
-        Double.NaN
-    };
+    double[] testValues =
+        new double[] {
+          Double.NEGATIVE_INFINITY,
+          -100.0f,
+          -0.0f,
+          0.0f,
+          100.0f,
+          Double.POSITIVE_INFINITY,
+          Double.NaN
+        };
 
     // Build the test configuration.
     for (int i = 0; i < testValues.length; i++) {
@@ -935,7 +980,9 @@ public class ConstantFoldingTest extends SmaliTestBase {
   private void cmpLongMethodBuilder(SmaliBuilder builder, String name, Object parameters) {
     long[] values = (long[]) (parameters);
     builder.addStaticMethod(
-        "int", name, Collections.emptyList(),
+        "int",
+        name,
+        Collections.emptyList(),
         4,
         "    const-wide v0, 0x" + Long.toHexString(values[0]) + "L",
         "    const-wide v2, 0x" + Long.toHexString(values[1]) + "L",
@@ -953,13 +1000,14 @@ public class ConstantFoldingTest extends SmaliTestBase {
 
   private void addCmpLongFold(SmaliBuilderWithCheckers testBuilder) {
     ImmutableList.of(
-        new long[]{Long.MIN_VALUE, 1L},
-        new long[]{Long.MAX_VALUE, 1L},
-        new long[]{Long.MIN_VALUE, 0L},
-        new long[]{Long.MAX_VALUE, 0L},
-        new long[]{Long.MIN_VALUE, -1L},
-        new long[]{Long.MAX_VALUE, -1L}
-    ).forEach(v -> testBuilder.addTest(this::cmpLongMethodBuilder, this::cmpLongMethodChecker, v));
+            new long[] {Long.MIN_VALUE, 1L},
+            new long[] {Long.MAX_VALUE, 1L},
+            new long[] {Long.MIN_VALUE, 0L},
+            new long[] {Long.MAX_VALUE, 0L},
+            new long[] {Long.MIN_VALUE, -1L},
+            new long[] {Long.MAX_VALUE, -1L})
+        .forEach(
+            v -> testBuilder.addTest(this::cmpLongMethodBuilder, this::cmpLongMethodChecker, v));
   }
 
   @Test
@@ -982,5 +1030,4 @@ public class ConstantFoldingTest extends SmaliTestBase {
     runDex2Oat(testBuilder.builder.build());
     testBuilder.run();
   }
-
 }
