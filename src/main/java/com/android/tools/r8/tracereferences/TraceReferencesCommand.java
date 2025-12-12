@@ -26,6 +26,7 @@ import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ProgramResourceProviderUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.google.common.collect.ImmutableList;
@@ -251,22 +252,6 @@ public class TraceReferencesCommand {
       };
     }
 
-    private static ProgramResourceProvider singleDexFileProgramResourceProvider(Path file) {
-      ProgramResource programResource = ProgramResource.fromFile(Kind.DEX, file);
-      return new ProgramResourceProvider() {
-
-        @Override
-        public Collection<ProgramResource> getProgramResources() {
-          return Collections.singletonList(programResource);
-        }
-
-        @Override
-        public void getProgramResources(Consumer<ProgramResource> consumer) {
-          consumer.accept(programResource);
-        }
-      };
-    }
-
     private void addLibraryOrTargetFile(
         Path file, ImmutableList.Builder<ClassFileResourceProvider> builder) {
       if (!Files.exists(file)) {
@@ -307,7 +292,9 @@ public class TraceReferencesCommand {
           error(new ExceptionDiagnostic(e));
         }
       } else if (isDexFile(file)) {
-        traceSourceBuilder.add(singleDexFileProgramResourceProvider(file));
+        traceSourceBuilder.add(
+            ProgramResourceProviderUtils.createSingleResourceProvider(
+                ProgramResource.fromFile(Kind.DEX, file)));
       } else {
         error(new StringDiagnostic("Unsupported source file type", new PathOrigin(file)));
       }

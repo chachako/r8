@@ -9,9 +9,29 @@ import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.errors.Unimplemented;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Consumer;
 
 public class ProgramResourceProviderUtils {
+  private static class SingleProgramResourceProvider implements ProgramResourceProvider {
+
+    private final ProgramResource programResource;
+
+    SingleProgramResourceProvider(ProgramResource programResource) {
+      this.programResource = programResource;
+    }
+
+    @Override
+    public Collection<ProgramResource> getProgramResources() {
+      return Collections.singletonList(programResource);
+    }
+
+    @Override
+    public void getProgramResources(Consumer<ProgramResource> consumer) {
+      consumer.accept(programResource);
+    }
+  }
 
   public static void forEachProgramResourceCompat(
       ProgramResourceProvider programResourceProvider, Consumer<ProgramResource> fn)
@@ -30,5 +50,10 @@ public class ProgramResourceProviderUtils {
       unimplementedHandler.accept(programResourceProvider);
       programResourceProvider.getProgramResources().forEach(fn);
     }
+  }
+
+  public static ProgramResourceProvider createSingleResourceProvider(
+      ProgramResource programResource) {
+    return new SingleProgramResourceProvider(programResource);
   }
 }

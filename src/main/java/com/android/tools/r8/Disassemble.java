@@ -20,6 +20,7 @@ import com.android.tools.r8.utils.ConsumerUtils;
 import com.android.tools.r8.utils.FieldReferenceUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.MethodReferenceUtils;
+import com.android.tools.r8.utils.ProgramResourceProviderUtils;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
@@ -31,7 +32,6 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -354,7 +354,9 @@ public class Disassemble {
       LazyLoadedDexApplication application =
           new ApplicationReader(
                   AndroidApp.builder()
-                      .addProgramResourceProvider(() -> Collections.singletonList(programResource))
+                      .addProgramResourceProvider(
+                          ProgramResourceProviderUtils.createSingleResourceProvider(
+                              programResource))
                       .build(),
                   options,
                   Timing.empty())
