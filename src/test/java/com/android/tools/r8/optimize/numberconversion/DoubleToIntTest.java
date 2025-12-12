@@ -48,6 +48,7 @@ public class DoubleToIntTest extends NumberConversionTestBase {
           -Double.MAX_VALUE,
           -Double.MIN_VALUE,
           Double.NaN,
+          Double.longBitsToDouble(0xFFFFFFFFFFFFFFFFL),
           Double.POSITIVE_INFINITY,
           Double.NEGATIVE_INFINITY
         },

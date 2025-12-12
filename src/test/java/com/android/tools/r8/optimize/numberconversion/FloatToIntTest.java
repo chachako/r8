@@ -41,6 +41,7 @@ public class FloatToIntTest extends NumberConversionTestBase {
           -Float.MAX_VALUE,
           -Float.MIN_VALUE,
           Float.NaN,
+          Float.intBitsToFloat(0xFFFFFFFF), // Non-canonical NaN
           Float.POSITIVE_INFINITY,
           Float.NEGATIVE_INFINITY
         },

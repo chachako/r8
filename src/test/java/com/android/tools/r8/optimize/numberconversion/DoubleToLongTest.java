@@ -41,6 +41,7 @@ public class DoubleToLongTest extends NumberConversionTestBase {
           (double) -Float.MAX_VALUE,
           (double) -Float.MIN_VALUE,
           (double) Float.NaN,
+          (double) Float.intBitsToFloat(0xFFFFFFFF),
           (double) Float.POSITIVE_INFINITY,
           (double) Float.NEGATIVE_INFINITY,
           Double.MAX_VALUE,
@@ -48,6 +49,7 @@ public class DoubleToLongTest extends NumberConversionTestBase {
           -Double.MAX_VALUE,
           -Double.MIN_VALUE,
           Double.NaN,
+          Double.longBitsToDouble(0xFFFFFFFFFFFFFFFFL),
           Double.POSITIVE_INFINITY,
           Double.NEGATIVE_INFINITY
         },

@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.optimize.numberconversion;
 
+import static org.junit.Assume.assumeFalse;
+
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.ir.code.NumericType;
 import java.util.List;
@@ -13,7 +15,7 @@ import org.junit.runners.Parameterized;
 import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
-public class FloatToLongTest extends NumberConversionTestBase {
+public class FloatToDoubleTest extends NumberConversionTestBase {
 
   @Parameterized.Parameter(0)
   public float input;
@@ -42,6 +44,9 @@ public class FloatToLongTest extends NumberConversionTestBase {
           -Float.MIN_VALUE,
           Float.NaN,
           Float.intBitsToFloat(0xFFFFFFFF), // Non-canonical NaN
+          Float.intBitsToFloat(0xFFFFF00F), // Non-canonical NaN
+          Float.intBitsToFloat(0x7F900000), // Non-canonical NaN
+          Float.intBitsToFloat(0x7FBFFFFF), // Non-canonical NaN
           Float.POSITIVE_INFINITY,
           Float.NEGATIVE_INFINITY
         },
@@ -49,18 +54,32 @@ public class FloatToLongTest extends NumberConversionTestBase {
   }
 
   @Test
-  public void test() throws Exception {
-    // Subtraction is used to verify the internal state of constants rather than just the output
-    // instructions. This avoids the situation where the input is not truncated during optimization,
-    // but is still truncated in the final instructions because of typed extraction.
+  public void testBitwise() throws Exception {
+    // Check that input is bitwise preserved.
     testConversion(
         mv -> {
           mv.visitLdcInsn(input);
-          mv.visitInsn(Opcodes.F2L);
-          mv.visitLdcInsn((long) input);
-          mv.visitInsn(Opcodes.LSUB);
+          mv.visitInsn(Opcodes.F2D);
         },
-        NumericType.LONG,
+        NumericType.DOUBLE,
+        Double.doubleToRawLongBits((double) input));
+  }
+
+  @Test
+  public void testCompare() throws Exception {
+    // DCMPG returns 1 if any of the inputs are NaN.
+    assumeFalse(Double.isNaN(input));
+    // Comparison is used to verify the internal state of constants rather than just the output
+    // instructions. This avoids the situation where the input is not truncated during
+    // optimization, but is still truncated in the final instructions because of typed extraction.
+    testConversion(
+        mv -> {
+          mv.visitLdcInsn(input);
+          mv.visitInsn(Opcodes.F2D);
+          mv.visitLdcInsn((double) input);
+          mv.visitInsn(Opcodes.DCMPG);
+        },
+        NumericType.INT,
         0);
   }
 }
