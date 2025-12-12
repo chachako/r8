@@ -207,6 +207,9 @@ public class NumberConversion extends Unop {
       case DOUBLE_TO_LONG:
         long rawDoubleToLongValue = (long) num.getDoubleValue();
         return valueFactory.createSingleNumberValue(rawDoubleToLongValue, typeElement);
+      case DOUBLE_TO_FLOAT:
+        long rawDoubleToFloatValue = LongUtils.encodeFloat((float) num.getDoubleValue());
+        return valueFactory.createSingleNumberValue(rawDoubleToFloatValue, typeElement);
       default:
         return super.getAbstractValue(appView, context, abstractValueSupplier);
     }

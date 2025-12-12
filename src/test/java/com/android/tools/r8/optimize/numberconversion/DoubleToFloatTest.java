@@ -16,10 +16,10 @@ import org.junit.runners.Parameterized;
 import org.objectweb.asm.Opcodes;
 
 @RunWith(Parameterized.class)
-public class FloatToDoubleTest extends NumberConversionTestBase {
+public class DoubleToFloatTest extends NumberConversionTestBase {
 
   @Parameterized.Parameter(0)
-  public float input;
+  public double input;
 
   @Parameterized.Parameter(1)
   public TestParameters parameters;
@@ -27,29 +27,29 @@ public class FloatToDoubleTest extends NumberConversionTestBase {
   @Parameterized.Parameters(name = "{0}, {1}")
   public static List<Object[]> data() {
     return buildParameters(
-        new Float[] {
-          128.12F,
-          65408.61623F,
-          -65408.61623F,
-          32768.574F,
-          -32768.574F,
-          42F,
-          -32F,
-          0F,
-          -0F,
-          (float) Integer.MAX_VALUE,
-          (float) Integer.MIN_VALUE,
-          Float.MAX_VALUE,
-          Float.MIN_VALUE,
-          -Float.MAX_VALUE,
-          -Float.MIN_VALUE,
-          Float.NaN,
-          Float.intBitsToFloat(0xFFFFFFFF), // Non-canonical NaN
-          Float.intBitsToFloat(0xFFFFF00F), // Non-canonical NaN
-          Float.intBitsToFloat(0x7F900000), // Non-canonical NaN
-          Float.intBitsToFloat(0x7FBFFFFF), // Non-canonical NaN
-          Float.POSITIVE_INFINITY,
-          Float.NEGATIVE_INFINITY
+        new Double[] {
+          128.12D,
+          65408.61623D,
+          -65408.61623D,
+          32768.574D,
+          -32768.574D,
+          42D,
+          -32D,
+          0D,
+          -0D,
+          (double) Integer.MAX_VALUE,
+          (double) Integer.MIN_VALUE,
+          Double.MAX_VALUE,
+          Double.MIN_VALUE,
+          -Double.MAX_VALUE,
+          -Double.MIN_VALUE,
+          Double.NaN,
+          Double.longBitsToDouble(0xFFFFFFFFFFFFFFFFL), // Non-canonical NaN
+          Double.longBitsToDouble(0xFFFFF0000000000FL), // Non-canonical NaN
+          Double.longBitsToDouble(0x7F90000000000000L), // Non-canonical NaN
+          Double.longBitsToDouble(0x7FBFFFFFFFFFFFFFL), // Non-canonical NaN
+          Double.POSITIVE_INFINITY,
+          Double.NEGATIVE_INFINITY
         },
         TestParameters.builder().withNoneRuntime().build());
   }
@@ -60,25 +60,25 @@ public class FloatToDoubleTest extends NumberConversionTestBase {
     testConversion(
         mv -> {
           mv.visitLdcInsn(input);
-          mv.visitInsn(Opcodes.F2D);
+          mv.visitInsn(Opcodes.D2F);
         },
-        NumericType.DOUBLE,
-        LongUtils.encodeDouble((double) input));
+        NumericType.FLOAT,
+        LongUtils.encodeFloat((float) input));
   }
 
   @Test
   public void testCompare() throws Exception {
-    // DCMPG returns 1 if any of the inputs are NaN.
-    assumeFalse(Float.isNaN(input));
+    // FCMPG returns 1 if any of the inputs are NaN.
+    assumeFalse(Double.isNaN(input));
     // Comparison is used to verify the internal state of constants rather than just the output
     // instructions. This avoids the situation where the input is not truncated during
     // optimization, but is still truncated in the final instructions because of typed extraction.
     testConversion(
         mv -> {
           mv.visitLdcInsn(input);
-          mv.visitInsn(Opcodes.F2D);
-          mv.visitLdcInsn((double) input);
-          mv.visitInsn(Opcodes.DCMPG);
+          mv.visitInsn(Opcodes.D2F);
+          mv.visitLdcInsn((float) input);
+          mv.visitInsn(Opcodes.FCMPG);
         },
         NumericType.INT,
         0);
