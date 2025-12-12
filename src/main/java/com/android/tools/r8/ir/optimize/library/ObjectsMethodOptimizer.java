@@ -129,6 +129,8 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
               .setOutValue(invoke.outValue())
               .setArguments(ImmutableList.of(aValue, bValue))
               .build());
+    } else {
+      // TODO(b/465869067): Convert to == when no override exists.
     }
   }
 
