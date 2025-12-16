@@ -4,9 +4,12 @@
 
 package com.android.tools.r8.ir.optimize.membervaluepropagation;
 
+import static org.junit.Assert.assertTrue;
+
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -25,12 +28,32 @@ public class JavaVmNameSystemPropertyPropagationTest extends TestBase {
   }
 
   @Test
+  public void testD8() throws Exception {
+    testForD8(parameters)
+        .addInnerClasses(getClass())
+        .release()
+        .compile()
+        .run(parameters.getRuntime(), Main.class)
+        .assertSuccessWithOutputLines("Dalvik");
+  }
+
+  @Test
   public void testR8() throws Exception {
     testForR8(parameters)
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
-        .setMinApi(parameters)
+        // TODO(b/450537181): Consider making this default in R8.
+        .addKeepRules(
+            "-assumenosideeffects class java.lang.System {",
+            "  java.lang.String getProperty(java.lang.String = \"java.vm.name\")"
+                + " return \"Dalvik\";",
+            "}")
         .compile()
+        .inspect(
+            inspector -> {
+              MethodSubject mainMethod = inspector.clazz(Main.class).mainMethod();
+              assertTrue(mainMethod.streamInstructions().anyMatch(i -> i.isConstString("Dalvik")));
+            })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Dalvik");
   }
@@ -38,7 +61,6 @@ public class JavaVmNameSystemPropertyPropagationTest extends TestBase {
   static class Main {
 
     public static void main(String[] args) {
-      // TODO(b/450537181): Consider optimizing this into a const string.
       System.out.println(System.getProperty("java.vm.name"));
     }
   }
