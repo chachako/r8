@@ -30,6 +30,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.startup.profile.ExternalStartupClass;
 import com.android.tools.r8.startup.profile.ExternalStartupItem;
 import com.android.tools.r8.startup.utils.StartupTestingUtils;
+import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.io.IOException;
@@ -50,6 +51,7 @@ public class R8BuildMetadataTest extends TestBase {
       ExternalArtProfile.builder().addClassRule(mainReference).build();
   private static final List<ExternalStartupItem> startupProfile =
       ImmutableList.of(ExternalStartupClass.builder().setClassReference(mainReference).build());
+  private static final String versionString = "99.99.99";
 
   @Parameter(0)
   public TestParameters parameters;
@@ -65,6 +67,7 @@ public class R8BuildMetadataTest extends TestBase {
         testForR8(parameters)
             .addKeepMainRule(Main.class)
             .apply(this::configure)
+            .addOptionsModification(this::configureVersion)
             .applyIf(
                 parameters.isDexRuntime(),
                 testBuilder -> testBuilder.addKeepMainRule(FeatureSplitMain.class))
@@ -82,7 +85,7 @@ public class R8BuildMetadataTest extends TestBase {
     String json = buildMetadata.toJson();
     // Inspecting the exact contents is not important here, but it *is* important to test that the
     // property names are unobfuscated when testing with R8lib (!).
-    assertThat(json, containsString("\"version\":\"" + Version.LABEL + "\""));
+    assertThat(json, containsString("\"version\":\"" + versionString + "\""));
     buildMetadata = R8BuildMetadata.fromJson(json);
     inspectDeserializedBuildMetadata(buildMetadata, false);
   }
@@ -99,6 +102,7 @@ public class R8BuildMetadataTest extends TestBase {
                         .addJavaTypeIncludePattern("kotlin.**")
                         .addJavaTypeIncludePattern("kotlinx.**"))
             .apply(this::configure)
+            .addR8PartialR8OptionsModification(this::configureVersion)
             .compileWithExpectedDiagnostics(
                 diagnostics ->
                     diagnostics.assertInfosMatch(
@@ -108,7 +112,7 @@ public class R8BuildMetadataTest extends TestBase {
     System.out.println(json);
     // Inspecting the exact contents is not important here, but it *is* important to test that the
     // property names are unobfuscated when testing with R8lib (!).
-    assertThat(json, containsString("\"version\":\"" + Version.LABEL + "\""));
+    assertThat(json, containsString("\"version\":\"" + versionString + "\""));
     buildMetadata = R8BuildMetadata.fromJson(json);
     inspectDeserializedBuildMetadata(buildMetadata, true);
   }
@@ -117,12 +121,6 @@ public class R8BuildMetadataTest extends TestBase {
     builder
         .addProgramClasses(Main.class, PostStartup.class)
         .addArtProfileForRewriting(artProfile)
-        // To avoid stripping of R8 stats metadata.
-        .addOptionsModification(
-            options -> {
-              assertEquals(Version.LABEL, options.buildMetadataVersion);
-              options.buildMetadataVersion = "99.99.99";
-            })
         .allowDiagnosticInfoMessages(parameters.canUseNativeMultidex())
         .applyIf(
             parameters.isDexRuntime(),
@@ -138,6 +136,12 @@ public class R8BuildMetadataTest extends TestBase {
                     .enableIsolatedSplits(true)
                     .enableOptimizedShrinking())
         .collectBuildMetadata();
+  }
+
+  private void configureVersion(InternalOptions options) {
+    // To avoid stripping of R8 stats metadata.
+    assertEquals(Version.LABEL, options.buildMetadataVersion);
+    options.buildMetadataVersion = versionString;
   }
 
   private AndroidTestResource getTestResources() throws IOException {
@@ -240,7 +244,7 @@ public class R8BuildMetadataTest extends TestBase {
     // Stats metadata.
     assertNotNull(buildMetadata.getStatsMetadata());
     // Version metadata.
-    assertEquals("99.99.99", buildMetadata.getVersion());
+    assertEquals(versionString, buildMetadata.getVersion());
   }
 
   static class Main {
