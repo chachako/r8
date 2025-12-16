@@ -20,6 +20,7 @@ import com.android.tools.r8.metadata.R8ResourceOptimizationMetadata;
 import com.android.tools.r8.metadata.R8StartupOptimizationMetadata;
 import com.android.tools.r8.metadata.R8StatsMetadata;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.SemanticVersion;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -84,12 +85,47 @@ public class R8BuildMetadataImpl implements R8BuildMetadata {
     this.optionsMetadata = options;
     this.baselineProfileRewritingMetadata = baselineProfileRewritingOptions;
     this.dexFilesMetadata = dexFilesMetadata;
-    this.statsMetadata = statsMetadata;
+    this.statsMetadata = canHaveOverflowInStatsMetadata(version) ? null : statsMetadata;
     this.featureSplitsMetadata = featureSplitsMetadata;
     this.partialCompilationMetadata = partialCompilationMetadata;
     this.resourceOptimizationMetadata = resourceOptimizationMetadata;
     this.startupOptimizationMetadata = startupOptimizationMetadata;
     this.version = version;
+  }
+
+  public static boolean canHaveOverflowInStatsMetadata(String version) {
+    try {
+      SemanticVersion semanticVersion = SemanticVersion.parse(version);
+      switch (semanticVersion.getMajor()) {
+        case 8:
+          switch (semanticVersion.getMinor()) {
+            case 10:
+              // Fixed in 8.10.33.
+              return semanticVersion.getPatch() < 33;
+            case 11:
+              // Fixed in 8.11.23.
+              return semanticVersion.getPatch() < 23;
+            case 12:
+              // Fixed in 8.12.19.
+              return semanticVersion.getPatch() < 19;
+            case 13:
+              // Fixed in 8.13.4.
+              return semanticVersion.getPatch() < 4;
+            default:
+              // R8 build metadata was only available in R8 8.10, so this should always be false.
+              return semanticVersion.getMinor() < 10;
+          }
+        case 9:
+          // Fixed in 9.0.1-dev.
+          return semanticVersion.getMinor() == 0 && semanticVersion.getPatch() == 0;
+        default:
+          // R8 build metadata was only available in R8 8, so this should always be false.
+          return semanticVersion.getMajor() < 8;
+      }
+    } catch (Exception e) {
+      // Conservatively return true, for example, if the build metadata is from a main build.
+      return true;
+    }
   }
 
   public static Builder builder() {

@@ -58,7 +58,7 @@ public class BuildMetadataFactory {
         .setResourceOptimizationOptions(R8ResourceOptimizationMetadataImpl.create(options))
         .setStartupOptimizationOptions(R8StartupOptimizationMetadataImpl.create(options))
         .setStatsMetadata(R8StatsMetadataImpl.create(appView))
-        .setVersion(Version.LABEL)
+        .setVersion(appView.options().buildMetadataVersion)
         .build();
   }
 }

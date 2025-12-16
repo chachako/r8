@@ -80,7 +80,6 @@ public class R8BuildMetadataTest extends TestBase {
                 })
             .getBuildMetadata();
     String json = buildMetadata.toJson();
-    System.out.println(json);
     // Inspecting the exact contents is not important here, but it *is* important to test that the
     // property names are unobfuscated when testing with R8lib (!).
     assertThat(json, containsString("\"version\":\"" + Version.LABEL + "\""));

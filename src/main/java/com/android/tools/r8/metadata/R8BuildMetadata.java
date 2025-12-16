@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.metadata;
 
+import static com.android.tools.r8.metadata.impl.R8BuildMetadataImpl.canHaveOverflowInStatsMetadata;
+
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.metadata.impl.R8ApiModelingMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8BaselineProfileRewritingMetadataImpl;
@@ -26,39 +28,57 @@ import java.util.List;
 public interface R8BuildMetadata {
 
   static R8BuildMetadata fromJson(String json) {
-    return new GsonBuilder()
-        .excludeFieldsWithoutExposeAnnotation()
-        .registerTypeAdapter(R8OptionsMetadata.class, deserializeTo(R8OptionsMetadataImpl.class))
-        .registerTypeAdapter(
-            R8ApiModelingMetadata.class, deserializeTo(R8ApiModelingMetadataImpl.class))
-        .registerTypeAdapter(
-            R8BaselineProfileRewritingMetadata.class,
-            deserializeTo(R8BaselineProfileRewritingMetadataImpl.class))
-        .registerTypeAdapter(R8DexFileMetadata.class, deserializeTo(R8DexFileMetadataImpl.class))
-        .registerTypeAdapter(R8StatsMetadata.class, deserializeTo(R8StatsMetadataImpl.class))
-        .registerTypeAdapter(
-            R8FeatureSplitMetadata.class, deserializeTo(R8FeatureSplitMetadataImpl.class))
-        .registerTypeAdapter(
-            R8FeatureSplitsMetadata.class, deserializeTo(R8FeatureSplitsMetadataImpl.class))
-        .registerTypeAdapter(
-            R8KeepAttributesMetadata.class, deserializeTo(R8KeepAttributesMetadataImpl.class))
-        .registerTypeAdapter(
-            R8LibraryDesugaringMetadata.class, deserializeTo(R8LibraryDesugaringMetadataImpl.class))
-        .registerTypeAdapter(
-            R8PartialCompilationMetadata.class,
-            deserializeTo(R8PartialCompilationMetadataImpl.class))
-        .registerTypeAdapter(
-            R8PartialCompilationStatsMetadata.class,
-            deserializeTo(R8PartialCompilationStatsMetadataImpl.class))
-        .registerTypeAdapter(
-            R8ResourceOptimizationMetadata.class,
-            deserializeTo(R8ResourceOptimizationMetadataImpl.class))
-        .registerTypeAdapter(
-            R8StartupOptimizationMetadata.class,
-            deserializeTo(R8StartupOptimizationMetadataImpl.class))
-        .serializeNulls()
-        .create()
-        .fromJson(json, R8BuildMetadataImpl.class);
+    R8BuildMetadataImpl buildMetadata =
+        new GsonBuilder()
+            .excludeFieldsWithoutExposeAnnotation()
+            .registerTypeAdapter(
+                R8OptionsMetadata.class, deserializeTo(R8OptionsMetadataImpl.class))
+            .registerTypeAdapter(
+                R8ApiModelingMetadata.class, deserializeTo(R8ApiModelingMetadataImpl.class))
+            .registerTypeAdapter(
+                R8BaselineProfileRewritingMetadata.class,
+                deserializeTo(R8BaselineProfileRewritingMetadataImpl.class))
+            .registerTypeAdapter(
+                R8DexFileMetadata.class, deserializeTo(R8DexFileMetadataImpl.class))
+            .registerTypeAdapter(R8StatsMetadata.class, deserializeTo(R8StatsMetadataImpl.class))
+            .registerTypeAdapter(
+                R8FeatureSplitMetadata.class, deserializeTo(R8FeatureSplitMetadataImpl.class))
+            .registerTypeAdapter(
+                R8FeatureSplitsMetadata.class, deserializeTo(R8FeatureSplitsMetadataImpl.class))
+            .registerTypeAdapter(
+                R8KeepAttributesMetadata.class, deserializeTo(R8KeepAttributesMetadataImpl.class))
+            .registerTypeAdapter(
+                R8LibraryDesugaringMetadata.class,
+                deserializeTo(R8LibraryDesugaringMetadataImpl.class))
+            .registerTypeAdapter(
+                R8PartialCompilationMetadata.class,
+                deserializeTo(R8PartialCompilationMetadataImpl.class))
+            .registerTypeAdapter(
+                R8PartialCompilationStatsMetadata.class,
+                deserializeTo(R8PartialCompilationStatsMetadataImpl.class))
+            .registerTypeAdapter(
+                R8ResourceOptimizationMetadata.class,
+                deserializeTo(R8ResourceOptimizationMetadataImpl.class))
+            .registerTypeAdapter(
+                R8StartupOptimizationMetadata.class,
+                deserializeTo(R8StartupOptimizationMetadataImpl.class))
+            .serializeNulls()
+            .create()
+            .fromJson(json, R8BuildMetadataImpl.class);
+    if (canHaveOverflowInStatsMetadata(buildMetadata.getVersion())) {
+      // Recreate the build metadata using the constructor to apply workaround.
+      return new R8BuildMetadataImpl(
+          buildMetadata.getOptionsMetadata(),
+          buildMetadata.getBaselineProfileRewritingMetadata(),
+          buildMetadata.getDexFilesMetadata(),
+          buildMetadata.getStatsMetadata(),
+          buildMetadata.getFeatureSplitsMetadata(),
+          buildMetadata.getPartialCompilationMetadata(),
+          buildMetadata.getResourceOptimizationMetadata(),
+          buildMetadata.getStartupOptizationOptions(),
+          buildMetadata.getVersion());
+    }
+    return buildMetadata;
   }
 
   private static <T> JsonDeserializer<T> deserializeTo(Class<T> implClass) {
@@ -97,6 +117,9 @@ public interface R8BuildMetadata {
    */
   R8StartupOptimizationMetadata getStartupOptizationOptions();
 
+  /**
+   * @return null if there is no stats metadata.
+   */
   R8StatsMetadata getStatsMetadata();
 
   String getVersion();

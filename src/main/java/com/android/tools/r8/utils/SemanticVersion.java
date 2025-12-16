@@ -12,6 +12,9 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
       SemanticVersion.create(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
 
   public static SemanticVersion parse(String version) {
+    if (version == null) {
+      throw new IllegalArgumentException("Invalid semantic version: null");
+    }
     int majorEnd = version.indexOf('.');
     if (majorEnd <= 0) {
       throw new IllegalArgumentException("Invalid semantic version: " + version);

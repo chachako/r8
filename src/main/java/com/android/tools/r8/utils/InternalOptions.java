@@ -269,6 +269,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public Consumer<? super D8BuildMetadata> d8BuildMetadataConsumer = null;
   public Consumer<? super R8BuildMetadata> r8BuildMetadataConsumer = null;
+  public String buildMetadataVersion = Version.LABEL;
   public DataResourceConsumer dataResourceConsumer;
   private FeatureSplitConfiguration featureSplitConfiguration;
 
