@@ -117,6 +117,12 @@ public class R8BuildMetadataTest extends TestBase {
     builder
         .addProgramClasses(Main.class, PostStartup.class)
         .addArtProfileForRewriting(artProfile)
+        // To avoid stripping of R8 stats metadata.
+        .addOptionsModification(
+            options -> {
+              assertEquals(Version.LABEL, options.buildMetadataVersion);
+              options.buildMetadataVersion = "99.99.99";
+            })
         .allowDiagnosticInfoMessages(parameters.canUseNativeMultidex())
         .applyIf(
             parameters.isDexRuntime(),
@@ -234,7 +240,7 @@ public class R8BuildMetadataTest extends TestBase {
     // Stats metadata.
     assertNotNull(buildMetadata.getStatsMetadata());
     // Version metadata.
-    assertEquals(Version.LABEL, buildMetadata.getVersion());
+    assertEquals("99.99.99", buildMetadata.getVersion());
   }
 
   static class Main {
