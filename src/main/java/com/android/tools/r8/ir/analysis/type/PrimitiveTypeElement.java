@@ -36,6 +36,7 @@ public abstract class PrimitiveTypeElement extends TypeElement {
     return fromTypeDescriptorChar((char) type.descriptor.content[0], asArrayElementType);
   }
 
+  @Override
   public DexType toDexType(DexItemFactory factory) {
     if (isBoolean()) {
       return factory.booleanType;

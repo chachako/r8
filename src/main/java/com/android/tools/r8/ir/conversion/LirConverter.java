@@ -24,6 +24,7 @@ import com.android.tools.r8.ir.conversion.passes.FilledNewArrayRewriter;
 import com.android.tools.r8.ir.conversion.passes.InitClassRemover;
 import com.android.tools.r8.ir.conversion.passes.OriginalFieldWitnessRemover;
 import com.android.tools.r8.ir.conversion.passes.StoreStoreFenceToInvokeRewriter;
+import com.android.tools.r8.ir.conversion.passes.StringConcatRemover;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.optimize.ConstantCanonicalizer;
@@ -195,6 +196,7 @@ public class LirConverter {
     assert !appView.getSyntheticItems().hasPendingSyntheticClasses();
     assert verifyLirOnly(appView);
     appView.testing().exitLirSupportedPhase();
+
     DeadCodeRemover deadCodeRemover = new DeadCodeRemover(appView);
     String output = appView.options().isGeneratingClassFiles() ? "CF" : "DEX";
     timing.begin("LIR->IR->" + output);
@@ -209,6 +211,7 @@ public class LirConverter {
             new DexItemBasedConstStringRemover(appView),
             new InitClassRemover(appView),
             new RecordInvokeDynamicInvokeCustomRewriter(appView),
+            new StringConcatRemover(appView),
             new FilledNewArrayRewriter(appView));
     TimingMerger merger = timing.beginMerger("LirToOutputFormatConverter", executorService);
     Collection<Collection<Timing>> timings =

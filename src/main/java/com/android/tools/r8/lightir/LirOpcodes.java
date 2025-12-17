@@ -216,6 +216,7 @@ public interface LirOpcodes {
   int ORIGINALFIELDWITNESS = 229;
   int STORESTOREFENCE = 230;
   int OUTLINEMARKER = 231;
+  int STRINGCONCAT = 232;
 
   static String toString(int opcode) {
     switch (opcode) {
@@ -561,6 +562,8 @@ public interface LirOpcodes {
         return "RESOURCENUMBER";
       case OUTLINEMARKER:
         return "OUTLINEMARKER";
+      case STRINGCONCAT:
+        return "STRINGCONCAT";
 
       default:
         throw new Unreachable("Unexpected LIR opcode: " + opcode);

@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.VerifyTypesHelper;
+import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.UnknownValue;
@@ -206,6 +207,11 @@ public class ConstString extends ConstInstruction {
     public Builder setValue(DexString value) {
       this.value = value;
       return this;
+    }
+
+    public Builder setFreshOutValue(AppView<?> appView, ValueFactory valueFactory) {
+      return setFreshOutValue(
+          valueFactory, TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
     }
 
     @Override

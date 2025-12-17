@@ -129,6 +129,10 @@ public class DexItemFactory {
 
   // Internal type containing only the null value.
   public static final DexType nullValueType = new DexType(new DexString("NULL"));
+  public final DexString emptyString = createString("");
+  public final DexString falseString = createString("false");
+  public final DexString trueString = createString("true");
+  public final DexString nullString = createString("null");
 
   public static final DexString unknownTypeName = new DexString("UNKNOWN");
 
@@ -1016,7 +1020,7 @@ public class DexItemFactory {
     DexType boxType = primitiveToBoxed.getOrDefault(type, type);
     DexType primitive = getPrimitiveFromBoxed(boxType);
     if (primitive == null) {
-      throw new Unreachable("Invalid primitive type descriptor: " + type);
+      return null;
     }
     DexProto proto = createProto(boxType, primitive);
     return createMethod(boxType, proto, valueOfMethodName);
@@ -1162,7 +1166,7 @@ public class DexItemFactory {
               stringMembers.substringWithEndIndex,
               stringMembers.concat,
               stringMembers.formatWithLocale,
-              stringMembers.valueOf)
+              stringMembers.valueOfObject)
           .addAll(javaUtilArraysMethods.copyOfMethods)
           .addAll(boxedValueOfMethods())
           .addAll(stringBufferMethods.appendMethods)
@@ -2665,7 +2669,13 @@ public class DexItemFactory {
 
     public final DexMethod format;
     public final DexMethod formatWithLocale;
-    public final DexMethod valueOf;
+    public final DexMethod valueOfBoolean;
+    public final DexMethod valueOfChar;
+    public final DexMethod valueOfInt;
+    public final DexMethod valueOfLong;
+    public final DexMethod valueOfFloat;
+    public final DexMethod valueOfDouble;
+    public final DexMethod valueOfObject;
     public final DexMethod toString;
     public final DexMethod intern;
 
@@ -2732,16 +2742,74 @@ public class DexItemFactory {
               stringDescriptor,
               new DexString[] {localeDescriptor, stringDescriptor, objectArrayDescriptor});
 
-      valueOf = createMethod(stringDescriptor, valueOfMethodName, stringDescriptor, objectArgs);
-      toString = createMethod(
-          stringDescriptor, toStringMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
-      intern = createMethod(
-          stringDescriptor, internMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
+      valueOfBoolean =
+          createMethod(
+              stringDescriptor,
+              valueOfMethodName,
+              stringDescriptor,
+              new DexString[] {booleanDescriptor});
+      valueOfChar =
+          createMethod(
+              stringDescriptor,
+              valueOfMethodName,
+              stringDescriptor,
+              new DexString[] {charDescriptor});
+      valueOfInt = createMethod(stringDescriptor, valueOfMethodName, stringDescriptor, intArgs);
+      valueOfLong =
+          createMethod(
+              stringDescriptor,
+              valueOfMethodName,
+              stringDescriptor,
+              new DexString[] {longDescriptor});
+      valueOfFloat =
+          createMethod(
+              stringDescriptor,
+              valueOfMethodName,
+              stringDescriptor,
+              new DexString[] {floatDescriptor});
+      valueOfDouble =
+          createMethod(
+              stringDescriptor,
+              valueOfMethodName,
+              stringDescriptor,
+              new DexString[] {doubleDescriptor});
+      valueOfObject =
+          createMethod(stringDescriptor, valueOfMethodName, stringDescriptor, objectArgs);
+
+      toString =
+          createMethod(
+              stringDescriptor, toStringMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
+      intern =
+          createMethod(stringDescriptor, internMethodName, stringDescriptor, DexString.EMPTY_ARRAY);
     }
 
     @Override
     public void forEachFinalField(Consumer<DexField> consumer) {
       consumer.accept(CASE_INSENSITIVE_ORDER);
+    }
+
+    public DexMethod getValueOfForDexType(DexType dexType) {
+      switch (dexType.toShorty()) {
+        case 'L':
+        case '[':
+          return valueOfObject;
+        case 'Z':
+          return valueOfBoolean;
+        case 'C':
+          return valueOfChar;
+        case 'F':
+          return valueOfFloat;
+        case 'J':
+          return valueOfLong;
+        case 'D':
+          return valueOfDouble;
+        case 'B':
+        case 'S':
+        case 'I':
+          return valueOfInt;
+        default:
+          throw new Unreachable();
+      }
     }
   }
 
@@ -2894,6 +2962,29 @@ public class DexItemFactory {
     @SuppressWarnings("ReferenceEquality")
     public boolean isAppendCharArrayMethod(DexMethod method) {
       return method == appendCharArray || method == appendSubCharArray;
+    }
+
+    public DexMethod getAppendMethodForType(DexType argType) {
+      switch (argType.toShorty()) {
+        case 'L':
+          return appendObject;
+        case 'Z':
+          return appendBoolean;
+        case 'C':
+          return appendChar;
+        case 'F':
+          return appendFloat;
+        case 'J':
+          return appendLong;
+        case 'D':
+          return appendDouble;
+        case 'B':
+        case 'S':
+        case 'I':
+          return appendInt;
+        default:
+          throw new Unreachable();
+      }
     }
   }
 

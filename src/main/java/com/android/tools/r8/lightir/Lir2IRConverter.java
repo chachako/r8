@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.proto.ArgumentInfo;
@@ -96,6 +97,7 @@ import com.android.tools.r8.ir.code.Shr;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.StoreStoreFence;
+import com.android.tools.r8.ir.code.StringConcat;
 import com.android.tools.r8.ir.code.StringSwitch;
 import com.android.tools.r8.ir.code.Sub;
 import com.android.tools.r8.ir.code.Throw;
@@ -1055,6 +1057,15 @@ public class Lir2IRConverter {
       // The instruction is a move and its type must be computed as that of its source value.
       Value dest = getOutValueForNextInstruction(TypeElement.getBottom());
       addInstruction(new OriginalFieldWitnessInstruction(witness, dest, getValue(value)));
+    }
+
+    @Override
+    public void onStringConcat(DexTypeList argTypes, List<EV> arguments) {
+      Value dest =
+          getOutValueForNextInstruction(
+              TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
+      List<Value> argValues = getValues(arguments);
+      addInstruction(StringConcat.createNormalized(appView, dest, argTypes, argValues));
     }
   }
 }

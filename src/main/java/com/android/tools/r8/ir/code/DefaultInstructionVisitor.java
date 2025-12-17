@@ -360,6 +360,11 @@ public abstract class DefaultInstructionVisitor<T> implements InstructionVisitor
   }
 
   @Override
+  public T visit(StringConcat instruction) {
+    return null;
+  }
+
+  @Override
   public T visit(Throw instruction) {
     return null;
   }

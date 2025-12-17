@@ -13,6 +13,7 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
@@ -467,6 +468,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
   }
 
   public void onOutlineMarker(Outline outline, List<EV> arguments) {
+    onInstruction();
+  }
+
+  public void onStringConcat(DexTypeList argTypes, List<EV> arguments) {
     onInstruction();
   }
 
@@ -1386,6 +1391,13 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
           Outline outline = (Outline) getConstantItem(view.getNextConstantOperand());
           List<EV> arguments = getInvokeInstructionArguments(view);
           onOutlineMarker(outline, arguments);
+          return;
+        }
+      case LirOpcodes.STRINGCONCAT:
+        {
+          DexTypeList argTypes = (DexTypeList) getConstantItem(view.getNextConstantOperand());
+          List<EV> arguments = getInvokeInstructionArguments(view);
+          onStringConcat(argTypes, arguments);
           return;
         }
       default:

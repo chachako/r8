@@ -23,11 +23,13 @@ import com.android.tools.r8.dex.code.DexGoto;
 import com.android.tools.r8.dex.code.DexIfEq;
 import com.android.tools.r8.dex.code.DexInstanceOf;
 import com.android.tools.r8.dex.code.DexInvokeCustom;
+import com.android.tools.r8.dex.code.DexInvokeDirect;
 import com.android.tools.r8.dex.code.DexInvokeVirtual;
 import com.android.tools.r8.dex.code.DexMonitorEnter;
 import com.android.tools.r8.dex.code.DexMonitorExit;
 import com.android.tools.r8.dex.code.DexMove;
 import com.android.tools.r8.dex.code.DexMoveException;
+import com.android.tools.r8.dex.code.DexMoveResultObject;
 import com.android.tools.r8.dex.code.DexNewArray;
 import com.android.tools.r8.dex.code.DexNewInstance;
 import com.android.tools.r8.dex.code.DexNotInt;
@@ -37,8 +39,10 @@ import com.android.tools.r8.dex.code.DexPackedSwitchPayload;
 import com.android.tools.r8.dex.code.DexSget;
 import com.android.tools.r8.dex.code.DexThrow;
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
+import java.util.List;
 
 public class LirSizeEstimation<EV> extends LirParsedInstructionCallback<EV> implements LirOpcodes {
 
@@ -99,11 +103,23 @@ public class LirSizeEstimation<EV> extends LirParsedInstructionCallback<EV> impl
     sizeEstimate += DexFillArrayData.SIZE + DexFillArrayDataPayload.SIZE + 4 + data.length;
   }
 
+  @Override
+  public void onStringConcat(DexTypeList argTypes, List<EV> arguments) {
+    // NewInstance, <init>(), one append() per-args, toString(), MoveResult
+    // TODO(246658291): May want to estimate based on the assumption outlining will take place.
+    sizeEstimate +=
+        DexNewInstance.SIZE
+            + DexInvokeDirect.SIZE
+            + (argTypes.size() + 1) * DexInvokeVirtual.SIZE
+            + DexMoveResultObject.SIZE;
+  }
+
   private int instructionSize(int opcode, LirInstructionView view) {
     switch (opcode) {
       case TABLESWITCH:
       case STRINGSWITCH:
       case NEWARRAYFILLEDDATA:
+      case STRINGCONCAT:
         // The payload instructions use the "parsed callback" to compute the payloads.
         super.onInstructionView(view);
         // The full size is added by the callbacks so return zero here.

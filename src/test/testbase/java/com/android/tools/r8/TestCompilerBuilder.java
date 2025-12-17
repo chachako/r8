@@ -70,10 +70,17 @@ public abstract class TestCompilerBuilder<
         options.getBottomUpOutlinerOptions().enableStringBuilderOutlining = true;
       };
 
-  public static final Consumer<InternalOptions> DEFAULT_D8_OPTIONS = DEFAULT_OPTIONS;
+  public static final Consumer<InternalOptions> DEFAULT_D8_OPTIONS =
+      DEFAULT_OPTIONS.andThen(
+          options -> {
+            options.enableStringConcatInstruction = true;
+          });
 
   public static final Consumer<InternalOptions> DEFAULT_D8_IN_R8_PARTIAL_OPTIONS =
-      DEFAULT_D8_OPTIONS;
+      DEFAULT_D8_OPTIONS.andThen(
+          options -> {
+            options.enableStringConcatInstruction = false;
+          });
 
   public static final Consumer<InternalOptions> DEFAULT_R8_OPTIONS =
       DEFAULT_OPTIONS.andThen(
@@ -102,6 +109,8 @@ public abstract class TestCompilerBuilder<
             // By default, skip tracing of inner classes in trace references of R8 partial.
             // This generally leads to unintended, hidden keep rules in R8 partial tests.
             options.getTraceReferencesOptions().skipInnerClassesForTesting = true;
+            // Required since it's also in DEFAULT_D8_OPTIONS.
+            options.getBottomUpOutlinerOptions().enableStringBuilderOutlining = true;
           });
 
   final Backend backend;
@@ -404,9 +413,9 @@ public abstract class TestCompilerBuilder<
     } else if (isR8PartialTestBuilder()) {
       asR8PartialTestBuilder()
           .addGlobalOptionsModification(
-              o ->
-                  o.getArtProfileOptions()
-                      .setEnableCompletenessCheckForTesting(!isBenchmarkRunner));
+              o -> {
+                o.getArtProfileOptions().setEnableCompletenessCheckForTesting(!isBenchmarkRunner);
+              });
     }
 
     builder.setOptimizeMultidexForLinearAlloc(optimizeMultidexForLinearAlloc);

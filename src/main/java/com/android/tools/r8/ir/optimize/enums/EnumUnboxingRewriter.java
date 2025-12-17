@@ -703,7 +703,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
 
     // Calls to java.lang.String.
     if (invokedMethod.getHolderType() == factory.stringType) {
-      if (invokedMethod == factory.stringMembers.valueOf) {
+      if (invokedMethod == factory.stringMembers.valueOfObject) {
         rewriteStringValueOf(invoke, context, convertedEnums, instructionIterator, eventConsumer);
       }
       return;

@@ -81,4 +81,5 @@ public interface Opcodes {
   int ORIGINAL_FIELD_WITNESS = 72;
   int STORE_STORE_FENCE = 73;
   int OUTLINE_MARKER = 74;
+  int STRING_CONCAT = 75;
 }

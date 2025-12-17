@@ -67,6 +67,9 @@ public class CodeRewriterPassCollection {
     }
     passes.add(new ShareInstanceGetInstructions(appView));
     passes.add(new DivisionOptimizer(appView));
+    if (appView.options().enableStringConcatInstruction) {
+      passes.add(new StringConcatOptimizer(appView));
+    }
     return new CodeRewriterPassCollection(passes);
   }
 
