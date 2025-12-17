@@ -65,7 +65,11 @@
 
     // Chart data provider.
     function getData(filteredCommits) {
-      const labels = filteredCommits.map((c, i) => c.index);
+      const labels = filteredCommits.map((c, i) => {
+        return new Date(c.submitted * 1000).toLocaleDateString('en-US', {
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+      });
       const datasets = getDatasets(filteredCommits);
       return {
         labels: labels,
