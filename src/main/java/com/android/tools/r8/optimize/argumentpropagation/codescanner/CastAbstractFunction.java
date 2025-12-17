@@ -6,8 +6,8 @@ package com.android.tools.r8.optimize.argumentpropagation.codescanner;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
-import java.util.Objects;
 import java.util.function.Function;
 
 public class CastAbstractFunction implements AbstractFunction {
@@ -75,7 +75,7 @@ public class CastAbstractFunction implements AbstractFunction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(inFlow, type);
+    return ObjectUtils.hashLL(inFlow, type);
   }
 
   @Override

@@ -4,7 +4,7 @@
 package com.android.tools.r8.experimental.graphinfo;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 @KeepForApi
 public final class AnnotationGraphNode extends GraphNode {
@@ -41,7 +41,7 @@ public final class AnnotationGraphNode extends GraphNode {
 
   @Override
   public int hashCode() {
-    return Objects.hash(annotatedNode, annotationClassNode);
+    return ObjectUtils.hashLL(annotatedNode, annotationClassNode);
   }
 
   @Override

@@ -21,6 +21,7 @@ import com.android.tools.r8.ir.code.MaterializingInstructionsInfo;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfoFixer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -289,6 +290,6 @@ public class RewrittenPrototypeDescription {
 
   @Override
   public int hashCode() {
-    return Objects.hash(extraParameters, rewrittenReturnInfo, argumentInfoCollection);
+    return ObjectUtils.hashLLL(extraParameters, rewrittenReturnInfo, argumentInfoCollection);
   }
 }

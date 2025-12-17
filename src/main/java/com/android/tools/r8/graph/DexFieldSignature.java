@@ -3,11 +3,11 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
-import java.util.Objects;
 
 public class DexFieldSignature implements StructuralItem<DexFieldSignature> {
 
@@ -62,6 +62,6 @@ public class DexFieldSignature implements StructuralItem<DexFieldSignature> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, type);
+    return ObjectUtils.hashLL(name, type);
   }
 }

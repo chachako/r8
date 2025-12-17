@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class StringBuilderEscapeState extends AbstractState<StringBuilderEscapeState> {
@@ -154,13 +153,13 @@ public class StringBuilderEscapeState extends AbstractState<StringBuilderEscapeS
 
   @Override
   public int hashCode() {
-    return Objects.hash(
+    return ObjectUtils.hashZZLLLL(
+        isBottom(),
+        isEmpty(),
         aliasesToDefinitions,
         definitionsToAliases,
         escaping,
-        liveStringBuilders,
-        isBottom(),
-        isEmpty());
+        liveStringBuilders);
   }
 
   @Override

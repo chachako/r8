@@ -10,6 +10,7 @@ import com.android.tools.r8.position.TextPosition;
 import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.shaking.ProguardKeepRule;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -55,7 +56,7 @@ public final class KeepRuleGraphNode extends GraphNode {
 
   @Override
   public int hashCode() {
-    return Objects.hash(origin, position, content, preconditions);
+    return ObjectUtils.hashLLLL(origin, position, content, preconditions);
   }
 
   public Origin getOrigin() {

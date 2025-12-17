@@ -9,9 +9,8 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
-import com.android.tools.r8.utils.BooleanUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.collect.Multiset;
-import java.util.Objects;
 import java.util.Set;
 
 public class NonEmptyParameterUsage extends ParameterUsage {
@@ -137,15 +136,12 @@ public class NonEmptyParameterUsage extends ParameterUsage {
 
   @Override
   public int hashCode() {
-    int hash =
-        31 * (31 * (31 + castsWithParameter.hashCode()) + fieldsReadFromParameter.hashCode())
-            + methodCallsWithParameterAsReceiver.hashCode();
-    assert hash
-        == Objects.hash(
-            castsWithParameter, fieldsReadFromParameter, methodCallsWithParameterAsReceiver);
-    hash = (hash << 1) | BooleanUtils.intValue(isParameterMutated);
-    hash = (hash << 1) | BooleanUtils.intValue(isParameterReturned);
-    hash = (hash << 1) | BooleanUtils.intValue(isParameterUsedAsLock);
-    return hash;
+    return ObjectUtils.hashZZZLLL(
+        isParameterMutated,
+        isParameterReturned,
+        isParameterUsedAsLock,
+        castsWithParameter,
+        fieldsReadFromParameter,
+        methodCallsWithParameterAsReceiver);
   }
 }

@@ -5,13 +5,13 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.lightir.LirConstant;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 public class OriginalFieldWitness implements LirConstant, StructuralItem<OriginalFieldWitness> {
@@ -67,7 +67,7 @@ public class OriginalFieldWitness implements LirConstant, StructuralItem<Origina
 
   @Override
   public int hashCode() {
-    return Objects.hash(originalField, parent);
+    return ObjectUtils.hashLL(originalField, parent);
   }
 
   @Override

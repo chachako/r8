@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification;
 
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 
@@ -92,6 +93,7 @@ public class EmulatedDispatchMethodDescriptor implements SpecificationDescriptor
 
   @Override
   public int hashCode() {
-    return Objects.hash(interfaceMethod, emulatedDispatchMethod, forwardingMethod, dispatchCases);
+    return ObjectUtils.hashLLLL(
+        interfaceMethod, emulatedDispatchMethod, forwardingMethod, dispatchCases);
   }
 }

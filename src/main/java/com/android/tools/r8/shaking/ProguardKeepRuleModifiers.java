@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.shaking;
 
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class ProguardKeepRuleModifiers {
   public static class Builder {
@@ -162,7 +162,7 @@ public class ProguardKeepRuleModifiers {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
+    return ObjectUtils.hashZZZZZZZZZ(
         allowsAccessModification,
         allowsAnnotationRemoval,
         allowsCodeReplacement,

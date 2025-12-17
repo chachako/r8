@@ -25,13 +25,13 @@ import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.EncodedValueUtils;
 import com.android.tools.r8.utils.LongUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.objectweb.asm.ConstantDynamic;
@@ -926,7 +926,7 @@ public abstract class DexValue extends DexItem implements StructuralItem<DexValu
 
     @Override
     public int hashCode() {
-      return Objects.hash(value, getValueKind());
+      return ObjectUtils.hashIL(value, getValueKind());
     }
 
     @Override

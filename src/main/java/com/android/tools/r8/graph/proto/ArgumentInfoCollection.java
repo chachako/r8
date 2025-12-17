@@ -11,6 +11,7 @@ import com.android.tools.r8.ir.optimize.info.MethodOptimizationInfoFixer;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.IntObjConsumer;
+import com.android.tools.r8.utils.ObjectUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
@@ -22,7 +23,6 @@ import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Objects;
 
 public class ArgumentInfoCollection {
 
@@ -222,8 +222,8 @@ public class ArgumentInfoCollection {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        argumentInfos, argumentPermutation, argumentInfosSize, isConvertedToStaticMethod);
+    return ObjectUtils.hashZILL(
+        isConvertedToStaticMethod, argumentInfosSize, argumentInfos, argumentPermutation);
   }
 
   public static Builder builder() {

@@ -344,8 +344,8 @@ public class ProguardMemberRuleValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        type, booleanValue, longInterval, fieldHolder, fieldName, nullability, stringValue);
+    return ObjectUtils.hashZLLLLLL(
+        booleanValue, type, longInterval, fieldHolder, fieldName, nullability, stringValue);
   }
 
   @Override

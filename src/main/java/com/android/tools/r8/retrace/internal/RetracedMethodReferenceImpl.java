@@ -8,9 +8,9 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.retrace.RetracedMethodReference;
 import com.android.tools.r8.utils.ComparatorUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -138,7 +138,7 @@ public abstract class RetracedMethodReferenceImpl implements RetracedMethodRefer
 
     @Override
     public int hashCode() {
-      return Objects.hash(methodReference, position);
+      return ObjectUtils.hashLL(methodReference, position);
     }
   }
 

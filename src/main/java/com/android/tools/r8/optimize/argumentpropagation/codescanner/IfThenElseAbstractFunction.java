@@ -9,8 +9,8 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.code.Position.SourcePosition;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -155,6 +155,6 @@ public class IfThenElseAbstractFunction implements AbstractFunction {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), condition, thenState, elseState);
+    return ObjectUtils.hashLLLL(getClass(), condition, thenState, elseState);
   }
 }

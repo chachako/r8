@@ -227,7 +227,7 @@ public interface ComputedApiLevel extends Equatable<ComputedApiLevel> {
 
     @Override
     public int hashCode() {
-      return Objects.hash(apiLevel);
+      return Objects.hashCode(apiLevel);
     }
   }
 }

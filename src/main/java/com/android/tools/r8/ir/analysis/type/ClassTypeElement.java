@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
@@ -283,7 +282,7 @@ public class ClassTypeElement extends ReferenceTypeElement {
   @Override
   public int hashCode() {
     // The interfaces of a type do not contribute to its hashCode as they are lazily computed.
-    return Objects.hash(nullability, type);
+    return ObjectUtils.hashLL(nullability, type);
   }
 
   @Override

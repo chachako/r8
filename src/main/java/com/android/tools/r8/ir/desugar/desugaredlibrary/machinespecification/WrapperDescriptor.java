@@ -6,6 +6,7 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification;
 
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.List;
 import java.util.Objects;
 
@@ -55,6 +56,6 @@ public class WrapperDescriptor implements SpecificationDescriptor {
 
   @Override
   public int hashCode() {
-    return Objects.hash(methods, subwrappers, nonPublicAccess);
+    return ObjectUtils.hashZLL(nonPublicAccess, methods, subwrappers);
   }
 }

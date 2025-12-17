@@ -13,6 +13,7 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;
 import com.google.common.collect.Iterables;
@@ -24,7 +25,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class MoveSorter {
@@ -258,17 +258,17 @@ public class MoveSorter {
     protected int doHash(Instruction instruction) {
       if (instruction.isConstNumber()) {
         ConstNumber constNumber = instruction.asConstNumber();
-        return Objects.hash(
-            constNumber.getClass(),
+        return ObjectUtils.hashIJL(
             constNumber.outValue().asFixedRegisterValue().getRegister(),
-            constNumber.getRawValue());
+            constNumber.getRawValue(),
+            constNumber.getClass());
       } else {
         assert instruction.isMove();
         Move move = instruction.asMove();
-        return Objects.hash(
-            move.getClass(),
+        return ObjectUtils.hashIIL(
             move.outValue().asFixedRegisterValue().getRegister(),
-            move.src().asFixedRegisterValue().getRegister());
+            move.src().asFixedRegisterValue().getRegister(),
+            move.getClass());
       }
     }
   }

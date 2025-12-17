@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.Reference;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 /** Internal encoding of a field that allows for having either basic info or full info. */
 abstract class FieldDefinition implements Definition {
@@ -69,7 +69,7 @@ abstract class FieldDefinition implements Definition {
 
     @Override
     public int hashCode() {
-      return Objects.hash(classReference, name);
+      return ObjectUtils.hashLL(classReference, name);
     }
   }
 

@@ -27,6 +27,7 @@ import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.FunctionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -36,7 +37,6 @@ import it.unimi.dsi.fastutil.objects.ObjectBidirectionalIterator;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -634,6 +634,6 @@ public class ConcreteCfFrameState extends CfFrameState {
 
   @Override
   public int hashCode() {
-    return Objects.hash(locals, stack);
+    return ObjectUtils.hashLL(locals, stack);
   }
 }

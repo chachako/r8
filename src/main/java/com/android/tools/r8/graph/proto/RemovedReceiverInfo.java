@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.SingleValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 
 public class RemovedReceiverInfo extends RemovedArgumentInfo {
@@ -49,7 +50,7 @@ public class RemovedReceiverInfo extends RemovedArgumentInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getSingleValue(), getType());
+    return ObjectUtils.hashLL(getSingleValue(), getType());
   }
 
   public static class Builder extends BuilderBase<Builder> {

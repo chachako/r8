@@ -8,8 +8,8 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OptionalBool;
-import java.util.Objects;
 
 public class NumberFromIntervalValue extends NonConstantNumberValue {
 
@@ -105,9 +105,7 @@ public class NumberFromIntervalValue extends NonConstantNumberValue {
 
   @Override
   public int hashCode() {
-    int hash = 31 * (31 + Long.hashCode(minInclusive)) + Long.hashCode(maxInclusive);
-    assert hash == Objects.hash(minInclusive, maxInclusive);
-    return hash;
+    return ObjectUtils.hashJJ(minInclusive, maxInclusive);
   }
 
   @Override

@@ -7,7 +7,7 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.references.Reference;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 /** Internal encoding of a method that allows for having either basic info or full info. */
 abstract class MethodDefinition implements Definition {
@@ -70,7 +70,7 @@ abstract class MethodDefinition implements Definition {
 
     @Override
     public int hashCode() {
-      return Objects.hash(classReference, name);
+      return ObjectUtils.hashLL(classReference, name);
     }
   }
 

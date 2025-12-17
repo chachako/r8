@@ -50,6 +50,7 @@ import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationIn
 import com.android.tools.r8.ir.optimize.info.initializer.InstanceInitializerInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
@@ -61,7 +62,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -153,7 +153,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
     @Override
     public int hashCode() {
-      return Objects.hash(array, index, memberType);
+      return ObjectUtils.hashILL(index, array, memberType);
     }
 
     @Override
@@ -185,7 +185,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
 
     @Override
     public int hashCode() {
-      return Objects.hash(array, index, memberType);
+      return ObjectUtils.hashLLL(array, index, memberType);
     }
 
     @Override

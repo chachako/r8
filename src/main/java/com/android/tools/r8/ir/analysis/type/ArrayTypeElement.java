@@ -7,7 +7,7 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -127,7 +127,7 @@ public class ArrayTypeElement extends ReferenceTypeElement {
 
   @Override
   public int hashCode() {
-    return Objects.hash(nullability, memberTypeLattice);
+    return ObjectUtils.hashLL(nullability, memberTypeLattice);
   }
 
   @Override

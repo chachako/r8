@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.SingleValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -124,7 +125,7 @@ public class RewrittenTypeInfo extends ArgumentInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(oldType, newType, singleValue);
+    return ObjectUtils.hashLLL(oldType, newType, singleValue);
   }
 
   public static class Builder {

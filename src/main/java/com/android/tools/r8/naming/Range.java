@@ -5,7 +5,7 @@ package com.android.tools.r8.naming;
 
 import static com.android.tools.r8.utils.positions.MappedPositionToClassNameMapperBuilder.getMaxLineNumber;
 
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 /** Represents a line number range. */
 public class Range {
@@ -64,7 +64,7 @@ public class Range {
 
   @Override
   public int hashCode() {
-    return Objects.hash(from, to, isCardinal);
+    return ObjectUtils.hashIIZ(from, to, isCardinal);
   }
 
   public boolean isCatchAll() {

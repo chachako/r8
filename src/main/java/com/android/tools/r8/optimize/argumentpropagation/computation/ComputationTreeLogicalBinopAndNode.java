@@ -8,7 +8,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValue;
 import com.android.tools.r8.ir.analysis.value.arithmetic.AbstractCalculator;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBinopNode {
 
@@ -52,7 +52,7 @@ public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBi
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), left, right);
+    return ObjectUtils.hashLLL(getClass(), left, right);
   }
 
   @Override

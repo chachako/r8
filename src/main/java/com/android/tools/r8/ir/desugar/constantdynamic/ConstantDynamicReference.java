@@ -8,6 +8,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.graph.JarApplicationReader;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.structural.Equatable;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
@@ -15,7 +16,6 @@ import com.android.tools.r8.utils.structural.StructuralSpecification;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import org.objectweb.asm.ConstantDynamic;
 
@@ -117,6 +117,6 @@ public class ConstantDynamicReference implements StructuralItem<ConstantDynamicR
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, type, bootstrapMethod, bootstrapMethodArguments);
+    return ObjectUtils.hashLLLL(name, type, bootstrapMethod, bootstrapMethodArguments);
   }
 }

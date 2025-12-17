@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.desugar.desugaredlibrary;
 
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 
 public class ApiLevelRange {
@@ -66,7 +67,7 @@ public class ApiLevelRange {
 
   @Override
   public int hashCode() {
-    return Objects.hash(apiLevelBelowOrEqual, apiLevelGreaterOrEqual);
+    return ObjectUtils.hashLL(apiLevelBelowOrEqual, apiLevelGreaterOrEqual);
   }
 
   public int deterministicOrder(ApiLevelRange other) {

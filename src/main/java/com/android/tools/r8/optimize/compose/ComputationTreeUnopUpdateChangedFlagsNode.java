@@ -14,8 +14,8 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphSt
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeNode;
 import com.android.tools.r8.optimize.argumentpropagation.computation.ComputationTreeUnopNode;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.TraversalContinuation;
-import java.util.Objects;
 import java.util.function.Function;
 
 public class ComputationTreeUnopUpdateChangedFlagsNode extends ComputationTreeUnopNode {
@@ -126,7 +126,7 @@ public class ComputationTreeUnopUpdateChangedFlagsNode extends ComputationTreeUn
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), operand);
+    return ObjectUtils.hashLL(getClass(), operand);
   }
 
   @Override

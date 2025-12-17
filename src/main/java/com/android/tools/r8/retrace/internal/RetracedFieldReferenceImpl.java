@@ -7,7 +7,6 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.references.FieldReference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.retrace.RetracedFieldReference;
-import java.util.Objects;
 
 public abstract class RetracedFieldReferenceImpl implements RetracedFieldReference {
 
@@ -81,7 +80,7 @@ public abstract class RetracedFieldReferenceImpl implements RetracedFieldReferen
 
     @Override
     public int hashCode() {
-      return Objects.hash(fieldReference);
+      return fieldReference.hashCode();
     }
   }
 
@@ -117,7 +116,7 @@ public abstract class RetracedFieldReferenceImpl implements RetracedFieldReferen
 
     @Override
     public int hashCode() {
-      return Objects.hash(fieldDefinition);
+      return fieldDefinition.hashCode();
     }
   }
 

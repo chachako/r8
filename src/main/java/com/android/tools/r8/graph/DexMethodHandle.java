@@ -9,6 +9,7 @@ import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.ir.code.InvokeType;
 import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.naming.NamingLens;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralMapping;
@@ -247,7 +248,7 @@ public class DexMethodHandle extends IndexedDexItem
 
   @Override
   public int computeHashCode() {
-    return Objects.hash(type, member.computeHashCode(), isInterface, rewrittenTarget);
+    return ObjectUtils.hashZILL(isInterface, member.computeHashCode(), rewrittenTarget, type);
   }
 
   @Override

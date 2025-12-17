@@ -243,7 +243,7 @@ public abstract class ProguardClassNameList {
 
     @Override
     public int hashCode() {
-      return Objects.hash(className);
+      return Objects.hashCode(className);
     }
 
     @Override
@@ -348,7 +348,7 @@ public abstract class ProguardClassNameList {
 
     @Override
     public int hashCode() {
-      return Objects.hash(classNames);
+      return classNames.hashCode();
     }
 
     @Override
@@ -425,6 +425,7 @@ public abstract class ProguardClassNameList {
     private final Object2BooleanMap<ProguardTypeMatcher> classNames;
 
     private MixedClassNameList(Object2BooleanMap<ProguardTypeMatcher> classNames) {
+      assert classNames != null;
       this.classNames = classNames;
     }
 
@@ -468,7 +469,7 @@ public abstract class ProguardClassNameList {
 
     @Override
     public int hashCode() {
-      return Objects.hash(classNames);
+      return classNames.hashCode();
     }
 
     @Override

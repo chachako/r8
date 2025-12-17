@@ -49,6 +49,7 @@ import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.CallSiteOptimizationOptions;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.ThreadUtils;
@@ -74,7 +75,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -152,7 +152,7 @@ public class ArgumentPropagatorProgramOptimizer {
 
     @Override
     public int hashCode() {
-      return Objects.hash(
+      return ObjectUtils.hashLLLL(
           canBeConvertedToStaticMethod,
           newReturnType,
           newParameterTypes,

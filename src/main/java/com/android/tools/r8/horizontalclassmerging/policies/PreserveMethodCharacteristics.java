@@ -12,6 +12,7 @@ import com.android.tools.r8.graph.MethodAccessFlags;
 import com.android.tools.r8.horizontalclassmerging.HorizontalMergeGroup;
 import com.android.tools.r8.horizontalclassmerging.MultiClassPolicy;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
@@ -20,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Policy that enforces that methods are only merged if they have the same visibility and library
@@ -60,8 +60,8 @@ public class PreserveMethodCharacteristics extends MultiClassPolicy {
 
     @Override
     public int hashCode() {
-      return Objects.hash(
-          accessFlags, isAssumeNoSideEffectsMethod, isLibraryMethodOverride.ordinal());
+      return ObjectUtils.hashZIL(
+          isAssumeNoSideEffectsMethod, isLibraryMethodOverride.ordinal(), accessFlags);
     }
 
     @Override

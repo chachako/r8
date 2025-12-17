@@ -13,9 +13,9 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.FieldAccessFlags;
 import com.android.tools.r8.horizontalclassmerging.MultiClassSameReferencePolicy;
 import com.android.tools.r8.horizontalclassmerging.policies.SameInstanceFields.InstanceFieldInfo;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
-import java.util.Objects;
 
 public class SameInstanceFields extends MultiClassSameReferencePolicy<Multiset<InstanceFieldInfo>> {
 
@@ -84,7 +84,7 @@ public class SameInstanceFields extends MultiClassSameReferencePolicy<Multiset<I
 
     @Override
     public int hashCode() {
-      return Objects.hash(accessFlags, type);
+      return ObjectUtils.hashLL(accessFlags, type);
     }
   }
 }

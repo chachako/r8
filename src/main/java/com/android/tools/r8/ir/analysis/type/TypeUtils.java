@@ -30,8 +30,8 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.code.Value;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.WorkList;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
 public class TypeUtils {
@@ -61,7 +61,7 @@ public class TypeUtils {
 
     @Override
     public int hashCode() {
-      return Objects.hash(user, value);
+      return ObjectUtils.hashLL(user, value);
     }
   }
 

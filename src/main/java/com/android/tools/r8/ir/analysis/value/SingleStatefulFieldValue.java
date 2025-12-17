@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.analysis.value;
 
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.ir.analysis.value.objectstate.ObjectState;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class SingleStatefulFieldValue extends SingleFieldValue {
 
@@ -61,6 +61,6 @@ public class SingleStatefulFieldValue extends SingleFieldValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(field, state);
+    return ObjectUtils.hashLL(field, state);
   }
 }

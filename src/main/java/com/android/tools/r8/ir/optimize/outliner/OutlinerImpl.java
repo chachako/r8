@@ -76,6 +76,7 @@ import com.android.tools.r8.shaking.KeepMethodInfo.Joiner;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.OutlineOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.StringUtils.BraceType;
@@ -92,7 +93,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -230,7 +230,7 @@ public class OutlinerImpl extends Outliner {
 
     @Override
     public int hashCode() {
-      return Objects.hash(type, numericType);
+      return ObjectUtils.hashLL(type, numericType);
     }
 
     @Override
@@ -350,7 +350,7 @@ public class OutlinerImpl extends Outliner {
 
     @Override
     public int hashCode() {
-      return Objects.hash(getOutlineInstructionType(), clazz.hashCode());
+      return ObjectUtils.hashLL(getOutlineInstructionType(), clazz);
     }
 
     @Override
@@ -445,7 +445,8 @@ public class OutlinerImpl extends Outliner {
 
     @Override
     public int hashCode() {
-      return Objects.hash(getOutlineInstructionType(), method, invokeType, hasOutValue, proto, itf);
+      return ObjectUtils.hashZZLLLL(
+          hasOutValue, itf, getOutlineInstructionType(), method, invokeType, proto);
     }
 
     @Override

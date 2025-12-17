@@ -4,7 +4,7 @@
 package com.android.tools.r8.references;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 /**
  * Reference to a field.
@@ -58,7 +58,7 @@ public final class FieldReference {
 
   @Override
   public int hashCode() {
-    return Objects.hash(holderClass, fieldName, fieldType);
+    return ObjectUtils.hashLLL(holderClass, fieldName, fieldType);
   }
 
   @Override

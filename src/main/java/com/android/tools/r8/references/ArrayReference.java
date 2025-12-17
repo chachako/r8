@@ -6,7 +6,7 @@ package com.android.tools.r8.references;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.DescriptorUtils;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 /** Reference to an array type. */
 @KeepForApi
@@ -85,6 +85,6 @@ public final class ArrayReference implements TypeReference {
 
   @Override
   public int hashCode() {
-    return Objects.hash(dimensions, baseType);
+    return ObjectUtils.hashIL(dimensions, baseType);
   }
 }

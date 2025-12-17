@@ -19,6 +19,7 @@ import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
 import com.android.tools.r8.utils.structural.HashingVisitor;
 import java.nio.ShortBuffer;
@@ -98,7 +99,7 @@ public class ThrowExceptionCode extends Code implements DexWritableCode {
 
   @Override
   protected int computeHashCode() {
-    return Objects.hash(DexWritableCodeKind.THROW_EXCEPTION, exceptionType.hashCode());
+    return ObjectUtils.hashLL(DexWritableCodeKind.THROW_EXCEPTION, exceptionType);
   }
 
   @Override

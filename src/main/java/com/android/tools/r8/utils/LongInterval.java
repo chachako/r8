@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.utils;
 
-import java.util.Objects;
-
 /**
  * Closed interval of two longs.
  */
@@ -81,7 +79,7 @@ public class LongInterval {
 
   @Override
   public int hashCode() {
-    return Objects.hash(min, max);
+    return ObjectUtils.hashJJ(min, max);
   }
 
   @Override

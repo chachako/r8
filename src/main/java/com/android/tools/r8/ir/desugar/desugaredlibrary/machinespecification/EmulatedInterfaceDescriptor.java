@@ -6,8 +6,8 @@ package com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification;
 
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * An EmulatedInterfaceDescriptor describes how emulated interfaces are desugared. The
@@ -55,6 +55,6 @@ public class EmulatedInterfaceDescriptor implements SpecificationDescriptor {
 
   @Override
   public int hashCode() {
-    return Objects.hash(rewrittenType, emulatedMethods);
+    return ObjectUtils.hashLL(rewrittenType, emulatedMethods);
   }
 }

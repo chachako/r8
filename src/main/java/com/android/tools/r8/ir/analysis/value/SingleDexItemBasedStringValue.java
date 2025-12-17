@@ -23,7 +23,7 @@ import com.android.tools.r8.ir.code.ValueFactory;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfo;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class SingleDexItemBasedStringValue extends SingleConstValue {
 
@@ -71,7 +71,7 @@ public class SingleDexItemBasedStringValue extends SingleConstValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(item, nameComputationInfo);
+    return ObjectUtils.hashLL(item, nameComputationInfo);
   }
 
   @Override

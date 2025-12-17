@@ -6,7 +6,7 @@ package com.android.tools.r8.ir.analysis.type;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class DynamicTypeWithLowerBound extends DynamicTypeWithUpperBound {
 
@@ -62,7 +62,7 @@ public class DynamicTypeWithLowerBound extends DynamicTypeWithUpperBound {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getDynamicUpperBoundType(), getDynamicLowerBoundType());
+    return ObjectUtils.hashLL(getDynamicUpperBoundType(), getDynamicLowerBoundType());
   }
 
   @Override

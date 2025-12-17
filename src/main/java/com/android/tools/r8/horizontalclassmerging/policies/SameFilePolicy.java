@@ -9,7 +9,7 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.horizontalclassmerging.MultiClassSameReferencePolicy;
 import com.android.tools.r8.synthesis.SyntheticItems;
 import com.android.tools.r8.utils.InternalOptions.HorizontalClassMergerOptions;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class SameFilePolicy extends MultiClassSameReferencePolicy<Object> {
 
@@ -61,7 +61,7 @@ public class SameFilePolicy extends MultiClassSameReferencePolicy<Object> {
 
     @Override
     public final int hashCode() {
-      return Objects.hash(key, getClass());
+      return ObjectUtils.hashLL(key, getClass());
     }
   }
 

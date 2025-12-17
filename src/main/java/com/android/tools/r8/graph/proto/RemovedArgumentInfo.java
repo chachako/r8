@@ -9,6 +9,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.value.SingleValue;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 
 public class RemovedArgumentInfo extends ArgumentInfo {
@@ -111,6 +112,6 @@ public class RemovedArgumentInfo extends ArgumentInfo {
 
   @Override
   public int hashCode() {
-    return Objects.hash(singleValue, type);
+    return ObjectUtils.hashLL(singleValue, type);
   }
 }

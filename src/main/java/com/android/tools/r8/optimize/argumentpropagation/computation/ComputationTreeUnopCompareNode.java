@@ -10,7 +10,7 @@ import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.FlowGraphStateProvider;
 import com.android.tools.r8.optimize.argumentpropagation.codescanner.MethodParameter;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
 
@@ -66,7 +66,7 @@ public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getClass(), operand, type);
+    return ObjectUtils.hashLLL(getClass(), operand, type);
   }
 
   @Override

@@ -9,12 +9,12 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexDebugInfo;
 import com.android.tools.r8.graph.ProgramMethod;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public interface PositionToMappedRangeMapper {
 
@@ -110,7 +110,7 @@ public interface PositionToMappedRangeMapper {
 
       @Override
       public int hashCode() {
-        return Objects.hash(paramCount, maxEncodingPc);
+        return ObjectUtils.hashII(paramCount, maxEncodingPc);
       }
     }
 

@@ -11,7 +11,7 @@ import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.naming.NamingLens;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class UninitializedNew extends UninitializedFrameType {
 
@@ -75,7 +75,7 @@ public class UninitializedNew extends UninitializedFrameType {
 
   @Override
   public int hashCode() {
-    return Objects.hash(label, type);
+    return ObjectUtils.hashLL(label, type);
   }
 
   @Override

@@ -116,7 +116,7 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(major, minor, patch, prerelease);
+    return ObjectUtils.hashIIIL(major, minor, patch, prerelease);
   }
 
   @Override

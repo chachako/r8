@@ -7,8 +7,8 @@ package com.android.tools.r8.shaking;
 import com.android.tools.r8.graph.Definition;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotation.AnnotatedKind;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.List;
-import java.util.Objects;
 
 public abstract class AnnotationMatchResult {
 
@@ -97,7 +97,7 @@ public abstract class AnnotationMatchResult {
 
     @Override
     public int hashCode() {
-      return Objects.hash(annotatedItem, annotation, annotatedKind);
+      return ObjectUtils.hashLLL(annotatedItem, annotation, annotatedKind);
     }
   }
 }

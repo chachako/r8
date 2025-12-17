@@ -15,6 +15,7 @@ import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.LebUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.structural.CompareToVisitor;
 import com.android.tools.r8.utils.structural.Equatable;
@@ -25,7 +26,6 @@ import com.android.tools.r8.utils.structural.StructuralSpecification;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public abstract class DexDebugInfo extends CachedHashValueDexItem
     implements StructuralItem<DexDebugInfo> {
@@ -132,7 +132,7 @@ public abstract class DexDebugInfo extends CachedHashValueDexItem
 
     @Override
     protected int computeHashCode() {
-      return Objects.hash(parameterCount, maxPc);
+      return ObjectUtils.hashII(parameterCount, maxPc);
     }
 
     @Override

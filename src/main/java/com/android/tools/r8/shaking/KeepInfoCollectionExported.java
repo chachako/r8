@@ -16,6 +16,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 
 public class KeepInfoCollectionExported {
 
@@ -112,7 +112,7 @@ public class KeepInfoCollectionExported {
 
     @Override
     public int hashCode() {
-      return Objects.hash(keepClassInfo, fieldInfos, methodInfos);
+      return ObjectUtils.hashLLL(keepClassInfo, fieldInfos, methodInfos);
     }
 
     public List<String> lines() {

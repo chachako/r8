@@ -4,10 +4,10 @@
 
 package com.android.tools.r8.graph;
 
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
-import java.util.Objects;
 
 public abstract class DexMethodSignature implements StructuralItem<DexMethodSignature> {
 
@@ -88,7 +88,7 @@ public abstract class DexMethodSignature implements StructuralItem<DexMethodSign
 
   @Override
   public int hashCode() {
-    return Objects.hash(getName(), getProto());
+    return ObjectUtils.hashLL(getName(), getProto());
   }
 
   @Override

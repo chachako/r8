@@ -29,6 +29,7 @@ import com.android.tools.r8.utils.ConsumerUtils;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.SegmentTree;
 import com.android.tools.r8.utils.ThrowingBiFunction;
 import com.google.common.collect.ImmutableList;
@@ -46,7 +47,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -380,7 +380,7 @@ public class ComposingBuilder {
 
     @Override
     public int hashCode() {
-      return Objects.hash(holderTypeName, methodName);
+      return ObjectUtils.hashLL(holderTypeName, methodName);
     }
   }
 

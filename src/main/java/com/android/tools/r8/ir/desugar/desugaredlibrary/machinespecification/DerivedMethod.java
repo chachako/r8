@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.synthesis.SyntheticNaming;
 import com.android.tools.r8.synthesis.SyntheticNaming.SyntheticKind;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 
 /**
@@ -82,6 +83,6 @@ public class DerivedMethod implements SpecificationDescriptor {
 
   @Override
   public int hashCode() {
-    return Objects.hash(method, holderKind);
+    return ObjectUtils.hashLL(method, holderKind);
   }
 }

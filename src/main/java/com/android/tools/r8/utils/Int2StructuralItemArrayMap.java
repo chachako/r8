@@ -12,7 +12,6 @@ import com.google.common.primitives.Ints;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class Int2StructuralItemArrayMap<T extends StructuralItem<T>>
@@ -66,7 +65,7 @@ public class Int2StructuralItemArrayMap<T extends StructuralItem<T>>
 
   @Override
   public int hashCode() {
-    return Objects.hash(Arrays.hashCode(keys), values);
+    return ObjectUtils.hashIL(Arrays.hashCode(keys), values);
   }
 
   public static <T extends StructuralItem<T>> Builder<T> builder() {

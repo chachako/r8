@@ -8,8 +8,8 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.OptionalBool;
-import java.util.Objects;
 
 public class DefiniteBitsNumberValue extends NonConstantNumberValue {
 
@@ -135,9 +135,7 @@ public class DefiniteBitsNumberValue extends NonConstantNumberValue {
 
   @Override
   public int hashCode() {
-    int hash = 31 * (31 + definitelySetBits) + definitelyUnsetBits;
-    assert hash == Objects.hash(definitelySetBits, definitelyUnsetBits);
-    return hash;
+    return ObjectUtils.hashII(definitelySetBits, definitelyUnsetBits);
   }
 
   @Override

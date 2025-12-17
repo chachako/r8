@@ -22,9 +22,9 @@ import com.android.tools.r8.shaking.GraphReporter.KeepReasonWitness;
 import com.android.tools.r8.threading.ThreadingModule;
 import com.android.tools.r8.utils.Action;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ObjectUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -527,7 +527,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public int hashCode() {
-      return Objects.hash(field, context.getReference(), metadata);
+      return ObjectUtils.hashLLL(field, context.getReference(), metadata);
     }
   }
 
@@ -558,7 +558,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public int hashCode() {
-      return Objects.hash(field, context.getReference(), metadata);
+      return ObjectUtils.hashLLL(field, context.getReference(), metadata);
     }
   }
 
@@ -589,7 +589,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public int hashCode() {
-      return Objects.hash(field, context.getReference(), metadata);
+      return ObjectUtils.hashLLL(field, context.getReference(), metadata);
     }
   }
 
@@ -646,7 +646,7 @@ public abstract class EnqueuerWorklist {
 
     @Override
     public int hashCode() {
-      return Objects.hash(field, context.getReference(), metadata);
+      return ObjectUtils.hashLLL(field, context.getReference(), metadata);
     }
   }
 

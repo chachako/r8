@@ -5,7 +5,7 @@
 package com.android.tools.r8.ir.desugar.desugaredlibrary.machinespecification;
 
 import com.android.tools.r8.graph.DexMethod;
-import java.util.Objects;
+import com.android.tools.r8.utils.ObjectUtils;
 
 public class CustomConversionDescriptor implements SpecificationDescriptor {
   private final DexMethod to;
@@ -48,6 +48,6 @@ public class CustomConversionDescriptor implements SpecificationDescriptor {
 
   @Override
   public int hashCode() {
-    return Objects.hash(to, from);
+    return ObjectUtils.hashLL(to, from);
   }
 }

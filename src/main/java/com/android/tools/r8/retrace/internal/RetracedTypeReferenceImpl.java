@@ -7,7 +7,6 @@ package com.android.tools.r8.retrace.internal;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.references.TypeReference;
 import com.android.tools.r8.retrace.RetracedTypeReference;
-import java.util.Objects;
 
 public final class RetracedTypeReferenceImpl implements RetracedTypeReference {
 
@@ -59,6 +58,6 @@ public final class RetracedTypeReferenceImpl implements RetracedTypeReference {
 
   @Override
   public int hashCode() {
-    return Objects.hash(typeReference);
+    return typeReference.hashCode();
   }
 }

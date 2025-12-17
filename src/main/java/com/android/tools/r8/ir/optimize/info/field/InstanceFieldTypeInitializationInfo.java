@@ -12,6 +12,7 @@ import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.utils.ObjectUtils;
 import java.util.Objects;
 
 /**
@@ -77,7 +78,7 @@ public class InstanceFieldTypeInitializationInfo implements InstanceFieldInitial
 
   @Override
   public int hashCode() {
-    return Objects.hash(dynamicLowerBoundType, dynamicUpperBoundType);
+    return ObjectUtils.hashLL(dynamicLowerBoundType, dynamicUpperBoundType);
   }
 
   @Override

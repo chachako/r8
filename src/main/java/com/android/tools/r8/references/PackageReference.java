@@ -6,7 +6,6 @@ package com.android.tools.r8.references;
 
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.utils.DescriptorUtils;
-import java.util.Objects;
 
 /** Reference to a package. */
 @KeepForApi
@@ -47,6 +46,6 @@ public class PackageReference {
 
   @Override
   public int hashCode() {
-    return Objects.hash(packageName);
+    return packageName.hashCode();
   }
 }
