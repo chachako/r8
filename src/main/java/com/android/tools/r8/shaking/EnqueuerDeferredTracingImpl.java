@@ -92,11 +92,6 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing
       ProgramMethod context,
       FieldAccessKind accessKind,
       FieldAccessMetadata metadata) {
-    if (!fieldReference.getType().isPrimitiveType()
-        && !options.getTestingOptions().enableEnqueuerDeferredTracingForReferenceFields) {
-      return false;
-    }
-
     ProgramField field = resolutionResult.getSingleProgramField();
     if (field == null) {
       return false;
@@ -196,6 +191,13 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing
     }
 
     if (info.isWritten()) {
+      // Bail-out if the optimization has been limited in order to preserve strong references to
+      // objects that may have a weak ref or non-trivial finalizer.
+      if (options.getTestingOptions().disableEnqueuerDeferredTracingForWrittenReferenceFields
+          && !field.getType().isPrimitiveType()) {
+        return false;
+      }
+
       // If the assigned value may have an override of Object#finalize() then give up.
       // Note that this check depends on the set of instantiated types, and must therefore be rerun
       // when the enqueuer's fixpoint is reached.
