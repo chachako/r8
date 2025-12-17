@@ -285,11 +285,13 @@ class MethodNameMinifier {
         new ArrayList<>(
             appView.appInfo().classes().size()
                 + appView.app().asDirect().classpathClasses().size());
-    classes.addAll(appView.appInfo().classes());
-    classes.addAll(appView.app().asDirect().classpathClasses());
+    classes.addAll(appView.appInfo().classesWithDeterministicOrder());
+    classes.addAll(
+        ListUtils.sort(
+            appView.app().asDirect().classpathClasses(), Comparator.comparing(DexClass::getType)));
     TopDownClassHierarchyTraversal.forAllClasses(appView)
         .visit(
-            ListUtils.destructiveSort(classes, Comparator.comparing(DexClass::getType)),
+            classes,
             clazz -> {
               DexType type = clazz.type;
               DexType frontier = frontiers.getOrDefault(clazz.superType, type);
