@@ -13,21 +13,18 @@ public class ProguardConfigurationParserOptions {
   private final boolean enableKeepRuntimeInvisibleAnnotations;
   private final boolean enableTestingOptions;
   private final boolean forceProguardCompatibility;
-  private final boolean enableNamedAndroidLogLevels;
 
   ProguardConfigurationParserOptions(
       boolean enableLegacyFullModeForKeepRules,
       boolean enableLegacyFullModeForKeepRulesWarnings,
       boolean enableKeepRuntimeInvisibleAnnotations,
       boolean enableTestingOptions,
-      boolean forceProguardCompatibility,
-      boolean enableNamedAndroidLogLevels) {
+      boolean forceProguardCompatibility) {
     this.enableKeepRuntimeInvisibleAnnotations = enableKeepRuntimeInvisibleAnnotations;
     this.enableTestingOptions = enableTestingOptions;
     this.enableLegacyFullModeForKeepRules = enableLegacyFullModeForKeepRules;
     this.enableLegacyFullModeForKeepRulesWarnings = enableLegacyFullModeForKeepRulesWarnings;
     this.forceProguardCompatibility = forceProguardCompatibility;
-    this.enableNamedAndroidLogLevels = enableNamedAndroidLogLevels;
   }
 
   public static Builder builder() {
@@ -48,10 +45,6 @@ public class ProguardConfigurationParserOptions {
     return enableKeepRuntimeInvisibleAnnotations;
   }
 
-  public boolean isEnableNamedAndroidLogLevels() {
-    return enableNamedAndroidLogLevels;
-  }
-
   public boolean isTestingOptionsEnabled() {
     return enableTestingOptions;
   }
@@ -63,7 +56,6 @@ public class ProguardConfigurationParserOptions {
     private boolean enableKeepRuntimeInvisibleAnnotations = true;
     private boolean enableTestingOptions;
     private boolean forceProguardCompatibility = false;
-    private boolean enableNamedAndroidLogLevels = true;
 
     public Builder readEnvironment() {
       enableLegacyFullModeForKeepRules =
@@ -101,19 +93,13 @@ public class ProguardConfigurationParserOptions {
       return this;
     }
 
-    public Builder setEnableNamedAndroidLogLevels(boolean enableNamedAndroidLogLevels) {
-      this.enableNamedAndroidLogLevels = enableNamedAndroidLogLevels;
-      return this;
-    }
-
     public ProguardConfigurationParserOptions build() {
       return new ProguardConfigurationParserOptions(
           enableLegacyFullModeForKeepRules,
           enableLegacyFullModeForKeepRulesWarnings,
           enableKeepRuntimeInvisibleAnnotations,
           enableTestingOptions,
-          forceProguardCompatibility,
-          enableNamedAndroidLogLevels);
+          forceProguardCompatibility);
     }
   }
 }

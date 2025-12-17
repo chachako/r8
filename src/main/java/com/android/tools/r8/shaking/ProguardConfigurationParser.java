@@ -904,7 +904,6 @@ public class ProguardConfigurationParser {
         throw parseError("Expected integer greater than or equal to 1", getPosition());
       }
       if (maxRemovedAndroidLogLevel == null) {
-        if (options.isEnableNamedAndroidLogLevels()) {
           String logLevelName = acceptString();
           if (logLevelName == null) {
             throw parseError("Expected log level", getPosition());
@@ -913,9 +912,6 @@ public class ProguardConfigurationParser {
           if (maxRemovedAndroidLogLevel == null) {
             throw parseError("Unsupported log level", getPosition());
           }
-        } else {
-          throw parseError("Expected integer greater than or equal to 1", getPosition());
-        }
       }
       MaximumRemovedAndroidLogLevelRule.Builder builder =
           MaximumRemovedAndroidLogLevelRule.builder()
