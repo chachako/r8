@@ -3078,7 +3078,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       fail("Expect to fail due to unsupported value.");
     } catch (RuntimeException e) {
-      checkDiagnostics(handler.errors, null, 2, 1, "Expected integer greater than or equal to 1");
+      checkDiagnostics(handler.errors, null, 2, 1, "Expected log level at");
     }
 
     try {
