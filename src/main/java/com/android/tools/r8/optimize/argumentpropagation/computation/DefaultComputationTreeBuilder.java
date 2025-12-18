@@ -40,7 +40,7 @@ public class DefaultComputationTreeBuilder extends ComputationTreeBuilder {
           And and = instruction.asAnd();
           ComputationTreeNode left = getOrBuildComputationTree(and.leftValue());
           ComputationTreeNode right = getOrBuildComputationTree(and.rightValue());
-          return ComputationTreeLogicalBinopAndNode.create(left, right);
+          return ComputationTreeLogicalBinopAndNode.create(appView, left, right);
         }
       case ARGUMENT:
         {
@@ -63,7 +63,7 @@ public class DefaultComputationTreeBuilder extends ComputationTreeBuilder {
           If theIf = instruction.asIf();
           if (theIf.isZeroTest()) {
             ComputationTreeNode operand = getOrBuildComputationTree(theIf.lhs());
-            return ComputationTreeUnopCompareNode.create(operand, theIf.getType());
+            return ComputationTreeUnopCompareNode.create(appView, operand, theIf.getType());
           }
           break;
         }

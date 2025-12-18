@@ -50,6 +50,11 @@ public class InstanceFieldReadAbstractFunction implements AbstractFunction {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    return traverseBaseInFlow(baseInFlow -> TraversalContinuation.doBreak()).isBreak();
+  }
+
+  @Override
   public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
       Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
     TraversalContinuation<TB, TC> traversalContinuation = fn.apply(receiver);

@@ -16,11 +16,17 @@ public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBi
     super(left, right);
   }
 
-  public static ComputationTreeNode create(ComputationTreeNode left, ComputationTreeNode right) {
+  public static ComputationTreeNode create(
+      AppView<AppInfoWithLiveness> appView, ComputationTreeNode left, ComputationTreeNode right) {
     if (left.isUnknown() && right.isUnknown()) {
       return AbstractValue.unknown();
     }
-    return new ComputationTreeLogicalBinopAndNode(left, right);
+    ComputationTreeLogicalBinopAndNode andNode =
+        new ComputationTreeLogicalBinopAndNode(left, right);
+    if (!left.hasBaseInFlow() && !right.hasBaseInFlow()) {
+      return andNode.evaluate(appView, FlowGraphStateProvider.unreachable());
+    }
+    return andNode;
   }
 
   @Override
@@ -51,7 +57,7 @@ public class ComputationTreeLogicalBinopAndNode extends ComputationTreeLogicalBi
   }
 
   @Override
-  public int hashCode() {
+  public int computeHashCode() {
     return ObjectUtils.hashLLL(getClass(), left, right);
   }
 

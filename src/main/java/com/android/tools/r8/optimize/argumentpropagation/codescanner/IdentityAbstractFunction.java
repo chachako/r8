@@ -30,6 +30,11 @@ public class IdentityAbstractFunction implements AbstractFunction {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    throw new Unreachable();
+  }
+
+  @Override
   public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
       Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
     throw new Unreachable();

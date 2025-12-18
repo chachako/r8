@@ -20,6 +20,12 @@ public abstract class ComputationTreeLogicalBinopNode extends ComputationTreeBas
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    // It is an invariant that binop nodes have base in flow.
+    return true;
+  }
+
+  @Override
   public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
       Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
     TraversalContinuation<TB, TC> traversalContinuation = left.traverseBaseInFlow(fn);

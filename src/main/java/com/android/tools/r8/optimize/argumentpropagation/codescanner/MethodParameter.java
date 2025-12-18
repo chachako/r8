@@ -61,6 +61,11 @@ public class MethodParameter implements BaseInFlow, ComputationTreeNode {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    return true;
+  }
+
+  @Override
   public AbstractValue evaluate(
       AppView<AppInfoWithLiveness> appView, FlowGraphStateProvider flowGraphStateProvider) {
     ValueState state = flowGraphStateProvider.getState(this, () -> ValueState.bottom(getType()));

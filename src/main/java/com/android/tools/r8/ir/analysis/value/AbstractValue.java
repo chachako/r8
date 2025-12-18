@@ -36,6 +36,11 @@ public abstract class AbstractValue implements ComputationTreeNode {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    return false;
+  }
+
+  @Override
   public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
       Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
     // Abstract values do not contain any open variables.

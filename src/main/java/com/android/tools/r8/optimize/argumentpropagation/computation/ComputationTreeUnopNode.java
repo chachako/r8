@@ -17,6 +17,12 @@ public abstract class ComputationTreeUnopNode extends ComputationTreeBaseNode {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    // It is an invariant that unop nodes have base in flow.
+    return true;
+  }
+
+  @Override
   public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
       Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
     return operand.traverseBaseInFlow(fn);

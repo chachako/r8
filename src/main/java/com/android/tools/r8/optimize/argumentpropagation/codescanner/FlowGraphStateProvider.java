@@ -46,19 +46,7 @@ public interface FlowGraphStateProvider {
     // Otherwise, the abstract function is a canonical function, or the abstract function has a
     // single declared input, meaning we should never perform any state lookups.
     assert abstractFunction.isIdentity() || abstractFunction.isCastAbstractFunction();
-    return new FlowGraphStateProvider() {
-
-      @Override
-      public ValueState getState(DexField field) {
-        throw new Unreachable();
-      }
-
-      @Override
-      public ValueState getState(
-          MethodParameter methodParameter, Supplier<ValueState> defaultStateProvider) {
-        throw new Unreachable();
-      }
-    };
+    return unreachable();
   }
 
   static FlowGraphStateProvider createFromMethodOptimizationInfo(ProgramMethod method) {
@@ -114,6 +102,10 @@ public interface FlowGraphStateProvider {
     };
   }
 
+  static FlowGraphStateProvider unreachable() {
+    return UnreachableFlowGraphStateProvider.get();
+  }
+
   ValueState getState(DexField field);
 
   ValueState getState(MethodParameter methodParameter, Supplier<ValueState> defaultStateProvider);
@@ -124,6 +116,27 @@ public interface FlowGraphStateProvider {
     } else {
       assert inFlow.isMethodParameter();
       return getState(inFlow.asMethodParameter(), defaultStateProvider);
+    }
+  }
+
+  class UnreachableFlowGraphStateProvider implements FlowGraphStateProvider {
+
+    private static final UnreachableFlowGraphStateProvider INSTANCE =
+        new UnreachableFlowGraphStateProvider();
+
+    public static UnreachableFlowGraphStateProvider get() {
+      return INSTANCE;
+    }
+
+    @Override
+    public ValueState getState(DexField field) {
+      throw new Unreachable();
+    }
+
+    @Override
+    public ValueState getState(
+        MethodParameter methodParameter, Supplier<ValueState> defaultStateProvider) {
+      throw new Unreachable();
     }
   }
 }

@@ -22,6 +22,8 @@ public interface InFlow {
 
   InFlowKind getKind();
 
+  boolean hasBaseInFlow();
+
   default boolean isAbstractComputation() {
     return false;
   }

@@ -28,11 +28,17 @@ public class ComputationTreeUnopUpdateChangedFlagsNode extends ComputationTreeUn
     super(operand);
   }
 
-  public static ComputationTreeNode create(ComputationTreeNode operand) {
+  public static ComputationTreeNode create(
+      AppView<AppInfoWithLiveness> appView, ComputationTreeNode operand) {
     if (operand.isUnknown()) {
       return AbstractValue.unknown();
     }
-    return new ComputationTreeUnopUpdateChangedFlagsNode(operand);
+    ComputationTreeUnopUpdateChangedFlagsNode updateChangedFlagsNode =
+        new ComputationTreeUnopUpdateChangedFlagsNode(operand);
+    if (!updateChangedFlagsNode.hasBaseInFlow()) {
+      return updateChangedFlagsNode.evaluate(appView, FlowGraphStateProvider.unreachable());
+    }
+    return updateChangedFlagsNode;
   }
 
   @Override
@@ -125,7 +131,7 @@ public class ComputationTreeUnopUpdateChangedFlagsNode extends ComputationTreeUn
   }
 
   @Override
-  public int hashCode() {
+  public int computeHashCode() {
     return ObjectUtils.hashLL(getClass(), operand);
   }
 

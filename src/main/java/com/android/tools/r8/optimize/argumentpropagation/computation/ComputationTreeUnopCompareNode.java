@@ -21,11 +21,16 @@ public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
     this.type = type;
   }
 
-  public static ComputationTreeNode create(ComputationTreeNode operand, IfType type) {
+  public static ComputationTreeNode create(
+      AppView<AppInfoWithLiveness> appView, ComputationTreeNode operand, IfType type) {
     if (operand.isUnknown()) {
       return AbstractValue.unknown();
     }
-    return new ComputationTreeUnopCompareNode(operand, type);
+    ComputationTreeUnopCompareNode compareNode = new ComputationTreeUnopCompareNode(operand, type);
+    if (!operand.hasBaseInFlow()) {
+      return compareNode.evaluate(appView, FlowGraphStateProvider.unreachable());
+    }
+    return compareNode;
   }
 
   @Override
@@ -65,7 +70,7 @@ public class ComputationTreeUnopCompareNode extends ComputationTreeUnopNode {
   }
 
   @Override
-  public int hashCode() {
+  public int computeHashCode() {
     return ObjectUtils.hashLLL(getClass(), operand, type);
   }
 

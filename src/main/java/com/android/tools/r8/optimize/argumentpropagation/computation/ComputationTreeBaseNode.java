@@ -13,6 +13,11 @@ import com.android.tools.r8.optimize.argumentpropagation.codescanner.InFlowKind;
  */
 abstract class ComputationTreeBaseNode implements ComputationTreeNode {
 
+  private static final int NOT_COMPUTED_HASH_VALUE = -1;
+  private static final int SENTINEL_HASH_VALUE = 0;
+
+  private volatile int hash = NOT_COMPUTED_HASH_VALUE;
+
   @Override
   public InFlowKind getKind() {
     return InFlowKind.ABSTRACT_COMPUTATION;
@@ -35,7 +40,19 @@ abstract class ComputationTreeBaseNode implements ComputationTreeNode {
   public abstract boolean equals(Object obj);
 
   @Override
-  public abstract int hashCode();
+  public final int hashCode() {
+    int cache = hash;
+    if (cache == NOT_COMPUTED_HASH_VALUE) {
+      cache = computeHashCode();
+      if (cache == NOT_COMPUTED_HASH_VALUE) {
+        cache = SENTINEL_HASH_VALUE;
+      }
+      hash = cache;
+    }
+    return cache;
+  }
+
+  public abstract int computeHashCode();
 
   @Override
   public abstract String toString();

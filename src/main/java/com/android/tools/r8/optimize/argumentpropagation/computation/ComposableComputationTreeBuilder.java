@@ -66,7 +66,7 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
           And and = instruction.asAnd();
           ComputationTreeNode left = getOrBuildComputationTree(and.leftValue());
           ComputationTreeNode right = getOrBuildComputationTree(and.rightValue());
-          return ComputationTreeLogicalBinopAndNode.create(left, right);
+          return ComputationTreeLogicalBinopAndNode.create(appView, left, right);
         }
       case ARGUMENT:
         {
@@ -89,7 +89,7 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
           If theIf = instruction.asIf();
           if (theIf.isZeroTest()) {
             ComputationTreeNode operand = getOrBuildComputationTree(theIf.lhs());
-            return ComputationTreeUnopCompareNode.create(operand, theIf.getType());
+            return ComputationTreeUnopCompareNode.create(appView, operand, theIf.getType());
           }
           break;
         }
@@ -130,14 +130,14 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
             break;
           }
           ComputationTreeNode operand = getOrBuildComputationTree(invoke.getFirstArgument());
-          return ComputationTreeUnopUpdateChangedFlagsNode.create(operand);
+          return ComputationTreeUnopUpdateChangedFlagsNode.create(appView, operand);
         }
       case OR:
         {
           Or or = instruction.asOr();
           ComputationTreeNode left = getOrBuildComputationTree(or.leftValue());
           ComputationTreeNode right = getOrBuildComputationTree(or.rightValue());
-          return ComputationTreeLogicalBinopOrNode.create(left, right);
+          return ComputationTreeLogicalBinopOrNode.create(appView, left, right);
         }
       default:
         break;
@@ -159,6 +159,6 @@ public class ComposableComputationTreeBuilder extends ComputationTreeBuilder {
     ComputationTreeNode condition =
         pathConstraintSupplier.getDifferentiatingPathConstraint(
             block.getPredecessor(0), block.getPredecessor(1));
-    return ComputationTreeLogicalBinopIntPhiNode.create(condition, left, right);
+    return ComputationTreeLogicalBinopIntPhiNode.create(appView, condition, left, right);
   }
 }

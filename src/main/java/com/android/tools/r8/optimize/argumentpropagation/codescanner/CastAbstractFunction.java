@@ -30,9 +30,14 @@ public class CastAbstractFunction implements AbstractFunction {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    return true;
+  }
+
+  @Override
   public <TB, TC> TraversalContinuation<TB, TC> traverseBaseInFlow(
       Function<? super BaseInFlow, TraversalContinuation<TB, TC>> fn) {
-    return inFlow.traverseBaseInFlow(fn);
+    return fn.apply(inFlow);
   }
 
   @Override

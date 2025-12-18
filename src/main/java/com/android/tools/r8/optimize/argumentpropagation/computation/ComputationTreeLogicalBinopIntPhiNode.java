@@ -25,11 +25,24 @@ public class ComputationTreeLogicalBinopIntPhiNode extends ComputationTreeLogica
   }
 
   public static ComputationTreeNode create(
-      ComputationTreeNode condition, ComputationTreeNode left, ComputationTreeNode right) {
+      AppView<AppInfoWithLiveness> appView,
+      ComputationTreeNode condition,
+      ComputationTreeNode left,
+      ComputationTreeNode right) {
+    if (condition.isUnknown()) {
+      if (left.isUnknown() || right.isUnknown()) {
+        return AbstractValue.unknown();
+      }
+    }
     if (left.isUnknown() && right.isUnknown()) {
       return AbstractValue.unknown();
     }
-    return new ComputationTreeLogicalBinopIntPhiNode(condition, left, right);
+    ComputationTreeLogicalBinopIntPhiNode phiNode =
+        new ComputationTreeLogicalBinopIntPhiNode(condition, left, right);
+    if (!condition.hasBaseInFlow() && !left.hasBaseInFlow() && !right.hasBaseInFlow()) {
+      return phiNode.evaluate(appView, FlowGraphStateProvider.unreachable());
+    }
+    return phiNode;
   }
 
   @Override
@@ -74,7 +87,7 @@ public class ComputationTreeLogicalBinopIntPhiNode extends ComputationTreeLogica
   }
 
   @Override
-  public int hashCode() {
+  public int computeHashCode() {
     return ObjectUtils.hashLLLL(getClass(), condition, left, right);
   }
 

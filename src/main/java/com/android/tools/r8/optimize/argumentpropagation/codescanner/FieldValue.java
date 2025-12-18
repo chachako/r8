@@ -42,6 +42,11 @@ public class FieldValue implements BaseInFlow, ComputationTreeNode {
   }
 
   @Override
+  public boolean hasBaseInFlow() {
+    return true;
+  }
+
+  @Override
   public int internalCompareToSameKind(InFlow other, InFlowComparator comparator) {
     return field.compareTo(other.asFieldValue().getField());
   }
