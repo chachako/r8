@@ -438,8 +438,7 @@ public class JarClassFileReader<T extends DexClass> {
         }
       }
       checkName(name);
-      return new CreateFieldVisitor(
-          this, access, name, desc, signature, classKind == ClassKind.LIBRARY ? null : value);
+      return new CreateFieldVisitor(this, access, name, desc, signature, value);
     }
 
     @Override
@@ -716,7 +715,7 @@ public class JarClassFileReader<T extends DexClass> {
       if (parent.fieldSignatures.add(signature)) {
         DexAnnotationSet annotationSet =
             createAnnotationSet(annotations, parent.application.options);
-        DexValue staticValue = flags.isStatic() ? getStaticValue(value, dexField.type) : null;
+        DexValue staticValue = flags.isStatic() ? getStaticValue(value, dexField) : null;
         DexEncodedField field =
             DexEncodedField.builder()
                 .setField(dexField)
@@ -740,11 +739,19 @@ public class JarClassFileReader<T extends DexClass> {
     }
 
     @SuppressWarnings("ReferenceEquality")
-    private DexValue getStaticValue(Object value, DexType type) {
+    private DexValue getStaticValue(Object value, DexField field) {
       if (value == null) {
         return null;
       }
       DexItemFactory factory = parent.application.getFactory();
+      // Allow argument-based assume rules for PackageManager fields.
+      // Other than that, set all static field values to unknown. We don't want to use the value
+      // from the library at compile time, as it can be different at runtime.
+      if (parent.classKind == ClassKind.LIBRARY
+          && !field.getHolderType().isIdenticalTo(factory.androidContentPmPackageManagerType)) {
+        return null;
+      }
+      DexType type = field.getType();
       if (type == factory.booleanType) {
         int i = (Integer) value;
         assert 0 <= i && i <= 1;

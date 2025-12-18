@@ -62,11 +62,6 @@ public class DexLibraryClass extends DexClass implements LibraryClass, Supplier<
         skipNameValidationForTesting);
     assert Streams.stream(fields()).allMatch(DexLibraryClass::verifyLibraryField);
     assert Streams.stream(methods()).allMatch(DexLibraryClass::verifyLibraryMethod);
-    // Set all static field values to unknown. We don't want to use the value from the library
-    // at compile time, as it can be different at runtime.
-    for (DexEncodedField staticField : staticFields()) {
-      staticField.clearStaticValue();
-    }
     assert kind == Kind.CF : "Invalid kind " + kind + " for library-path class " + type;
   }
 

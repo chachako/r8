@@ -724,6 +724,8 @@ public class DexItemFactory {
       createStaticallyKnownType(androidResourcesDescriptorString);
   public final DexType androidContentContextType =
       createStaticallyKnownType(androidContextDescriptorString);
+  public final DexType androidContentPmPackageManagerType =
+      createStaticallyKnownType("Landroid/content/pm/PackageManager;");
   public final DexString getColorName = createString("getColor");
   public final DexProto androidGetColorProto = createProto(intType, intType);
   public final DexMethod androidResourcesGetColorMethod =
