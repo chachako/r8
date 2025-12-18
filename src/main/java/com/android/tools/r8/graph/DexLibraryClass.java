@@ -82,7 +82,6 @@ public class DexLibraryClass extends DexClass implements LibraryClass, Supplier<
 
   private static boolean verifyLibraryField(DexEncodedField field) {
     assert !field.isPrivate();
-    assert !field.isStatic() || !field.hasExplicitStaticValue();
     return true;
   }
 
