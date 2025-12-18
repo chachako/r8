@@ -3,9 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.analysis.type;
 
-import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.graph.DexType;
-
 public class BottomTypeElement extends TypeElement {
   private static final BottomTypeElement INSTANCE = new BottomTypeElement();
 
@@ -21,12 +18,6 @@ public class BottomTypeElement extends TypeElement {
   @Override
   public boolean isBottom() {
     return true;
-  }
-
-  @Override
-  public DexType toDexType(DexItemFactory factory) {
-    assert false : this;
-    return null;
   }
 
   @Override

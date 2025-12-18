@@ -459,8 +459,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       System.getProperty("com.android.tools.r8.allowServiceLoaderRewritingPinnedTypes") != null;
   public boolean enableNameReflectionOptimization = true;
   public boolean enableStringConcatenationOptimization = true;
-  public boolean enableStringConcatInstruction =
-      System.getProperty("com.android.tools.r8.enableStringConcatInstruction") != null;
   // Enabled only for R8 (not D8).
   public boolean enableTreeShakingOfLibraryMethodOverrides = false;
   public boolean encodeChecksums = false;
@@ -2686,12 +2684,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public boolean canUseInvokeCustom() {
     return hasFeaturePresentFrom(invokeCustomApiLevel());
-  }
-
-  public boolean canUseInvokeCustomWithIndyStringConcat(CfVersion cfVersion) {
-    return isGeneratingClassFiles()
-        && cfVersion.isGreaterThanOrEqualTo(CfVersion.V9)
-        && !isCfDesugaring();
   }
 
   public static AndroidApiLevel constantDynamicApiLevel() {

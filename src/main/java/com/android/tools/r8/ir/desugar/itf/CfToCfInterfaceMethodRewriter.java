@@ -71,13 +71,9 @@ public class CfToCfInterfaceMethodRewriter extends InterfaceMethodRewriter
       return;
     }
     CfCode code = method.getDefinition().getCode().asCfCode();
-    boolean enableStringConcatInstruction = appView.options().enableStringConcatInstruction;
     for (CfInstruction instruction : code.getInstructions()) {
-      CfInvokeDynamic invokeDynamic = instruction.asInvokeDynamic();
-      if (invokeDynamic != null
-          && !(enableStringConcatInstruction
-              && invokeDynamic.isStringConcat(appView.dexItemFactory()))
-          && !isAlreadyDesugared(invokeDynamic, method)) {
+      if (instruction.isInvokeDynamic()
+          && !isAlreadyDesugared(instruction.asInvokeDynamic(), method)) {
         reportInterfaceMethodHandleCallSite(instruction.asInvokeDynamic().getCallSite(), method);
       }
       compute(instruction, method).scan();

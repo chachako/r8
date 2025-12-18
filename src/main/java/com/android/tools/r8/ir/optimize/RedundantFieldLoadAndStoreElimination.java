@@ -402,10 +402,7 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
               handleInvokeDirect(instruction.asInvokeDirect());
             } else if (instruction.isInvokeStatic()) {
               handleInvokeStatic(instruction.asInvokeStatic());
-            } else if (instruction.isInvokeMethod()
-                || instruction.isInvokeCustom()
-                || (instruction.isStringConcat()
-                    && instruction.instructionMayTriggerMethodInvocation(appView, method))) {
+            } else if (instruction.isInvokeMethod() || instruction.isInvokeCustom()) {
               killAllNonFinalActiveFields();
             } else if (instruction.isNewInstance()) {
               handleNewInstance(instruction.asNewInstance());
@@ -445,7 +442,6 @@ public class RedundantFieldLoadAndStoreElimination extends CodeRewriterPass<AppI
                       || instruction.isNewArrayEmpty()
                       || instruction.isNewArrayFilledData()
                       || instruction.isReturn()
-                      || instruction.isStringConcat()
                       || instruction.isSwitch()
                       || instruction.isThrow()
                       || instruction.isUnop()

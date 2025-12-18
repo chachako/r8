@@ -146,8 +146,6 @@ public interface InstructionVisitor<T> {
 
   T visit(StringSwitch instruction);
 
-  T visit(StringConcat instruction);
-
   T visit(Throw instruction);
 
   T visit(OutlineMarker instruction);

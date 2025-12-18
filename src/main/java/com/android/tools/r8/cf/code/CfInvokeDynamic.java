@@ -11,7 +11,6 @@ import com.android.tools.r8.graph.CfCompareHelper;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexClassAndMethod;
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexMethodHandle;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
@@ -210,12 +209,6 @@ public class CfInvokeDynamic extends CfInstruction {
   @Override
   public boolean canThrow() {
     return true;
-  }
-
-  public boolean isStringConcat(DexItemFactory factory) {
-    DexMethod method = callSite.bootstrapMethod.asMethod();
-    return method.isIdenticalTo(factory.stringConcatFactoryMembers.makeConcat)
-        || method.isIdenticalTo(factory.stringConcatFactoryMembers.makeConcatWithConstants);
   }
 
   @Override

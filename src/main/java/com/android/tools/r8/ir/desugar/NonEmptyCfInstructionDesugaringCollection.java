@@ -133,10 +133,8 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
     RecordInstructionDesugaring recordRewriter = RecordInstructionDesugaring.create(appView);
     addIfNotNull(desugarings, recordRewriter);
     StringConcatInstructionDesugaring stringConcatDesugaring =
-        appView.options().enableStringConcatInstruction
-            ? null
-            : new StringConcatInstructionDesugaring(appView);
-    addIfNotNull(desugarings, stringConcatDesugaring);
+        new StringConcatInstructionDesugaring(appView);
+    desugarings.add(stringConcatDesugaring);
     LambdaInstructionDesugaring lambdaDesugaring = new LambdaInstructionDesugaring(appView);
     desugarings.add(lambdaDesugaring);
     interfaceMethodRewriter =

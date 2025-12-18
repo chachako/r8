@@ -280,7 +280,7 @@ public class StringBuilderMethodOptimizer implements LibraryMethodModelCollectio
 
                 // Allow calls to Objects.toString(Object) and String.valueOf(Object).
                 if (invokedMethod == dexItemFactory.objectsMethods.toStringWithObject
-                    || invokedMethod == dexItemFactory.stringMembers.valueOfObject) {
+                    || invokedMethod == dexItemFactory.stringMembers.valueOf) {
                   // Only allow unused StringBuilders.
                   if (invoke.hasOutValue() && invoke.outValue().hasNonDebugUsers()) {
                     return false;

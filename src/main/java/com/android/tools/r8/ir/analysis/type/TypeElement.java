@@ -456,8 +456,6 @@ public abstract class TypeElement {
     return appView.getTypeElementFactory().createReferenceTypeElement(type, nullability, appView);
   }
 
-  public abstract DexType toDexType(DexItemFactory factory);
-
   public boolean isValueTypeCompatible(TypeElement other) {
     return (isReferenceType() && other.isReferenceType())
         || (isSinglePrimitive() && other.isSinglePrimitive())

@@ -348,7 +348,7 @@ public class BottomUpOutlinerScanner {
         InvokeStatic invoke, Consumer<OutlineBuilder> continuation) {
       DexMethod invokedMethod = invoke.getInvokedMethod();
       if (!invokedMethod.isIdenticalTo(factory.stringMembers.format)
-          && !invokedMethod.isIdenticalTo(factory.stringMembers.valueOfObject)) {
+          && !invokedMethod.isIdenticalTo(factory.stringMembers.valueOf)) {
         // Unhandled instruction.
         startOutline(invoke.getNext(), continuation);
         return;

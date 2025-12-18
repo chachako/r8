@@ -17,7 +17,6 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeInstructionMetadata;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -846,11 +845,6 @@ public class LirBuilder<V, EV> {
         LirOpcodes.STRINGSWITCH,
         Collections.singletonList(payload),
         Collections.singletonList(value));
-  }
-
-  public LirBuilder<V, EV> addStringConcat(DexTypeList argTypes, List<V> arguments) {
-    return addInstructionTemplate(
-        LirOpcodes.STRINGCONCAT, Collections.singletonList(argTypes), arguments);
   }
 
   public LirBuilder<V, EV> addIf(

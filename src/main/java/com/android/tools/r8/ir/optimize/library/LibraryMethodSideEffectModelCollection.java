@@ -51,7 +51,7 @@ public class LibraryMethodSideEffectModelCollection {
                 dexItemFactory.stringMembers.constructor,
                 (method, arguments) -> arguments.get(1).isNeverNull())
             .put(
-                dexItemFactory.stringMembers.valueOfObject,
+                dexItemFactory.stringMembers.valueOf,
                 (method, arguments) ->
                     !JavaLangObjectsSideEffectCollection.toStringMayHaveSideEffects(
                         appView, arguments));

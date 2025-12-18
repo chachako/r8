@@ -116,6 +116,8 @@ public abstract class ReferenceTypeElement extends TypeElement {
     return this;
   }
 
+  public abstract DexType toDexType(DexItemFactory dexItemFactory);
+
   @Override
   public boolean equals(Object o) {
     throw new Unreachable("Should be implemented on each sub type");
