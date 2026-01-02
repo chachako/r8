@@ -744,13 +744,6 @@ public class JarClassFileReader<T extends DexClass> {
         return null;
       }
       DexItemFactory factory = parent.application.getFactory();
-      // Allow argument-based assume rules for PackageManager fields.
-      // Other than that, set all static field values to unknown. We don't want to use the value
-      // from the library at compile time, as it can be different at runtime.
-      if (parent.classKind == ClassKind.LIBRARY
-          && !field.getHolderType().isIdenticalTo(factory.androidContentPmPackageManagerType)) {
-        return null;
-      }
       DexType type = field.getType();
       if (type == factory.booleanType) {
         int i = (Integer) value;
