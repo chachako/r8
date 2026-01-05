@@ -1,7 +1,7 @@
 // Copyright (c) 2016, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.shaking;
+package com.android.tools.r8.shaking.rootset;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 import static com.android.tools.r8.utils.LensUtils.rewriteAndApplyIfNotPrimitiveType;
@@ -63,14 +63,62 @@ import com.android.tools.r8.position.FieldPosition;
 import com.android.tools.r8.position.MethodPosition;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.repackaging.RepackagingUtils;
+import com.android.tools.r8.shaking.AnnotationMatchResult;
 import com.android.tools.r8.shaking.AnnotationMatchResult.AnnotationsIgnoredMatchResult;
 import com.android.tools.r8.shaking.AnnotationMatchResult.ConcreteAnnotationMatchResult;
 import com.android.tools.r8.shaking.AnnotationMatchResult.MatchedAnnotation;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.shaking.CheckEnumUnboxedRule;
+import com.android.tools.r8.shaking.ClassInlineRule;
+import com.android.tools.r8.shaking.ConvertCheckNotNullRule;
+import com.android.tools.r8.shaking.DependentMinimumKeepInfoCollection;
+import com.android.tools.r8.shaking.DexStringCache;
+import com.android.tools.r8.shaking.Enqueuer;
+import com.android.tools.r8.shaking.EnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.InstantiatedClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.LiveClassEnqueuerEvent;
 import com.android.tools.r8.shaking.EnqueuerEvent.UnconditionalKeepInfoEvent;
+import com.android.tools.r8.shaking.InlineRule;
+import com.android.tools.r8.shaking.InterfaceMethodSyntheticBridgeAction;
 import com.android.tools.r8.shaking.KeepAnnotationCollectionInfo.RetentionInfo;
+import com.android.tools.r8.shaking.KeepConstantArgumentRule;
 import com.android.tools.r8.shaking.KeepInfo.Joiner;
+import com.android.tools.r8.shaking.KeepUnusedArgumentRule;
+import com.android.tools.r8.shaking.KeepUnusedReturnValueRule;
+import com.android.tools.r8.shaking.MaximumRemovedAndroidLogLevelRule;
+import com.android.tools.r8.shaking.MinimumKeepInfoCollection;
+import com.android.tools.r8.shaking.NoAccessModificationRule;
+import com.android.tools.r8.shaking.NoFieldTypeStrengtheningRule;
+import com.android.tools.r8.shaking.NoHorizontalClassMergingRule;
+import com.android.tools.r8.shaking.NoMethodStaticizingRule;
+import com.android.tools.r8.shaking.NoParameterReorderingRule;
+import com.android.tools.r8.shaking.NoParameterTypeStrengtheningRule;
+import com.android.tools.r8.shaking.NoRedundantFieldLoadEliminationRule;
+import com.android.tools.r8.shaking.NoReturnTypeStrengtheningRule;
+import com.android.tools.r8.shaking.NoUnusedInterfaceRemovalRule;
+import com.android.tools.r8.shaking.NoValuePropagationRule;
+import com.android.tools.r8.shaking.NoVerticalClassMergingRule;
+import com.android.tools.r8.shaking.ProguardAssumeMayHaveSideEffectsRule;
+import com.android.tools.r8.shaking.ProguardAssumeNoSideEffectRule;
+import com.android.tools.r8.shaking.ProguardAssumeValuesRule;
+import com.android.tools.r8.shaking.ProguardCheckDiscardRule;
+import com.android.tools.r8.shaking.ProguardClassFilter;
+import com.android.tools.r8.shaking.ProguardConfigurationRule;
+import com.android.tools.r8.shaking.ProguardIdentifierNameStringRule;
+import com.android.tools.r8.shaking.ProguardIfRule;
+import com.android.tools.r8.shaking.ProguardIfRulePreconditionMatch;
+import com.android.tools.r8.shaking.ProguardKeepAttributes;
+import com.android.tools.r8.shaking.ProguardKeepRule;
+import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
+import com.android.tools.r8.shaking.ProguardMemberRule;
+import com.android.tools.r8.shaking.ProguardMemberRuleValue;
+import com.android.tools.r8.shaking.ProguardTypeMatcher;
+import com.android.tools.r8.shaking.ReprocessClassInitializerRule;
+import com.android.tools.r8.shaking.ReprocessMethodRule;
+import com.android.tools.r8.shaking.WhyAreYouKeepingRule;
+import com.android.tools.r8.shaking.WhyAreYouNotInliningRule;
+import com.android.tools.r8.shaking.WhyAreYouNotObfuscatingRule;
 import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
 import com.android.tools.r8.shaking.assume.AssumeMethodInfoCollection;
 import com.android.tools.r8.shaking.rules.ReferencedFromExcludedClassInR8PartialRule;
@@ -196,10 +244,7 @@ public class RootSetUtils {
     private RootSetBuilder(
         AppView<? extends AppInfoWithClassHierarchy> appView,
         ImmediateAppSubtypingInfo subtypingInfo) {
-      this(
-          appView,
-          subtypingInfo,
-          null);
+      this(appView, subtypingInfo, null);
     }
 
     public DependentMinimumKeepInfoCollection getDependentMinimumKeepInfo() {
@@ -497,7 +542,7 @@ public class RootSetUtils {
       }
     }
 
-    void runPerRule(
+    public void runPerRule(
         TaskCollection<?> tasks,
         ProguardConfigurationRule rule,
         ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
@@ -742,7 +787,7 @@ public class RootSetUtils {
       }
     }
 
-    ConsequentRootSet buildConsequentRootSet() {
+    public ConsequentRootSet buildConsequentRootSet() {
       return new ConsequentRootSet(
           dependentMinimumKeepInfo,
           dependentKeepClassCompatRule,
@@ -1183,21 +1228,22 @@ public class RootSetUtils {
       out.close();
     }
 
-    static boolean satisfyNonSyntheticClass(DexClass clazz, AppView<?> appView) {
+    public static boolean satisfyNonSyntheticClass(DexClass clazz, AppView<?> appView) {
       return !clazz.isProgramClass()
           || !appView.getSyntheticItems().isSynthetic(clazz.asProgramClass());
     }
 
-    static boolean satisfyClassType(ProguardConfigurationRule rule, DexClass clazz) {
+    public static boolean satisfyClassType(ProguardConfigurationRule rule, DexClass clazz) {
       return rule.getClassType().matches(clazz) != rule.getClassTypeNegated();
     }
 
-    static boolean satisfyAccessFlag(ProguardConfigurationRule rule, DexClass clazz) {
+    public static boolean satisfyAccessFlag(ProguardConfigurationRule rule, DexClass clazz) {
       return rule.getClassAccessFlags().containsAll(clazz.accessFlags)
           && rule.getNegatedClassAccessFlags().containsNone(clazz.accessFlags);
     }
 
-    static AnnotationMatchResult satisfyAnnotation(ProguardConfigurationRule rule, DexClass clazz) {
+    public static AnnotationMatchResult satisfyAnnotation(
+        ProguardConfigurationRule rule, DexClass clazz) {
       return containsAllAnnotations(rule.getClassAnnotations(), clazz);
     }
 
@@ -1224,7 +1270,7 @@ public class RootSetUtils {
       return getMethodSatisfyingRule(rule, methods) != null;
     }
 
-    DexClassAndMethod getMethodSatisfyingRule(
+    public DexClassAndMethod getMethodSatisfyingRule(
         ProguardMemberRule rule, Iterable<DexClassAndMethod> methods) {
       if (rule.getRuleType().includesMethods()) {
         for (DexClassAndMethod method : methods) {
@@ -1236,7 +1282,8 @@ public class RootSetUtils {
       return null;
     }
 
-    boolean ruleSatisfiedByFields(ProguardMemberRule rule, Iterable<DexClassAndField> fields) {
+    public boolean ruleSatisfiedByFields(
+        ProguardMemberRule rule, Iterable<DexClassAndField> fields) {
       if (rule.getRuleType().includesFields()) {
         for (DexClassAndField field : fields) {
           if (rule.matches(field, appView, this::handleMatchedAnnotation, dexStringCache)) {
@@ -1247,17 +1294,18 @@ public class RootSetUtils {
       return false;
     }
 
-    boolean sideEffectFreeIsRuleSatisfiedByField(ProguardMemberRule rule, DexClassAndField field) {
+    public boolean sideEffectFreeIsRuleSatisfiedByField(
+        ProguardMemberRule rule, DexClassAndField field) {
       return rule.matches(field, appView, ignore -> {}, dexStringCache);
     }
 
-    static AnnotationMatchResult containsAllAnnotations(
+    public static AnnotationMatchResult containsAllAnnotations(
         List<ProguardTypeMatcher> annotationMatchers, DexClass clazz) {
       return containsAllAnnotations(
           annotationMatchers, clazz, clazz.annotations(), AnnotatedKind.TYPE);
     }
 
-    static <D extends DexEncodedMember<D, R>, R extends DexMember<D, R>>
+    public static <D extends DexEncodedMember<D, R>, R extends DexMember<D, R>>
         boolean containsAllAnnotations(
             List<ProguardTypeMatcher> annotationMatchers,
             DexClassAndMember<D, R> member,
@@ -1426,7 +1474,7 @@ public class RootSetUtils {
       }
     }
 
-    synchronized void addItemToSets(
+    public synchronized void addItemToSets(
         Definition item,
         ProguardConfigurationRule context,
         ProguardMemberRule rule,
@@ -2192,11 +2240,12 @@ public class RootSetUtils {
     }
   }
 
-  abstract static class RootSetBase {
+  public abstract static class RootSetBase {
 
     private final DependentMinimumKeepInfoCollection dependentMinimumKeepInfo;
-    final Map<DexType, Set<ProguardKeepRuleBase>> dependentKeepClassCompatRule;
-    final List<InterfaceMethodSyntheticBridgeAction> delayedInterfaceMethodSyntheticBridgeActions;
+    public final Map<DexType, Set<ProguardKeepRuleBase>> dependentKeepClassCompatRule;
+    public final List<InterfaceMethodSyntheticBridgeAction>
+        delayedInterfaceMethodSyntheticBridgeActions;
     public final ProgramMethodMap<ProgramMethod> pendingMethodMoveInverse;
 
     RootSetBase(
@@ -2211,7 +2260,7 @@ public class RootSetUtils {
       this.pendingMethodMoveInverse = pendingMethodMoveInverse;
     }
 
-    Set<ProguardKeepRuleBase> getDependentKeepClassCompatRule(DexType type) {
+    public Set<ProguardKeepRuleBase> getDependentKeepClassCompatRule(DexType type) {
       return dependentKeepClassCompatRule.get(type);
     }
 
@@ -2291,7 +2340,7 @@ public class RootSetUtils {
       }
     }
 
-    void addConsequentRootSet(ConsequentRootSet consequentRootSet) {
+    public void addConsequentRootSet(ConsequentRootSet consequentRootSet) {
       consequentRootSet.dependentKeepClassCompatRule.forEach(
           (type, rules) ->
               dependentKeepClassCompatRule
@@ -2381,7 +2430,7 @@ public class RootSetUtils {
       return rewrittenRootSet;
     }
 
-    void shouldNotBeMinified(ProgramDefinition definition) {
+    public void shouldNotBeMinified(ProgramDefinition definition) {
       getDependentMinimumKeepInfo()
           .getOrCreateUnconditionalMinimumKeepInfoFor(definition.getReference())
           .disallowMinification()
@@ -2554,14 +2603,11 @@ public class RootSetUtils {
         AppView<? extends AppInfoWithClassHierarchy> appView,
         ImmediateAppSubtypingInfo subtypingInfo,
         Iterable<? extends ProguardConfigurationRule> rules) {
-      return new RootSetBuilder(
-          appView,
-          subtypingInfo,
-          rules);
+      return new RootSetBuilder(appView, subtypingInfo, rules);
     }
   }
 
-  static class ConsequentRootSetBuilder extends RootSetBuilder {
+  public static class ConsequentRootSetBuilder extends RootSetBuilder {
 
     private final Enqueuer enqueuer;
 
@@ -2577,7 +2623,7 @@ public class RootSetUtils {
     }
 
     @Override
-    void handleMatchedAnnotation(AnnotationMatchResult annotationMatchResult) {
+    public void handleMatchedAnnotation(AnnotationMatchResult annotationMatchResult) {
       if (enqueuer.getMode().isInitialTreeShaking()
           && annotationMatchResult.isConcreteAnnotationMatchResult()) {
         enqueuer.retainAnnotationForFinalTreeShaking(
@@ -2607,7 +2653,7 @@ public class RootSetUtils {
           pendingMethodMoveInverse);
     }
 
-    static ConsequentRootSetBuilder builder(
+    public static ConsequentRootSetBuilder builder(
         AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
       return new ConsequentRootSetBuilder(appView, enqueuer, enqueuer.getSubtypingInfo());
     }
@@ -2674,7 +2720,7 @@ public class RootSetUtils {
     }
 
     @Override
-    void shouldNotBeMinified(ProgramDefinition definition) {
+    public void shouldNotBeMinified(ProgramDefinition definition) {
       // Do nothing.
     }
 

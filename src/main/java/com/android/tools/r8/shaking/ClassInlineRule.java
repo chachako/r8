@@ -107,7 +107,7 @@ public class ClassInlineRule extends ProguardConfigurationRule {
   }
 
   @Override
-  String typeString() {
+  public String typeString() {
     switch (type) {
       case ALWAYS:
         return "alwaysclassinline";

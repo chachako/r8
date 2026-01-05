@@ -135,12 +135,12 @@ import com.android.tools.r8.shaking.GraphReporter.KeepReasonWitness;
 import com.android.tools.r8.shaking.KeepInfoCollection.MutableKeepInfoCollection;
 import com.android.tools.r8.shaking.KeepMethodInfo.Joiner;
 import com.android.tools.r8.shaking.KeepReason.ReflectiveUseFromXml;
-import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSet;
-import com.android.tools.r8.shaking.RootSetUtils.RootSet;
-import com.android.tools.r8.shaking.RootSetUtils.RootSetBase;
-import com.android.tools.r8.shaking.RootSetUtils.RootSetBuilder;
 import com.android.tools.r8.shaking.ScopedDexMethodSet.AddMethodIfMoreVisibleResult;
 import com.android.tools.r8.shaking.reflectiveidentification.EnqueuerReflectiveIdentification;
+import com.android.tools.r8.shaking.rootset.RootSetUtils.ConsequentRootSet;
+import com.android.tools.r8.shaking.rootset.RootSetUtils.RootSet;
+import com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBase;
+import com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBuilder;
 import com.android.tools.r8.shaking.rules.ApplicableRulesEvaluator;
 import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
 import com.android.tools.r8.shaking.rules.KeepAnnotationMatcher;
@@ -5105,7 +5105,7 @@ public class Enqueuer {
         action.getIfRulePreconditionMatch());
   }
 
-  void retainAnnotationForFinalTreeShaking(List<MatchedAnnotation> matchedAnnotations) {
+  public void retainAnnotationForFinalTreeShaking(List<MatchedAnnotation> matchedAnnotations) {
     assert mode.isInitialTreeShaking();
     if (annotationRemoverBuilder != null) {
       for (MatchedAnnotation matchedAnnotation : matchedAnnotations) {

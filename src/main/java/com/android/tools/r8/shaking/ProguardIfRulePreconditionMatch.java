@@ -6,7 +6,7 @@ package com.android.tools.r8.shaking;
 import com.android.tools.r8.graph.Definition;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexClassAndMethod;
-import com.android.tools.r8.shaking.RootSetUtils.ConsequentRootSetBuilder;
+import com.android.tools.r8.shaking.rootset.RootSetUtils.ConsequentRootSetBuilder;
 import com.android.tools.r8.utils.collections.DexClassAndMethodSet;
 
 public class ProguardIfRulePreconditionMatch {

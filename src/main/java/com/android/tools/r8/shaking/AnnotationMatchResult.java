@@ -20,7 +20,7 @@ public abstract class AnnotationMatchResult {
     return null;
   }
 
-  static class AnnotationsIgnoredMatchResult extends AnnotationMatchResult {
+  public static class AnnotationsIgnoredMatchResult extends AnnotationMatchResult {
 
     private static final AnnotationsIgnoredMatchResult INSTANCE =
         new AnnotationsIgnoredMatchResult();
@@ -32,7 +32,7 @@ public abstract class AnnotationMatchResult {
     }
   }
 
-  static class ConcreteAnnotationMatchResult extends AnnotationMatchResult {
+  public static class ConcreteAnnotationMatchResult extends AnnotationMatchResult {
 
     private final List<MatchedAnnotation> matchedAnnotations;
 
@@ -55,13 +55,13 @@ public abstract class AnnotationMatchResult {
     }
   }
 
-  static class MatchedAnnotation {
+  public static class MatchedAnnotation {
 
     private final Definition annotatedItem;
     private final DexAnnotation annotation;
     private final AnnotatedKind annotatedKind;
 
-    MatchedAnnotation(
+    public MatchedAnnotation(
         Definition annotatedItem, DexAnnotation annotation, AnnotatedKind annotatedKind) {
       this.annotatedItem = annotatedItem;
       this.annotation = annotation;

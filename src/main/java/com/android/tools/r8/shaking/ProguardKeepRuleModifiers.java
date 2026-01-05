@@ -79,7 +79,7 @@ public class ProguardKeepRuleModifiers {
       this.includeDescriptorClasses = includeDescriptorClasses;
     }
 
-    ProguardKeepRuleModifiers build() {
+    public ProguardKeepRuleModifiers build() {
       return new ProguardKeepRuleModifiers(
           allowsAccessModification,
           allowsAnnotationRemoval,

@@ -6,7 +6,7 @@ package com.android.tools.r8.shaking;
 import com.android.tools.r8.graph.DexString;
 import java.util.concurrent.ConcurrentHashMap;
 
-final class DexStringCache {
+public final class DexStringCache {
   private final ConcurrentHashMap<DexString, String> stringCache = new ConcurrentHashMap<>();
 
   public String lookupString(DexString name) {

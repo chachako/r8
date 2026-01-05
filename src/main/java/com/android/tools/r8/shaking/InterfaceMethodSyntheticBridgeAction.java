@@ -15,7 +15,7 @@ public class InterfaceMethodSyntheticBridgeAction {
   private final ProguardIfRulePreconditionMatch ifRulePreconditionMatch;
   private final DexClass precondition;
 
-  InterfaceMethodSyntheticBridgeAction(
+  public InterfaceMethodSyntheticBridgeAction(
       ProgramMethod methodToKeep,
       ProgramMethod singleTarget,
       ProguardConfigurationRule context,
