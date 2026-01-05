@@ -8,11 +8,11 @@ import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
+import com.android.tools.r8.dex.distribution.IndexedItemTransaction;
 import com.android.tools.r8.errors.DexFileOverflowDiagnostic;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexField;
-import com.android.tools.r8.graph.DexItem;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexMethodHandle;
@@ -21,7 +21,6 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.ObjectToOffsetMapping;
-import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.synthesis.SyntheticNaming;
 import com.android.tools.r8.utils.FileUtils;
@@ -38,14 +37,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class VirtualFile {
 
@@ -228,7 +223,7 @@ public class VirtualFile {
         new ObjectToOffsetMapping(
             appView,
             sharedMapping,
-            transaction.rewriter,
+            transaction.getRewriter(),
             indexedItems.classes,
             indexedItems.protos,
             indexedItems.types,
@@ -313,7 +308,7 @@ public class VirtualFile {
 
     private Set<DexProgramClass> use;
 
-    ItemUseInfo(Set<DexProgramClass> initialUse) {
+    public ItemUseInfo(Set<DexProgramClass> initialUse) {
       use = initialUse.size() >= manyCount ? MANY : initialUse;
     }
 
@@ -358,16 +353,16 @@ public class VirtualFile {
   public static class VirtualFileIndexedItemCollection implements IndexedItemCollection {
 
     private final DexItemFactory factory;
-    private final Map<String, DexString> shortyCache = new HashMap<>();
+    public final Map<String, DexString> shortyCache = new HashMap<>();
 
-    private final Set<DexProgramClass> classes = Sets.newIdentityHashSet();
-    private final Map<DexProto, DexString> protos = Maps.newIdentityHashMap();
-    private final Set<DexType> types = Sets.newIdentityHashSet();
-    private final Set<DexMethod> methods = Sets.newIdentityHashSet();
-    private final Set<DexField> fields = Sets.newIdentityHashSet();
-    private final Set<DexString> strings = Sets.newIdentityHashSet();
-    private final Set<DexCallSite> callSites = Sets.newIdentityHashSet();
-    private final Set<DexMethodHandle> methodHandles = Sets.newIdentityHashSet();
+    public final Set<DexProgramClass> classes = Sets.newIdentityHashSet();
+    public final Map<DexProto, DexString> protos = Maps.newIdentityHashMap();
+    public final Set<DexType> types = Sets.newIdentityHashSet();
+    public final Set<DexMethod> methods = Sets.newIdentityHashSet();
+    public final Set<DexField> fields = Sets.newIdentityHashSet();
+    public final Set<DexString> strings = Sets.newIdentityHashSet();
+    public final Set<DexCallSite> callSites = Sets.newIdentityHashSet();
+    public final Set<DexMethodHandle> methodHandles = Sets.newIdentityHashSet();
 
     public final Map<DexString, ItemUseInfo> stringsUse = new IdentityHashMap<>();
     public final Map<DexType, ItemUseInfo> typesUse = new IdentityHashMap<>();
@@ -430,11 +425,11 @@ public class VirtualFile {
       return methodHandles.add(methodHandle);
     }
 
-    int getNumberOfMethods() {
+    public int getNumberOfMethods() {
       return methods.size();
     }
 
-    int getNumberOfFields() {
+    public int getNumberOfFields() {
       return fields.size();
     }
 
@@ -443,7 +438,7 @@ public class VirtualFile {
     }
   }
 
-  private static boolean addProtoWithShorty(
+  public static boolean addProtoWithShorty(
       DexProto proto,
       Map<DexProto, DexString> protoToShorty,
       Map<String, DexString> shortyCache,
@@ -459,440 +454,4 @@ public class VirtualFile {
     return true;
   }
 
-  public static class IndexedItemTransaction implements IndexedItemCollection {
-
-    public interface ClassUseCollector {
-
-      void collectClassDependencies(DexProgramClass clazz);
-
-      void collectClassDependenciesDone();
-
-      void clear();
-
-      Map<DexString, Set<DexProgramClass>> getStringsUse();
-
-      Map<DexType, Set<DexProgramClass>> getTypesUse();
-
-      Map<DexProto, Set<DexProgramClass>> getProtosUse();
-
-      Map<DexField, Set<DexProgramClass>> getFieldsUse();
-
-      Map<DexMethod, Set<DexProgramClass>> getMethodsUse();
-
-      Map<DexCallSite, Set<DexProgramClass>> getCallSitesUse();
-
-      Map<DexMethodHandle, Set<DexProgramClass>> getMethodHandlesUse();
-    }
-
-    public static class EmptyIndexedItemUsedByClasses implements ClassUseCollector {
-      @Override
-      public void collectClassDependencies(DexProgramClass clazz) {
-        // Do nothing.
-      }
-
-      @Override
-      public void collectClassDependenciesDone() {
-        // Do nothing.
-      }
-
-      @Override
-      public void clear() {
-        // DO nothing.
-      }
-
-      @Override
-      public Map<DexString, Set<DexProgramClass>> getStringsUse() {
-        assert false;
-        return null;
-      }
-
-      @Override
-      public Map<DexType, Set<DexProgramClass>> getTypesUse() {
-        assert false;
-        return null;
-      }
-
-      @Override
-      public Map<DexProto, Set<DexProgramClass>> getProtosUse() {
-        assert false;
-        return null;
-      }
-
-      @Override
-      public Map<DexField, Set<DexProgramClass>> getFieldsUse() {
-        assert false;
-        return null;
-      }
-
-      @Override
-      public Map<DexMethod, Set<DexProgramClass>> getMethodsUse() {
-        assert false;
-        return null;
-      }
-
-      @Override
-      public Map<DexCallSite, Set<DexProgramClass>> getCallSitesUse() {
-        assert false;
-        return null;
-      }
-
-      @Override
-      public Map<DexMethodHandle, Set<DexProgramClass>> getMethodHandlesUse() {
-        assert false;
-        return null;
-      }
-    }
-
-    public static class IndexedItemsUsedByClassesInTransaction
-        implements IndexedItemCollection, ClassUseCollector {
-
-      private final AppView<?> appView;
-      private final LensCodeRewriterUtils rewriter;
-      private final VirtualFileIndexedItemCollection base;
-      private final IndexedItemTransaction transaction;
-
-      private final Set<DexProgramClass> classes = new LinkedHashSet<>();
-
-      private final Map<DexString, Set<DexProgramClass>> stringsUse = new IdentityHashMap<>();
-      private final Map<DexType, Set<DexProgramClass>> typesUse = new IdentityHashMap<>();
-      private final Map<DexProto, Set<DexProgramClass>> protosUse = new IdentityHashMap<>();
-      private final Map<DexField, Set<DexProgramClass>> fieldsUse = new IdentityHashMap<>();
-      private final Map<DexMethod, Set<DexProgramClass>> methodsUse = new IdentityHashMap<>();
-      private final Map<DexCallSite, Set<DexProgramClass>> callSitesUse = new IdentityHashMap<>();
-      private final Map<DexMethodHandle, Set<DexProgramClass>> methodHandlessUse =
-          new LinkedHashMap<>();
-
-      DexProgramClass currentClass = null;
-
-      private IndexedItemsUsedByClassesInTransaction(
-          AppView<?> appView,
-          LensCodeRewriterUtils rewriter,
-          VirtualFileIndexedItemCollection base,
-          IndexedItemTransaction transaction) {
-        this.appView = appView;
-        this.rewriter = rewriter;
-        this.base = base;
-        this.transaction = transaction;
-      }
-
-      @Override
-      public void collectClassDependencies(DexProgramClass clazz) {
-        clazz.collectIndexedItems(appView, this, rewriter);
-      }
-
-      @Override
-      public boolean addClass(DexProgramClass clazz) {
-        assert currentClass == null;
-        currentClass = clazz;
-        assert !classes.contains(clazz);
-        classes.add(clazz);
-        return true;
-      }
-
-      @Override
-      public void collectClassDependenciesDone() {
-        currentClass = null;
-      }
-
-      @Override
-      public boolean addString(DexString string) {
-        collectUse(string, transaction.strings, base.strings, stringsUse);
-        return true;
-      }
-
-      @Override
-      public boolean addType(DexType type) {
-        collectUse(type, transaction.types, base.types, typesUse);
-        return true;
-      }
-
-      @Override
-      public boolean addProto(DexProto proto) {
-        collectUse(proto, transaction.protos.keySet(), base.protos.keySet(), protosUse);
-        return true;
-      }
-
-      @Override
-      public boolean addField(DexField field) {
-        collectUse(field, transaction.fields, base.fields, fieldsUse);
-        return true;
-      }
-
-      @Override
-      public boolean addMethod(DexMethod method) {
-        collectUse(method, transaction.methods, base.methods, methodsUse);
-        return true;
-      }
-
-      @Override
-      public boolean addCallSite(DexCallSite callSite) {
-        collectUse(callSite, transaction.callSites, base.callSites, callSitesUse);
-        return true;
-      }
-
-      @Override
-      public boolean addMethodHandle(DexMethodHandle methodHandle) {
-        collectUse(methodHandle, transaction.methodHandles, base.methodHandles, methodHandlessUse);
-        return true;
-      }
-
-      private <T extends DexItem> void collectUse(
-          T item, Set<T> set, Set<T> baseSet, Map<T, Set<DexProgramClass>> use) {
-        assert baseSet.contains(item) || set.contains(item);
-        if (set.contains(item)) {
-          assert classes.contains(currentClass);
-        }
-        use.computeIfAbsent(item, unused -> Sets.newIdentityHashSet()).add(currentClass);
-      }
-
-      @Override
-      public Map<DexString, Set<DexProgramClass>> getStringsUse() {
-        return stringsUse;
-      }
-
-      @Override
-      public Map<DexType, Set<DexProgramClass>> getTypesUse() {
-        return typesUse;
-      }
-
-      @Override
-      public Map<DexProto, Set<DexProgramClass>> getProtosUse() {
-        return protosUse;
-      }
-
-      @Override
-      public Map<DexField, Set<DexProgramClass>> getFieldsUse() {
-        return fieldsUse;
-      }
-
-      @Override
-      public Map<DexMethod, Set<DexProgramClass>> getMethodsUse() {
-        return methodsUse;
-      }
-
-      @Override
-      public Map<DexCallSite, Set<DexProgramClass>> getCallSitesUse() {
-        return callSitesUse;
-      }
-
-      @Override
-      public Map<DexMethodHandle, Set<DexProgramClass>> getMethodHandlesUse() {
-        return methodHandlessUse;
-      }
-
-      @Override
-      public void clear() {
-        classes.clear();
-        stringsUse.clear();
-        typesUse.clear();
-        protosUse.clear();
-        fieldsUse.clear();
-        methodsUse.clear();
-        callSitesUse.clear();
-        methodHandlessUse.clear();
-      }
-    }
-
-    private final AppView<?> appView;
-    private final VirtualFileIndexedItemCollection base;
-    private final LensCodeRewriterUtils rewriter;
-
-    private final Set<DexProgramClass> classes = new LinkedHashSet<>();
-    private final Set<DexField> fields = new LinkedHashSet<>();
-    private final Set<DexMethod> methods = new LinkedHashSet<>();
-    private final Set<DexType> types = new LinkedHashSet<>();
-    private final Map<DexProto, DexString> protos = new LinkedHashMap<>();
-    private final Set<DexString> strings = new LinkedHashSet<>();
-    private final Set<DexCallSite> callSites = new LinkedHashSet<>();
-    private final Set<DexMethodHandle> methodHandles = new LinkedHashSet<>();
-
-    private final ClassUseCollector indexedItemsReferencedFromClassesInTransaction;
-
-    private IndexedItemTransaction(VirtualFileIndexedItemCollection base, AppView<?> appView) {
-      this.appView = appView;
-      this.base = base;
-      this.rewriter = new LensCodeRewriterUtils(appView, true);
-      this.indexedItemsReferencedFromClassesInTransaction =
-          appView.options().testing.calculateItemUseCountInDex
-              ? new IndexedItemsUsedByClassesInTransaction(appView, rewriter, base, this)
-              : new EmptyIndexedItemUsedByClasses();
-    }
-
-    private <T extends DexItem> boolean maybeInsert(T item, Predicate<T> adder, Set<T> baseSet) {
-      return maybeInsert(item, adder, baseSet, true);
-    }
-
-    private <T extends DexItem> boolean maybeInsert(
-        T item, Predicate<T> adder, Set<T> baseSet, boolean requireCurrentClass) {
-      if (baseSet.contains(item)) {
-        return false;
-      }
-      boolean added = adder.test(item);
-      assert !added || !requireCurrentClass || classes.contains(currentClass);
-      return added;
-    }
-
-    void addClassAndDependencies(DexProgramClass clazz) {
-      clazz.collectIndexedItems(appView, this, rewriter);
-      addClassDone();
-      indexedItemsReferencedFromClassesInTransaction.collectClassDependencies(clazz);
-      indexedItemsReferencedFromClassesInTransaction.collectClassDependenciesDone();
-    }
-
-    DexProgramClass currentClass = null;
-
-    @Override
-    public boolean addClass(DexProgramClass dexProgramClass) {
-      assert currentClass == null;
-      currentClass = dexProgramClass;
-      return maybeInsert(dexProgramClass, classes::add, base.classes);
-    }
-
-    public void addClassDone() {
-      currentClass = null;
-    }
-
-    @Override
-    public boolean addField(DexField field) {
-      assert currentClass != null;
-      return maybeInsert(field, fields::add, base.fields);
-    }
-
-    @Override
-    public boolean addMethod(DexMethod method) {
-      assert currentClass != null;
-      return maybeInsert(method, methods::add, base.methods);
-    }
-
-    @Override
-    public boolean addString(DexString string) {
-      if (currentClass == null) {
-        // Only marker strings can be added outside a class context.
-        assert string.startsWith("~~");
-      }
-      return maybeInsert(string, strings::add, base.strings, false);
-    }
-
-    @Override
-    public boolean addProto(DexProto proto) {
-      assert currentClass != null;
-      return maybeInsert(
-          proto,
-          p -> addProtoWithShorty(p, protos, base.shortyCache, this::addString, base.factory),
-          base.protos.keySet());
-    }
-
-    @Override
-    public boolean addType(DexType type) {
-      assert currentClass != null;
-      assert SyntheticNaming.verifyNotInternalSynthetic(type);
-      return maybeInsert(type, types::add, base.types);
-    }
-
-    @Override
-    public boolean addCallSite(DexCallSite callSite) {
-      assert currentClass != null;
-      return maybeInsert(callSite, callSites::add, base.callSites);
-    }
-
-    @Override
-    public boolean addMethodHandle(DexMethodHandle methodHandle) {
-      assert currentClass != null;
-      return maybeInsert(methodHandle, methodHandles::add, base.methodHandles);
-    }
-
-    int getNumberOfMethods() {
-      return methods.size() + base.getNumberOfMethods();
-    }
-
-    int getNumberOfClasses() {
-      return classes.size() + base.classes.size();
-    }
-
-    int getNumberOfTypes() {
-      return types.size() + base.types.size();
-    }
-
-    int getNumberOfFields() {
-      return fields.size() + base.getNumberOfFields();
-    }
-
-    private <T extends DexItem> void commitItemsIn(Set<T> set, Function<T, Boolean> hook) {
-      set.forEach((item) -> {
-        boolean newlyAdded = hook.apply(item);
-        assert newlyAdded;
-      });
-      set.clear();
-    }
-
-    void commit() {
-      commitItemsIn(classes, base::addClass);
-      commitItemsIn(fields, base::addField);
-      commitItemsIn(methods, base::addMethod);
-      // The shorty strings are maintained in the transaction strings, so don't add them twice.
-      commitItemsIn(protos.keySet(), base::addProtoWithoutShorty);
-      commitItemsIn(types, base::addType);
-      commitItemsIn(strings, base::addString);
-      commitItemsIn(callSites, base::addCallSite);
-      commitItemsIn(methodHandles, base::addMethodHandle);
-
-      if (appView.options().testing.calculateItemUseCountInDex) {
-        transferUsedBy(
-            indexedItemsReferencedFromClassesInTransaction.getStringsUse(), base.stringsUse);
-        transferUsedBy(indexedItemsReferencedFromClassesInTransaction.getTypesUse(), base.typesUse);
-        transferUsedBy(
-            indexedItemsReferencedFromClassesInTransaction.getProtosUse(), base.protosUse);
-        transferUsedBy(
-            indexedItemsReferencedFromClassesInTransaction.getFieldsUse(), base.fieldsUse);
-        transferUsedBy(
-            indexedItemsReferencedFromClassesInTransaction.getMethodsUse(), base.methodsUse);
-        transferUsedBy(
-            indexedItemsReferencedFromClassesInTransaction.getCallSitesUse(), base.callSitesUse);
-        transferUsedBy(
-            indexedItemsReferencedFromClassesInTransaction.getMethodHandlesUse(),
-            base.methodHandlesUse);
-      }
-    }
-
-    private <T extends DexItem> void transferUsedBy(
-        Map<T, Set<DexProgramClass>> classesInTransactionReferringToItem,
-        Map<T, ItemUseInfo> itemUse) {
-      assert appView.options().testing.calculateItemUseCountInDex;
-      classesInTransactionReferringToItem.forEach(
-          (item, classes) -> {
-            ItemUseInfo currentItemUse = itemUse.get(item);
-            if (currentItemUse == null) {
-              itemUse.put(item, new ItemUseInfo(classes));
-            } else {
-              currentItemUse.addUse(classes);
-            }
-          });
-
-      classesInTransactionReferringToItem.clear();
-    }
-
-    void abort() {
-      classes.clear();
-      fields.clear();
-      methods.clear();
-      protos.clear();
-      types.clear();
-      strings.clear();
-      callSites.clear();
-      methodHandles.clear();
-
-      indexedItemsReferencedFromClassesInTransaction.clear();
-    }
-
-    public boolean isEmpty() {
-      return classes.isEmpty()
-          && fields.isEmpty()
-          && methods.isEmpty()
-          && protos.isEmpty()
-          && types.isEmpty()
-          && strings.isEmpty()
-          && callSites.isEmpty()
-          && methodHandles.isEmpty();
-    }
-  }
 }
