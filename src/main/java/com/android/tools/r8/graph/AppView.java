@@ -216,11 +216,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
             () -> DontWarnConfiguration.create(options().getProguardConfiguration()));
     this.initClassLens = timing.time("Init class lens", InitClassLens::getThrowingInstance);
     timing.begin("Create argument propagator");
-    if (enableWholeProgramOptimizations() && options().callSiteOptimizationOptions().isEnabled()) {
-      this.argumentPropagator = new ArgumentPropagator(withLiveness());
-    } else {
-      this.argumentPropagator = null;
-    }
+    this.argumentPropagator = ArgumentPropagator.create(withLiveness());
     if (enableWholeProgramOptimizations() && options().isOptimizedResourceShrinking()) {
       resourceShrinkerState = ResourceShrinkerUtils.createResourceShrinkerState(this);
     }

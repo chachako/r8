@@ -72,6 +72,14 @@ public class ArgumentPropagator {
     this.appView = appView;
   }
 
+  public static ArgumentPropagator create(AppView<AppInfoWithLiveness> appView) {
+    if (!appView.enableWholeProgramOptimizations()
+        || !appView.options().callSiteOptimizationOptions().isEnabled()) {
+      return null;
+    }
+    return new ArgumentPropagator(appView);
+  }
+
   /**
    * Called by {@link IRConverter} *before* the primary optimization pass to setup the scanner for
    * collecting argument information from the code objects.
