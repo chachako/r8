@@ -2,9 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.dex;
+package com.android.tools.r8.dex.distribution;
 
-import com.android.tools.r8.dex.VirtualFile.VirtualFileCycler;
+import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
@@ -31,10 +31,10 @@ import java.util.concurrent.ExecutorService;
 /**
  * Partition classes among dex files to limit LinearAlloc usage during DexOpt.
  *
- * This is achieved by ensuring that each class has all it's hierarchy either in the bootclasspath
- * or in the same secondary dex. This is preventing linking errors for those classes. Then if it's
- * not possible to respect this constraint for some classes, instead ensure that those classes are
- * put in a different secondary dex than all their link dependents (i.e. subclasses,
+ * <p>This is achieved by ensuring that each class has all it's hierarchy either in the
+ * bootclasspath or in the same secondary dex. This is preventing linking errors for those classes.
+ * Then if it's not possible to respect this constraint for some classes, instead ensure that those
+ * classes are put in a different secondary dex than all their link dependents (i.e. subclasses,
  * implementations or sub interfaces). Those classes will failed to link during DexOpt but they will
  * be loaded only once, this ensures that DexOpt will not use any extra LinearAlloc space for those
  * classes in linking error.
@@ -47,9 +47,7 @@ public class InheritanceClassInDexDistributor {
   private static final int DEX_FULL_ENOUGH_THRESHOLD = VirtualFile.MAX_ENTRIES - 100;
   private final ExecutorService executorService;
 
-  /**
-   * Group of classes.
-   */
+  /** Group of classes. */
   private class ClassGroup implements Comparable<ClassGroup> {
 
     public final Set<DexProgramClass> members;
@@ -85,10 +83,10 @@ public class InheritanceClassInDexDistributor {
     // This is used for sorting. Compared groups must be disjoint.
     @Override
     public int compareTo(ClassGroup other) {
-      assert !(
-          members.isEmpty()
+      assert !(members.isEmpty()
           || other.members.isEmpty()
-          || numberOfFieldIds == -1 || numberOfMethodIds == -1);
+          || numberOfFieldIds == -1
+          || numberOfMethodIds == -1);
       if (this == other) {
         return 0;
       }
@@ -103,29 +101,30 @@ public class InheritanceClassInDexDistributor {
       }
       // We can end up here frequently with one element groups, but it seems very unlikely if the
       // groups grow significantly bigger.
-      int result = DEX_PROGRAM_CLASS_COMPARATOR.compare(
-          getSortedCopy(members).iterator().next(),
-          getSortedCopy(other.members).iterator().next());
+      int result =
+          DEX_PROGRAM_CLASS_COMPARATOR.compare(
+              getSortedCopy(members).iterator().next(),
+              getSortedCopy(other.members).iterator().next());
       assert result != 0;
       return result;
     }
   }
 
   /**
-   * For {@link ClassGroup} with a dependency to the main dex classes. Allow to split the
-   * members in 3 categories:
-   * - Category 1: members which could go to a secondary dex altogether without facing linking
-   *   error.
-   * - Category 2: members which could go to the main dex without needing category 1 members to link
-   * - Category 3: others members of the group, those which will fail to link unless the whole group
-   *   goes into the main dex.
+   * For {@link ClassGroup} with a dependency to the main dex classes. Allow to split the members in
+   * 3 categories: - Category 1: members which could go to a secondary dex altogether without facing
+   * linking error. - Category 2: members which could go to the main dex without needing category 1
+   * members to link - Category 3: others members of the group, those which will fail to link unless
+   * the whole group goes into the main dex.
    */
   private class CategorizedInheritanceGroupWithMainDexDependency {
 
     /** Category 1. */
     final Set<DexProgramClass> mainDexIndependents = new HashSet<>();
+
     /** Category 2. Main dex dependents independents from mainDexIndependents elements. */
     final Set<DexProgramClass> independentsFromMainDexIndependents = new HashSet<>();
+
     /** Category 3. Main dex dependents also depending on some mainDexIndependents elements. */
     final Set<DexProgramClass> dependentsOfMainDexIndependents = new HashSet<>();
 
@@ -133,9 +132,7 @@ public class InheritanceClassInDexDistributor {
 
       int totalClassNumber = group.members.size();
 
-      /**
-       * Category 2 + category 3 elements. Used during construction only.
-       */
+      /** Category 2 + category 3 elements. Used during construction only. */
       Set<DexProgramClass> mainDexDependents = new HashSet<>();
       // split group members between mainDexIndependents and mainDexDependents
       // Note: sort not needed.
@@ -148,11 +145,10 @@ public class InheritanceClassInDexDistributor {
       for (DexProgramClass candidate : mainDexDependents) {
         isDependingOnMainDexIndependents(candidate);
       }
-      assert totalClassNumber ==
-          mainDexIndependents.size()
+      assert totalClassNumber
+          == mainDexIndependents.size()
               + dependentsOfMainDexIndependents.size()
               + independentsFromMainDexIndependents.size();
-
     }
 
     private boolean isDependingOnMainDexClass(
@@ -233,13 +229,14 @@ public class InheritanceClassInDexDistributor {
   }
 
   /**
-   * Collect direct inheritance relation between a set of {@link DexProgramClass}.
-   * This is not a general purpose tool: it's ignoring any inheritance relation with classes outside
-   * of the provided set.
+   * Collect direct inheritance relation between a set of {@link DexProgramClass}. This is not a
+   * general purpose tool: it's ignoring any inheritance relation with classes outside of the
+   * provided set.
    */
   private static class DirectSubClassesInfo {
     /** Class or interface to direct subclasses or direct sub interfaces and implementing classes */
     private final Map<DexProgramClass, Collection<DexProgramClass>> directSubClasses;
+
     private final Set<DexProgramClass> classes;
 
     DirectSubClassesInfo(AppView<?> appView, Set<DexProgramClass> classes) {
@@ -274,7 +271,6 @@ public class InheritanceClassInDexDistributor {
         subClasses.add(clazz);
       }
     }
-
   }
 
   private final VirtualFile mainDex;
@@ -316,16 +312,14 @@ public class InheritanceClassInDexDistributor {
     // the main dex members
     VirtualFileCycler cycler =
         new VirtualFileCycler(files, filesForDistribution, appView, nextFileId);
-    for (Iterator<ClassGroup> iter = remainingInheritanceGroups.iterator(); iter.hasNext();) {
+    for (Iterator<ClassGroup> iter = remainingInheritanceGroups.iterator(); iter.hasNext(); ) {
       ClassGroup group = iter.next();
       if (group.dependsOnMainDexClasses) {
 
         iter.remove();
 
         // Try to assign the whole group to the main dex
-        if (group.canFitInOneDex()
-            && !isDexFull(mainDex)
-            && assignAll(mainDex, group.members)) {
+        if (group.canFitInOneDex() && !isDexFull(mainDex) && assignAll(mainDex, group.members)) {
           // It fitted, so work done
           continue;
         }
@@ -341,8 +335,7 @@ public class InheritanceClassInDexDistributor {
             assignFromRoot(mainDex, groupSplit.independentsFromMainDexIndependents);
 
         // Assign mainDexIndependents classes, those can link as long as the group fit into one dex
-        ClassGroup mainDexIndependentGroup =
-            new ClassGroup(groupSplit.mainDexIndependents);
+        ClassGroup mainDexIndependentGroup = new ClassGroup(groupSplit.mainDexIndependents);
 
         Collection<VirtualFile> mainDexInpendentsDexes =
             assignGroup(mainDexIndependentGroup, cycler, Collections.singletonList(mainDex));
@@ -441,9 +434,12 @@ public class InheritanceClassInDexDistributor {
             dexForLayer.abortTransaction();
             if (dexForLayer.isEmpty()) {
               // The class is too big to fit in one dex
-              throw new CompilationError("Class '" + dexProgramClass.toSourceString()
-                  + "' from " + dexProgramClass.getOrigin().toString()
-                  + " is too big to fit in a dex.");
+              throw new CompilationError(
+                  "Class '"
+                      + dexProgramClass.toSourceString()
+                      + "' from "
+                      + dexProgramClass.getOrigin().toString()
+                      + " is too big to fit in a dex.");
             }
             if (dexForLayer.isFull(DEX_FULL_ENOUGH_THRESHOLD)) {
               markDexFull(dexForLayer);
@@ -557,8 +553,8 @@ public class InheritanceClassInDexDistributor {
     }
   }
 
-  private void collectGroup(Collection<DexProgramClass> classes, ClassGroup group,
-      DexProgramClass clazz) {
+  private void collectGroup(
+      Collection<DexProgramClass> classes, ClassGroup group, DexProgramClass clazz) {
     if (clazz == null) {
       return;
     }
@@ -588,6 +584,7 @@ public class InheritanceClassInDexDistributor {
 
   /**
    * Assign all given classes or none.
+   *
    * @return true if it managed to assign all the classes, false otherwise.
    */
   private boolean assignAll(VirtualFile dex, Collection<DexProgramClass> classes) {
@@ -608,12 +605,13 @@ public class InheritanceClassInDexDistributor {
     }
     dex.commitTransaction();
     assert totalClasses == assignedClasses
-      && dexInitialSize + assignedClasses == dex.classes().size();
+        && dexInitialSize + assignedClasses == dex.classes().size();
     return true;
   }
 
   /**
    * Assign as many classes as possible by layer starting by roots.
+   *
    * @return the list of classes that were not assigned.
    */
   private Set<DexProgramClass> assignFromRoot(
@@ -637,8 +635,12 @@ public class InheritanceClassInDexDistributor {
             dex.abortTransaction();
             if (dex.isEmpty()) {
               // The class is too big to fit in one dex
-              throw new CompilationError("Class '" + clazz.toSourceString() + "' from "
-                  + clazz.getOrigin().toString() + " is too big to fit in a dex.");
+              throw new CompilationError(
+                  "Class '"
+                      + clazz.toSourceString()
+                      + "' from "
+                      + clazz.getOrigin().toString()
+                      + " is too big to fit in a dex.");
             }
             isLayerFullyAssigned = false;
             remaining.add(clazz);
@@ -658,8 +660,8 @@ public class InheritanceClassInDexDistributor {
     return remaining;
   }
 
-  private boolean hasDirectInheritanceInCollection(DexProgramClass clazz,
-      Set<DexProgramClass> collection) {
+  private boolean hasDirectInheritanceInCollection(
+      DexProgramClass clazz, Set<DexProgramClass> collection) {
     if (collection.contains(appView.programDefinitionFor(clazz.superType, clazz))) {
       return true;
     }
@@ -690,8 +692,8 @@ public class InheritanceClassInDexDistributor {
     return result;
   }
 
-  private DexProgramClass findOneRootInSetFrom(DexProgramClass searchFrom,
-      Set<DexProgramClass> classSet) {
+  private DexProgramClass findOneRootInSetFrom(
+      DexProgramClass searchFrom, Set<DexProgramClass> classSet) {
     DexProgramClass zuper = appView.programDefinitionFor(searchFrom.superType, searchFrom);
     if (classSet.contains(zuper)) {
       return findOneRootInSetFrom(zuper, classSet);

@@ -22,8 +22,11 @@ import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPredicate;
 import com.android.tools.r8.dex.FileWriter.ByteBufferResult;
-import com.android.tools.r8.dex.VirtualFile.FilePerInputClassDistributor;
 import com.android.tools.r8.dex.VirtualFile.ItemUseInfo;
+import com.android.tools.r8.dex.distribution.Distributor;
+import com.android.tools.r8.dex.distribution.FilePerInputClassDistributor;
+import com.android.tools.r8.dex.distribution.FillFilesDistributor;
+import com.android.tools.r8.dex.distribution.MonoDexDistributor;
 import com.android.tools.r8.dex.jumbostrings.JumboStringRewriter;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.features.FeatureSplitConfiguration.DataResourceProvidersAndConsumer;
@@ -203,10 +206,10 @@ public class ApplicationWriter {
     }
 
     // Distribute classes into dex files.
-    VirtualFile.Distributor distributor;
+    Distributor distributor;
     if (options.isGeneratingDexFilePerClassFile()) {
       distributor =
-          new VirtualFile.FilePerInputClassDistributor(
+          new FilePerInputClassDistributor(
               this,
               classes,
               options.getDexFilePerClassFileConsumer().combineSyntheticClassesWithPrimaryClass());
@@ -214,7 +217,7 @@ public class ApplicationWriter {
         && options.mainDexKeepRules.isEmpty()
         && appView.appInfo().getMainDexInfo().isEmpty()
         && options.enableMainDexListCheck) {
-      distributor = new VirtualFile.MonoDexDistributor(this, classes, options);
+      distributor = new MonoDexDistributor(this, classes, options);
     } else {
       // Retrieve the startup order for writing the app. Use an empty startup profile if the startup
       // profile should not be used for layout.
@@ -223,8 +226,7 @@ public class ApplicationWriter {
               ? appView.getStartupProfile()
               : StartupProfile.empty();
       distributor =
-          new VirtualFile.FillFilesDistributor(
-              this, classes, options, executorService, startupProfile);
+          new FillFilesDistributor(this, classes, options, executorService, startupProfile);
     }
 
     List<VirtualFile> virtualFiles = distributor.run();

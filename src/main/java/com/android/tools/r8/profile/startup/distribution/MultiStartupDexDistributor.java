@@ -5,8 +5,8 @@
 package com.android.tools.r8.profile.startup.distribution;
 
 import com.android.tools.r8.dex.VirtualFile;
-import com.android.tools.r8.dex.VirtualFile.PackageSplitPopulator;
-import com.android.tools.r8.dex.VirtualFile.VirtualFileCycler;
+import com.android.tools.r8.dex.distribution.PackageSplitPopulator;
+import com.android.tools.r8.dex.distribution.VirtualFileCycler;
 import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexEncodedMethod;
