@@ -4,10 +4,10 @@
 package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
-import static com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBuilder.satisfyAccessFlag;
-import static com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBuilder.satisfyAnnotation;
-import static com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBuilder.satisfyClassType;
-import static com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBuilder.satisfyNonSyntheticClass;
+import static com.android.tools.r8.shaking.rootset.RootSetBuilder.satisfyAccessFlag;
+import static com.android.tools.r8.shaking.rootset.RootSetBuilder.satisfyAnnotation;
+import static com.android.tools.r8.shaking.rootset.RootSetBuilder.satisfyClassType;
+import static com.android.tools.r8.shaking.rootset.RootSetBuilder.satisfyNonSyntheticClass;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -19,7 +19,7 @@ import com.android.tools.r8.graph.ImmediateAppSubtypingInfo;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
-import com.android.tools.r8.shaking.rootset.RootSetUtils.RootSetBuilder;
+import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;

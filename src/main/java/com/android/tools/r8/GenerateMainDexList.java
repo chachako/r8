@@ -22,7 +22,7 @@ import com.android.tools.r8.shaking.EnqueuerFactory;
 import com.android.tools.r8.shaking.MainDexInfo;
 import com.android.tools.r8.shaking.MainDexListBuilder;
 import com.android.tools.r8.shaking.WhyAreYouKeepingConsumer;
-import com.android.tools.r8.shaking.rootset.RootSetUtils.MainDexRootSet;
+import com.android.tools.r8.shaking.rootset.MainDexRootSet;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
