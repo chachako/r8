@@ -39,17 +39,11 @@ public class IndexedItemTransaction implements IndexedItemCollection {
   final Set<DexCallSite> callSites = new LinkedHashSet<>();
   final Set<DexMethodHandle> methodHandles = new LinkedHashSet<>();
 
-  private final ClassUseCollector indexedItemsReferencedFromClassesInTransaction;
-
   public IndexedItemTransaction(
       VirtualFile.VirtualFileIndexedItemCollection base, AppView<?> appView) {
     this.appView = appView;
     this.base = base;
     this.rewriter = new LensCodeRewriterUtils(appView, true);
-    this.indexedItemsReferencedFromClassesInTransaction =
-        appView.options().testing.calculateItemUseCountInDex
-            ? new IndexedItemsUsedByClassesInTransaction(appView, rewriter, base, this)
-            : new EmptyIndexedItemUsedByClasses();
   }
 
   public LensCodeRewriterUtils getRewriter() {
@@ -73,8 +67,6 @@ public class IndexedItemTransaction implements IndexedItemCollection {
   public void addClassAndDependencies(DexProgramClass clazz) {
     clazz.collectIndexedItems(appView, this, rewriter);
     addClassDone();
-    indexedItemsReferencedFromClassesInTransaction.collectClassDependencies(clazz);
-    indexedItemsReferencedFromClassesInTransaction.collectClassDependenciesDone();
   }
 
   DexProgramClass currentClass = null;
@@ -174,38 +166,6 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     commitItemsIn(strings, base::addString);
     commitItemsIn(callSites, base::addCallSite);
     commitItemsIn(methodHandles, base::addMethodHandle);
-
-    if (appView.options().testing.calculateItemUseCountInDex) {
-      transferUsedBy(
-          indexedItemsReferencedFromClassesInTransaction.getStringsUse(), base.stringsUse);
-      transferUsedBy(indexedItemsReferencedFromClassesInTransaction.getTypesUse(), base.typesUse);
-      transferUsedBy(indexedItemsReferencedFromClassesInTransaction.getProtosUse(), base.protosUse);
-      transferUsedBy(indexedItemsReferencedFromClassesInTransaction.getFieldsUse(), base.fieldsUse);
-      transferUsedBy(
-          indexedItemsReferencedFromClassesInTransaction.getMethodsUse(), base.methodsUse);
-      transferUsedBy(
-          indexedItemsReferencedFromClassesInTransaction.getCallSitesUse(), base.callSitesUse);
-      transferUsedBy(
-          indexedItemsReferencedFromClassesInTransaction.getMethodHandlesUse(),
-          base.methodHandlesUse);
-    }
-  }
-
-  private <T extends DexItem> void transferUsedBy(
-      Map<T, Set<DexProgramClass>> classesInTransactionReferringToItem,
-      Map<T, VirtualFile.ItemUseInfo> itemUse) {
-    assert appView.options().testing.calculateItemUseCountInDex;
-    classesInTransactionReferringToItem.forEach(
-        (item, classes) -> {
-          VirtualFile.ItemUseInfo currentItemUse = itemUse.get(item);
-          if (currentItemUse == null) {
-            itemUse.put(item, new VirtualFile.ItemUseInfo(classes));
-          } else {
-            currentItemUse.addUse(classes);
-          }
-        });
-
-    classesInTransactionReferringToItem.clear();
   }
 
   public void abort() {
@@ -217,8 +177,6 @@ public class IndexedItemTransaction implements IndexedItemCollection {
     strings.clear();
     callSites.clear();
     methodHandles.clear();
-
-    indexedItemsReferencedFromClassesInTransaction.clear();
   }
 
   public boolean isEmpty() {

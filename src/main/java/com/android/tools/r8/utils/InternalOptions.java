@@ -2281,10 +2281,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean nullOutDebugInfo =
         System.getProperty("com.android.tools.r8.nullOutDebugInfo") != null;
 
-    // Testing options to analyse locality of items in DEX files when they are generated.
-    public boolean calculateItemUseCountInDex = false;
-    public boolean calculateItemUseCountInDexDumpSingleUseStrings = false;
-
     public boolean enableBinopOptimization = true;
 
     public boolean forceInvokeRangeForInvokeCustom = false;

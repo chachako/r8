@@ -228,7 +228,6 @@ class ApplicationWriterContainer extends ApplicationWriter {
       boolean last) {
     assert !virtualFile.isEmpty();
     assert BitUtils.isAligned(4, offset);
-    printItemUseInfo(virtualFile);
 
     timing.begin("Reindex for lazy strings");
     ObjectToOffsetMapping objectMapping = virtualFile.getObjectMapping();

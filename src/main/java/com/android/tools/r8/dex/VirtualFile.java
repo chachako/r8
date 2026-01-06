@@ -35,7 +35,6 @@ import com.google.common.hash.Hashing;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -301,55 +300,6 @@ public class VirtualFile {
     return indexedItems.classes;
   }
 
-  public static class ItemUseInfo {
-
-    private static final Set<DexProgramClass> MANY = null;
-    private static final int manyCount = 3;
-
-    private Set<DexProgramClass> use;
-
-    public ItemUseInfo(Set<DexProgramClass> initialUse) {
-      use = initialUse.size() >= manyCount ? MANY : initialUse;
-    }
-
-    public void addUse(Set<DexProgramClass> moreUse) {
-      if (use == MANY) {
-        return;
-      }
-      if (moreUse.size() >= manyCount) {
-        use = MANY;
-        return;
-      }
-      use.addAll(moreUse);
-      if (use.size() >= manyCount) {
-        use = MANY;
-      }
-    }
-
-    public static int getManyCount() {
-      return manyCount;
-    }
-
-    public boolean isMany() {
-      return use == MANY;
-    }
-
-    public int getSize() {
-      assert use != MANY;
-      return use.size();
-    }
-
-    public int getSizeOrMany() {
-      if (use == MANY) return -1;
-      return use.size();
-    }
-
-    public Set<DexProgramClass> getUse() {
-      assert !isMany();
-      return use;
-    }
-  }
-
   public static class VirtualFileIndexedItemCollection implements IndexedItemCollection {
 
     private final DexItemFactory factory;
@@ -363,14 +313,6 @@ public class VirtualFile {
     public final Set<DexString> strings = Sets.newIdentityHashSet();
     public final Set<DexCallSite> callSites = Sets.newIdentityHashSet();
     public final Set<DexMethodHandle> methodHandles = Sets.newIdentityHashSet();
-
-    public final Map<DexString, ItemUseInfo> stringsUse = new IdentityHashMap<>();
-    public final Map<DexType, ItemUseInfo> typesUse = new IdentityHashMap<>();
-    public final Map<DexProto, ItemUseInfo> protosUse = new IdentityHashMap<>();
-    public final Map<DexField, ItemUseInfo> fieldsUse = new IdentityHashMap<>();
-    public final Map<DexMethod, ItemUseInfo> methodsUse = new IdentityHashMap<>();
-    public final Map<DexCallSite, ItemUseInfo> callSitesUse = new IdentityHashMap<>();
-    public final Map<DexMethodHandle, ItemUseInfo> methodHandlesUse = new IdentityHashMap<>();
 
     public VirtualFileIndexedItemCollection(AppView<?> appView) {
       this.factory = appView.dexItemFactory();
