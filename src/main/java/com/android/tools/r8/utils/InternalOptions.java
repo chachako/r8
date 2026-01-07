@@ -2218,6 +2218,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public int classToDexDistributionRefinementPasses =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementpasses", 0);
+    public int classToDexDistributionRefinementLegRoomPercentage =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.dex.refinementlegroom", 5);
 
     public boolean enableEmbeddedKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(

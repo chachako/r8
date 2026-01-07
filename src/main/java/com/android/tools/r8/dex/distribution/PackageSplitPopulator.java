@@ -379,7 +379,13 @@ public class PackageSplitPopulator {
         && current.getNumberOfClasses() > options.testing.limitNumberOfClassesPerDex) {
       return true;
     }
-    return current.isFull();
+    int maxEntries = VirtualFile.MAX_ENTRIES;
+    if (options.testing.classToDexDistributionRefinementPasses > 0) {
+      // Leave a bit of room for the refinement to be more effective.
+      maxEntries -=
+          maxEntries * (options.testing.classToDexDistributionRefinementLegRoomPercentage / 100);
+    }
+    return current.isFull(maxEntries);
   }
 
   private void addNonPackageClasses(
