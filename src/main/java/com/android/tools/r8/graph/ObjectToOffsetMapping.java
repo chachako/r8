@@ -9,7 +9,6 @@ import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.lens.GraphLens;
-import com.android.tools.r8.graph.lens.InitClassLens;
 import com.android.tools.r8.ir.conversion.LensCodeRewriterUtils;
 import com.android.tools.r8.naming.NamingLens;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
@@ -42,8 +41,8 @@ public class ObjectToOffsetMapping {
   private final AppView<?> appView;
   private final GraphLens graphLens;
   private final NamingLens namingLens;
-  private final InitClassLens initClassLens;
   private final LensCodeRewriterUtils lensCodeRewriter;
+  private final Map<String, DexString> shortyCache;
 
   // Sorted collection of objects mapped to their offsets.
   private final DexProgramClass[] classes;
@@ -55,8 +54,6 @@ public class ObjectToOffsetMapping {
   private Reference2IntLinkedOpenHashMap<DexString> strings;
   private final Reference2IntLinkedOpenHashMap<DexCallSite> callSites;
   private final Reference2IntLinkedOpenHashMap<DexMethodHandle> methodHandles;
-  // Indirection table of protos to their shorty strings.
-  private final Map<DexProto, DexString> protoToShorty;
 
   private DexString firstJumboString;
 
@@ -67,7 +64,7 @@ public class ObjectToOffsetMapping {
       ObjectToOffsetMapping sharedMapping,
       LensCodeRewriterUtils lensCodeRewriter,
       Set<DexProgramClass> classes,
-      Map<DexProto, DexString> protos,
+      Collection<DexProto> protos,
       Collection<DexType> types,
       Collection<DexMethod> methods,
       Collection<DexField> fields,
@@ -75,6 +72,7 @@ public class ObjectToOffsetMapping {
       Collection<DexCallSite> callSites,
       Collection<DexMethodHandle> methodHandles,
       int lazyDexStringsCount,
+      Map<String, DexString> shortyCache,
       StartupProfile startupProfile,
       VirtualFile virtualFile,
       Timing timing) {
@@ -91,9 +89,8 @@ public class ObjectToOffsetMapping {
     this.appView = appView;
     this.graphLens = appView.graphLens();
     this.namingLens = appView.getNamingLens();
-    this.initClassLens = appView.initClassLens();
     this.lensCodeRewriter = lensCodeRewriter;
-    this.protoToShorty = protos;
+    this.shortyCache = shortyCache;
     timing.begin("Sort strings");
     if (sharedMapping == null) {
       this.strings =
@@ -118,7 +115,7 @@ public class ObjectToOffsetMapping {
             : sortClasses(classes, startupProfile, virtualFile, visitor);
     timing.end();
     timing.begin("Sort protos");
-    this.protos = createSortedMap(protos.keySet(), compare(visitor), this::failOnOverflow);
+    this.protos = createSortedMap(protos, compare(visitor), this::failOnOverflow);
     timing.end();
     timing.begin("Sort methods");
     this.methods = createSortedMap(methods, compare(visitor), this::failOnOverflow);
@@ -399,7 +396,9 @@ public class ObjectToOffsetMapping {
   }
 
   public DexString getShorty(DexProto proto) {
-    return protoToShorty.get(proto);
+    String shorty = proto.createShortyString();
+    assert shortyCache.containsKey(shorty);
+    return shortyCache.get(shorty);
   }
 
   public boolean hasJumboStrings() {
@@ -451,9 +450,5 @@ public class ObjectToOffsetMapping {
 
   public int getOffsetFor(DexMethodHandle methodHandle) {
     return getOffsetFor(methodHandle, methodHandles);
-  }
-
-  public DexField getClinitField(DexType type) {
-    return initClassLens.getInitClassField(type);
   }
 }

@@ -33,7 +33,7 @@ public class ContainerJumboStringRewriter extends JumboStringRewriter {
     VirtualFile lastFile = virtualFiles.get(virtualFiles.size() - 1);
     List<VirtualFile> allExceptLastFile = virtualFiles.subList(0, virtualFiles.size() - 1);
     for (VirtualFile virtualFile : allExceptLastFile) {
-      lastFile.indexedItems.addStrings(virtualFile.indexedItems.getStrings());
+      lastFile.indexedItems.addStringsToContainer(virtualFile.indexedItems.getStrings());
     }
     // Compute string layout and handle jumbo strings for the last DEX section.
     timing.begin("Process last virtual file");

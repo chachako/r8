@@ -25,7 +25,7 @@ public abstract class Distributor {
   void addMarkers(VirtualFile virtualFile) {
     if (writer.markerStrings != null && !writer.markerStrings.isEmpty()) {
       for (DexString markerString : writer.markerStrings) {
-        virtualFile.getTransaction().addString(markerString);
+        virtualFile.getTransaction().addMarkerString(markerString);
       }
       virtualFile.commitTransaction();
     }

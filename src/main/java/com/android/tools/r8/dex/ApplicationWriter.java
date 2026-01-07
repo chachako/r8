@@ -264,7 +264,9 @@ public class ApplicationWriter {
         DexString desc = getNamingLens().lookupDescriptor(clazz.type);
         toWrite.addChecksum(desc.toString(), inputChecksums.getLong(desc));
       }
-      file.injectString(appView.dexItemFactory().createString(toWrite.toJsonString()));
+      file.getTransaction()
+          .addChecksumString(appView.dexItemFactory().createString(toWrite.toJsonString()));
+      file.commitTransaction();
     }
   }
 

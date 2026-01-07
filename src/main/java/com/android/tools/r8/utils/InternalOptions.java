@@ -2215,6 +2215,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public static class TestingOptions {
 
+    public int classToDexDistributionRefinementPasses =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.dex.refinementpasses", 0);
+
     public boolean enableEmbeddedKeepAnnotations =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);

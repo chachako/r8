@@ -24,6 +24,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collections;
+import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +56,7 @@ public class DebugByteCodeWriterTest {
         null,
         new LensCodeRewriterUtils(appView),
         Collections.emptySet(),
-        Collections.emptyMap(),
+        Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList(),
@@ -63,6 +64,7 @@ public class DebugByteCodeWriterTest {
         Collections.emptyList(),
         Collections.emptyList(),
         0,
+        new HashMap<>(),
         StartupProfile.empty(),
         null,
         Timing.empty());
