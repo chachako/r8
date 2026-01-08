@@ -68,6 +68,7 @@ public abstract class TestCompilerBuilder<
         options.testing.enableTestAssertions = true;
         options.getBottomUpOutlinerOptions().enable = OptionalBool.TRUE;
         options.getBottomUpOutlinerOptions().enableStringBuilderOutlining = true;
+        options.getTestingOptions().classToDexDistributionRefinementPasses = 5;
       };
 
   public static final Consumer<InternalOptions> DEFAULT_D8_OPTIONS = DEFAULT_OPTIONS;

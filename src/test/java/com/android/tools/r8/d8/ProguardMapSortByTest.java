@@ -49,7 +49,10 @@ public class ProguardMapSortByTest extends TestBase {
     D8TestBuilder d8TestBuilder =
         testForD8()
             .addOptionsModification(
-                internalOptions -> internalOptions.testing.limitNumberOfClassesPerDex = 2);
+                options -> {
+                  options.testing.classToDexDistributionRefinementPasses = 0;
+                  options.testing.limitNumberOfClassesPerDex = 2;
+                });
     if (parameters.getApiLevel().isLessThan(AndroidApiLevel.L)) {
       d8TestBuilder.addMainDexRules("-keep class " + A.class.getName());
     }

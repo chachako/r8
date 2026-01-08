@@ -397,7 +397,6 @@ public class ObjectToOffsetMapping {
 
   public DexString getShorty(DexProto proto) {
     String shorty = proto.createShortyString();
-    assert shortyCache.containsKey(shorty) || appView.options().enableContainerDex();
     return shortyCache.computeIfAbsent(shorty, appView.dexItemFactory()::createString);
   }
 
