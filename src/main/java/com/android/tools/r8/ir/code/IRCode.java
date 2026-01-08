@@ -114,7 +114,6 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   private static class BlockMarker {
     final BasicBlock block;
 
-    @SuppressWarnings("UnusedVariable")
     BlockMarker(BasicBlock block) {
       this.block = block;
     }
@@ -209,13 +208,12 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
   @SuppressWarnings("ReferenceEquality")
   public Map<BasicBlock, LiveAtEntrySets> computeLiveAtEntrySets() {
     Map<BasicBlock, LiveAtEntrySets> liveAtEntrySets = new IdentityHashMap<>();
-    Queue<BasicBlock> worklist = new ArrayDeque<>();
     // Since this is a backwards data-flow analysis we process the blocks in reverse
     // topological order to reduce the number of iterations.
-    ImmutableList<BasicBlock> sorted = topologicallySortedBlocks();
-    worklist.addAll(sorted.reverse());
+    WorkList<BasicBlock> worklist =
+        WorkList.newIdentityWorkList(topologicallySortedBlocks().reverse());
     while (!worklist.isEmpty()) {
-      BasicBlock block = worklist.poll();
+      BasicBlock block = worklist.removeSeen();
       // Note that the iteration order of live values matters when inserting spill/restore moves.
       LinkedHashSet<Value> live = new LinkedHashSet<>();
       Set<Value> liveLocals = Sets.newIdentityHashSet();
@@ -315,16 +313,12 @@ public class IRCode implements IRControlFlowGraph, ValueFactory {
       // If the live-at-entry set changed, add the predecessors to the worklist if they are not
       // already there.
       if (previousLiveAtEntry == null || !previousLiveAtEntry.equals(liveAtEntry)) {
-        for (BasicBlock pred : block.getPredecessors()) {
-          if (!worklist.contains(pred)) {
-            worklist.add(pred);
-          }
-        }
+        worklist.addIfNotSeen(block.getPredecessors());
       }
     }
-    assert liveAtEntrySets.get(sorted.get(0)).isEmpty()
+    assert liveAtEntrySets.get(entryBlock()).isEmpty()
         : "Unexpected values live at entry to first block: "
-        + liveAtEntrySets.get(sorted.get(0)).liveValues;
+            + liveAtEntrySets.get(entryBlock()).liveValues;
     return liveAtEntrySets;
   }
 
