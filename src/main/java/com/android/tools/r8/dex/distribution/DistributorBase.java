@@ -21,6 +21,7 @@ import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.SetUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
@@ -28,6 +29,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 public abstract class DistributorBase extends Distributor {
   protected Set<DexProgramClass> classes;
@@ -113,7 +116,11 @@ public abstract class DistributorBase extends Distributor {
   }
 
   protected void addFeatureSplitFiles(
-      Map<FeatureSplit, Set<DexProgramClass>> featureSplitClasses, StartupProfile startupProfile) {
+      Map<FeatureSplit, Set<DexProgramClass>> featureSplitClasses,
+      StartupProfile startupProfile,
+      ExecutorService executorService,
+      Timing timing)
+      throws ExecutionException {
     if (featureSplitClasses.isEmpty()) {
       return;
     }
@@ -135,7 +142,7 @@ public abstract class DistributorBase extends Distributor {
               originalNames,
               startupProfile,
               nextFileId)
-          .run();
+          .run(executorService, timing);
     }
   }
 }

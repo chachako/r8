@@ -183,7 +183,8 @@ public class ApplicationWriter {
     return appView.getNamingLens();
   }
 
-  private List<VirtualFile> distribute(ExecutorService executorService) {
+  private List<VirtualFile> distribute(ExecutorService executorService, Timing timing)
+      throws ExecutionException {
     Collection<DexProgramClass> classes = appView.appInfo().classes();
     Collection<DexProgramClass> globalSynthetics = new ArrayList<>();
     if (appView.options().intermediate && appView.options().hasGlobalSyntheticsConsumer()) {
@@ -215,7 +216,7 @@ public class ApplicationWriter {
         && options.mainDexKeepRules.isEmpty()
         && appView.appInfo().getMainDexInfo().isEmpty()
         && options.enableMainDexListCheck) {
-      distributor = new MonoDexDistributor(this, classes, options);
+      distributor = new MonoDexDistributor(this, classes, options, executorService);
     } else {
       // Retrieve the startup order for writing the app. Use an empty startup profile if the startup
       // profile should not be used for layout.
@@ -227,10 +228,10 @@ public class ApplicationWriter {
           new FillFilesDistributor(this, classes, options, executorService, startupProfile);
     }
 
-    List<VirtualFile> virtualFiles = distributor.run();
+    List<VirtualFile> virtualFiles = distributor.run(timing);
     if (!globalSynthetics.isEmpty()) {
       List<VirtualFile> files =
-          new FilePerInputClassDistributor(this, globalSynthetics, false).run();
+          new FilePerInputClassDistributor(this, globalSynthetics, false).run(timing);
       globalSyntheticFiles = new HashSet<>(files);
       virtualFiles.addAll(globalSyntheticFiles);
       globalsSyntheticsConsumer =
@@ -336,7 +337,7 @@ public class ApplicationWriter {
 
       // Generate the dex file contents.
       timing.begin("Distribute");
-      List<VirtualFile> virtualFiles = distribute(executorService);
+      List<VirtualFile> virtualFiles = distribute(executorService, timing);
       timing.end();
       if (options.encodeChecksums) {
         timing.begin("Encode checksums");

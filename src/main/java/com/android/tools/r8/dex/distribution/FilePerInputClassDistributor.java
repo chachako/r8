@@ -7,6 +7,7 @@ import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.IdentityHashMap;
@@ -35,7 +36,7 @@ public class FilePerInputClassDistributor extends Distributor {
 
   @Override
   @SuppressWarnings("ReferenceEquality")
-  public List<VirtualFile> run() {
+  public List<VirtualFile> run(Timing timing) {
     Map<DexType, VirtualFile> files = new IdentityHashMap<>();
     Map<DexType, List<DexProgramClass>> derivedSynthetics = new LinkedHashMap<>();
     // Assign dedicated virtual files for all program classes.

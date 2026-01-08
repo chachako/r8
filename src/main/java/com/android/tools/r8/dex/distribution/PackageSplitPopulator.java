@@ -16,6 +16,7 @@ import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
+import com.android.tools.r8.utils.timing.Timing;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.ArrayList;
@@ -23,6 +24,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 
 /**
@@ -138,6 +141,7 @@ public class PackageSplitPopulator {
    */
   private static final int MIN_FILL_FACTOR = 5;
 
+  private final AppView<?> appView;
   private final PackageSplitClassPartioning classPartioning;
   private final Map<DexProgramClass, String> originalNames;
   private final DexItemFactory dexItemFactory;
@@ -153,6 +157,7 @@ public class PackageSplitPopulator {
       Map<DexProgramClass, String> originalNames,
       StartupProfile startupProfile,
       IntBox nextFileId) {
+    this.appView = appView;
     this.classPartioning =
         PackageSplitClassPartioning.create(classes, originalNames, startupProfile);
     this.originalNames = originalNames;
@@ -178,9 +183,11 @@ public class PackageSplitPopulator {
     return originalNames.get(clazz);
   }
 
-  public void run() {
+  public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
     addStartupClasses();
     distributeClasses(classPartioning.getNonStartupClasses());
+    DexDistributionRefinement.run(
+        appView, cycler.getFilesForDistribution(), executorService, timing);
   }
 
   private void addStartupClasses() {

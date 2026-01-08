@@ -7,8 +7,10 @@ import com.android.tools.r8.dex.ApplicationWriter;
 import com.android.tools.r8.dex.VirtualFile;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public abstract class Distributor {
   protected final AppView<?> appView;
@@ -20,7 +22,7 @@ public abstract class Distributor {
     this.writer = writer;
   }
 
-  public abstract List<VirtualFile> run();
+  public abstract List<VirtualFile> run(Timing timing) throws ExecutionException;
 
   void addMarkers(VirtualFile virtualFile) {
     if (writer.markerStrings != null && !writer.markerStrings.isEmpty()) {

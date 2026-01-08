@@ -10,11 +10,13 @@ import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.utils.IntBox;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.timing.Timing;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 public class FillFilesDistributor extends DistributorBase {
@@ -34,7 +36,7 @@ public class FillFilesDistributor extends DistributorBase {
   }
 
   @Override
-  public List<VirtualFile> run() {
+  public List<VirtualFile> run(Timing timing) throws ExecutionException {
     assert virtualFiles.size() == 1;
     assert virtualFiles.get(0).isEmpty();
 
@@ -78,9 +80,9 @@ public class FillFilesDistributor extends DistributorBase {
               originalNames,
               startupProfile,
               nextFileId)
-          .run();
+          .run(executorService, timing);
     }
-    addFeatureSplitFiles(featureSplitClasses, startupProfile);
+    addFeatureSplitFiles(featureSplitClasses, startupProfile, executorService, timing);
 
     assert totalClassNumber == virtualFiles.stream().mapToInt(dex -> dex.classes().size()).sum();
     return virtualFiles;
