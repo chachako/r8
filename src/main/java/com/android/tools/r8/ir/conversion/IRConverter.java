@@ -1105,7 +1105,7 @@ public class IRConverter {
   }
 
   public static void printMethod(ProgramMethod method, String title, InternalOptions options) {
-    if (options.extensiveLoggingFilter.size() > 0
+    if (!options.extensiveLoggingFilter.isEmpty()
         && options.extensiveLoggingFilter.contains(method.getReference().toSourceString())) {
       String current = method.getDefinition().codeToString();
       System.out.println();
