@@ -2056,7 +2056,8 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     // avoid move generation for the argument.
     if (isPinnedArgumentRegister(unhandledInterval)) {
       if (registerConstraint == Constants.U16BIT_MAX
-          || (mode.is8Bit() && registerConstraint == Constants.U8BIT_MAX)) {
+          || (mode.is8Bit() && registerConstraint == Constants.U8BIT_MAX)
+          || (mode.is4Bit() && registerConstraint == Constants.U4BIT_MAX)) {
         int argumentRegister = unhandledInterval.getSplitParent().getRegister();
         assignFreeRegisterToUnhandledInterval(unhandledInterval, argumentRegister);
         return true;
