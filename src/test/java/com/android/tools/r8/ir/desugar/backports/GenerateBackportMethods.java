@@ -37,6 +37,7 @@ public class GenerateBackportMethods extends MethodGenerationBase {
       ImmutableList.of(
           AndroidOsBuildMethods.class,
           AndroidOsBuildVersionMethods.class,
+          ArraysMethods.class,
           AssertionErrorMethods.class,
           AtomicReferenceArrayMethods.class,
           AtomicReferenceFieldUpdaterMethods.class,

@@ -2215,6 +2215,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public static class TestingOptions {
 
+    public boolean backportArraysEquals =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.backportArraysEquals", false);
+
     public int classToDexDistributionRefinementPasses =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.dex.refinementpasses", 0);

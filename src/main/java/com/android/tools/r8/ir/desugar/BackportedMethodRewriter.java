@@ -360,6 +360,10 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.V)) {
         initializeAndroidVMethodProviders(factory);
+        // Backport Array.equals due to slower implementation on Android T and U (b/433540561).
+        if (appView.options().testing.backportArraysEquals) {
+          initializeAndroidArraysEqualsMethodProviders(factory);
+        }
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.BAKLAVA)) {
         initializeAndroidBaklavaMethodProviders(factory);
@@ -2008,6 +2012,11 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         addProvider(new MethodGenerator(method, BackportedMethods::MathMethods_absExactLong));
       }
 
+      name = factory.createString("equals");
+      proto = factory.createProto(factory.intArrayType, factory.intArrayType);
+      method = factory.createMethod(factory.arraysType, proto, name);
+      addProvider(new MethodGenerator(method, BackportedMethods::ArraysMethods_equalsInt));
+
       initializeMathExactApis(factory, factory.strictMathType);
     }
 
@@ -2147,6 +2156,55 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
                 BackportedMethods::MathMethods_unsignedMultiplyHigh,
                 "unsignedMultiplyHigh"));
       }
+    }
+
+    private void initializeAndroidArraysEqualsMethodProviders(DexItemFactory factory) {
+      DexString name = factory.createString("equals");
+
+      class ArrayEqualsMethodInfo {
+        private final DexType arrayType;
+        private final TemplateMethodFactory provider;
+
+        private ArrayEqualsMethodInfo(DexType arrayType, TemplateMethodFactory provider) {
+          this.arrayType = arrayType;
+          this.provider = provider;
+        }
+      }
+
+      ImmutableList.Builder<ArrayEqualsMethodInfo> builder = ImmutableList.builder();
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.intArrayType, BackportedMethods::ArraysMethods_equalsInt));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.longArrayType, BackportedMethods::ArraysMethods_equalsLong));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.shortArrayType, BackportedMethods::ArraysMethods_equalsShort));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.byteArrayType, BackportedMethods::ArraysMethods_equalsByte));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.charArrayType, BackportedMethods::ArraysMethods_equalsChar));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.booleanArrayType, BackportedMethods::ArraysMethods_equalsBoolean));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.floatArrayType, BackportedMethods::ArraysMethods_equalsFloat));
+      builder.add(
+          new ArrayEqualsMethodInfo(
+              factory.doubleArrayType, BackportedMethods::ArraysMethods_equalsDouble));
+      builder
+          .build()
+          .forEach(
+              info -> {
+                DexProto proto =
+                    factory.createProto(factory.booleanType, info.arrayType, info.arrayType);
+                DexMethod method = factory.createMethod(factory.arraysType, proto, name);
+                addProvider(new MethodGenerator(method, info.provider));
+              });
     }
 
     private void initializeAndroidUStreamMethodProviders(DexItemFactory factory) {
