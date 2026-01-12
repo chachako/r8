@@ -61,6 +61,24 @@ public class VirtualFileCycler {
     reset();
   }
 
+  void removeEmptyFilesAndRenumber() {
+    int seenEmptyFiles = 0;
+    List<VirtualFile> newVirtualFiles = new ArrayList<>();
+    for (int i = 0; i < files.size(); i++) {
+      VirtualFile file = files.get(i);
+      if (file.getIndexedItems().classes.isEmpty()) {
+        seenEmptyFiles++;
+      } else {
+        assert file.getId() == i;
+        file.setId(file.getId() - seenEmptyFiles);
+        newVirtualFiles.add(file);
+      }
+    }
+    assert seenEmptyFiles > 0;
+    files.clear();
+    files.addAll(newVirtualFiles);
+  }
+
   void reset() {
     allFilesCyclic = Iterators.cycle(filesForDistribution);
     restart();

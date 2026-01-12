@@ -40,8 +40,9 @@ import java.util.concurrent.ExecutorService;
 public class DexDistributionRefinement {
 
   private final AppView<?> appView;
+  private final VirtualFileCycler cycler;
   private final boolean enableContainerDex;
-  private final List<VirtualFile> files;
+  private final LinkedHashSet<VirtualFile> files;
   private final int numPasses;
   private final LensCodeRewriterUtils rewriter;
 
@@ -54,25 +55,30 @@ public class DexDistributionRefinement {
   private final Map<VirtualFile, LinkedHashSet<DexProgramClass>>
       fileToClassesWithDeterministicOrder = new IdentityHashMap<>();
 
-  private DexDistributionRefinement(AppView<?> appView, List<VirtualFile> files, int numPasses) {
+  private DexDistributionRefinement(
+      AppView<?> appView,
+      VirtualFileCycler cycler,
+      List<VirtualFile> filesSubjectToRefinement,
+      int numPasses) {
     this.appView = appView;
+    this.cycler = cycler;
     this.enableContainerDex = appView.options().enableContainerDex();
-    this.files = files;
+    this.files = new LinkedHashSet<>(filesSubjectToRefinement);
     this.numPasses = numPasses;
     this.rewriter = new LensCodeRewriterUtils(appView, true);
     initialize();
   }
 
   public static void run(
-      AppView<?> appView, List<VirtualFile> files, ExecutorService executorService, Timing timing)
+      AppView<?> appView, VirtualFileCycler cycler, ExecutorService executorService, Timing timing)
       throws ExecutionException {
     int numPasses = appView.testing().classToDexDistributionRefinementPasses;
     if (numPasses > 0) {
       List<VirtualFile> filesSubjectToRefinement =
-          ListUtils.filter(files, f -> !f.isEmpty() && !f.isStartup());
+          ListUtils.filter(cycler.getFilesForDistribution(), f -> !f.isEmpty() && !f.isStartup());
       if (filesSubjectToRefinement.size() > 1) {
         timing.begin("Dex distribution refinement");
-        new DexDistributionRefinement(appView, filesSubjectToRefinement, numPasses)
+        new DexDistributionRefinement(appView, cycler, filesSubjectToRefinement, numPasses)
             .internalRun(executorService, timing);
         timing.end();
       }
@@ -90,18 +96,32 @@ public class DexDistributionRefinement {
 
   private void internalRun(ExecutorService executorService, Timing timing)
       throws ExecutionException {
+    // Run refinement.
+    boolean hasEmptyFiles = false;
     for (int i = 0; i < numPasses; i++) {
       boolean changed = false;
       timing.begin("Pass " + i);
-      for (VirtualFile file : files) {
+      Iterator<VirtualFile> iterator = files.iterator();
+      while (iterator.hasNext()) {
+        VirtualFile file = iterator.next();
         if (refineFile(file, executorService, timing)) {
           changed = true;
+        }
+        // If the file became empty, then don't consider it for any further refinement.
+        if (file.getIndexedItems().classes.isEmpty()) {
+          iterator.remove();
+          hasEmptyFiles = true;
         }
       }
       timing.end();
       if (!changed) {
         break;
       }
+    }
+
+    // Fixup empty files.
+    if (hasEmptyFiles) {
+      cycler.removeEmptyFilesAndRenumber();
     }
   }
 

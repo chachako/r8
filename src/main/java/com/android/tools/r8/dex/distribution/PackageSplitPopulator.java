@@ -186,8 +186,7 @@ public class PackageSplitPopulator {
   public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
     addStartupClasses();
     distributeClasses(classPartioning.getNonStartupClasses());
-    DexDistributionRefinement.run(
-        appView, cycler.getFilesForDistribution(), executorService, timing);
+    DexDistributionRefinement.run(appView, cycler, executorService, timing);
   }
 
   private void addStartupClasses() {

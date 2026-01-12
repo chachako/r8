@@ -41,7 +41,7 @@ public class VirtualFile {
 
   public static final int MAX_ENTRIES = Constants.U16BIT_MAX + 1;
 
-  private final int id;
+  private int id;
   public final VirtualFileIndexedItemCollection indexedItems;
   private final IndexedItemTransaction transaction;
   private final FeatureSplit featureSplit;
@@ -87,6 +87,10 @@ public class VirtualFile {
     return checksumForBuildMetadata;
   }
 
+  public VirtualFileIndexedItemCollection getIndexedItems() {
+    return indexedItems;
+  }
+
   public IndexedItemTransaction getTransaction() {
     return transaction;
   }
@@ -101,6 +105,10 @@ public class VirtualFile {
 
   public int getId() {
     return id;
+  }
+
+  public void setId(int id) {
+    this.id = id;
   }
 
   public Set<String> getClassDescriptors() {
