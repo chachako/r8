@@ -14,9 +14,14 @@ import androidx.tracing.driver.wire.TraceSink;
 import androidx.tracing.driver.wire.TraceSinkUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import kotlinx.coroutines.Dispatchers;
+import okio.BufferedSink;
+import okio.Okio;
 
 public class PerfettoTiming extends TimingImplBase {
 
@@ -31,9 +36,20 @@ public class PerfettoTiming extends TimingImplBase {
   private volatile boolean memoryTrackerActive = true;
 
   public PerfettoTiming(String title, InternalOptions options, ExecutorService executorService) {
-    File directory = new File(options.perfettoTraceDumpDirectory);
     int sequenceId = 1;
-    sink = TraceSinkUtils.TraceSink(directory, sequenceId);
+    if (options.perfettoTraceDumpFile != null) {
+      BufferedSink bufferedSink;
+      try {
+        File file = new File(options.perfettoTraceDumpFile);
+        bufferedSink = Okio.buffer(Okio.appendingSink(file));
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+      sink = new TraceSink(sequenceId, bufferedSink, Dispatchers.getIO());
+    } else {
+      File directory = new File(options.perfettoTraceDumpDirectory);
+      sink = TraceSinkUtils.TraceSink(directory, sequenceId);
+    }
     traceDriver = new TraceDriver(sink, true);
     TraceContext traceContext = traceDriver.getContext();
     processTrack = traceContext.getOrCreateProcessTrack(1, title);

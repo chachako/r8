@@ -27,7 +27,7 @@ public abstract class Timing implements AutoCloseable {
       String title, InternalOptions options, ExecutorService executorService) {
     // We also create a timer when running assertions to validate wellformedness of the node stack.
     Timing timing;
-    if (options.perfettoTraceDumpDirectory != null) {
+    if (options.perfettoTraceDumpDirectory != null || options.perfettoTraceDumpFile != null) {
       timing = new PerfettoTiming(title, options, executorService);
     } else if (options.printTimes) {
       timing = new TimingImpl(title, options);
