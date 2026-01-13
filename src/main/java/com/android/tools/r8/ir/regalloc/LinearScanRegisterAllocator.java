@@ -21,15 +21,18 @@ import com.android.tools.r8.ir.code.And;
 import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.ArithmeticBinop;
 import com.android.tools.r8.ir.code.BasicBlock;
+import com.android.tools.r8.ir.code.BasicBlockInstructionListIterator;
 import com.android.tools.r8.ir.code.CheckCast;
 import com.android.tools.r8.ir.code.DebugLocalWrite;
 import com.android.tools.r8.ir.code.DebugLocalsChange;
+import com.android.tools.r8.ir.code.DominatorTree;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRCode.LiveAtEntrySets;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InstructionIterator;
 import com.android.tools.r8.ir.code.InstructionListIterator;
 import com.android.tools.r8.ir.code.Invoke;
+import com.android.tools.r8.ir.code.InvokeDirect;
 import com.android.tools.r8.ir.code.Move;
 import com.android.tools.r8.ir.code.MoveException;
 import com.android.tools.r8.ir.code.NumberConversionType;
@@ -78,6 +81,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -367,6 +371,7 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
     computeNeedsRegister();
     constrainArgumentIntervals();
     insertRangeInvokeMoves();
+    insertInitializedThisMove();
     ImmutableList<BasicBlock> blocks = computeLivenessInformation();
     dedupCatchHandlerBlocks();
     timing.end();
@@ -3712,6 +3717,59 @@ public class LinearScanRegisterAllocator implements RegisterAllocator {
           // Move past the move again.
           it.next();
         }
+      }
+    }
+  }
+
+  // Workaround issue where a join of an uninitialized this with a join of an initialized this leads
+  // to a verification error. This seemingly only happens when the parent or forwarding constructor
+  // call inside an instance initializer is covered by a catch handler, which is not possible to
+  // write directly in Java. This also only manifests when the live range of the `this` value is
+  // extended to cover the entire method (to workaround runtime bugs), since otherwise it is a type
+  // error in the input to read a join of the uninitialized and initialized this.
+  //
+  // See also b/468253695.
+  private void insertInitializedThisMove() {
+    if (!code.method().isInstanceInitializer()) {
+      return;
+    }
+    if (!options().canHaveThisTypeVerifierBug() && !options().canHaveThisJitCodeDebuggingBug()) {
+      return;
+    }
+    Value thisValue = firstArgumentValue;
+    assert thisValue.isThis();
+    // Collect parent/forwarding constructor calls. After each one we need to materialize a move to
+    // create a new SSA value for the initialized `this` value.
+    List<InvokeDirect> constructorCalls = new ArrayList<>();
+    for (InvokeDirect invoke : thisValue.<InvokeDirect>uniqueUsers(Instruction::isInvokeDirect)) {
+      if (invoke.isInvokeConstructor(appView.dexItemFactory())
+          && invoke.getReceiver() == thisValue
+          && invoke.getBlock().hasCatchHandlers()) {
+        constructorCalls.add(invoke);
+      }
+    }
+    // Create a dominator tree to determine which uses of the `this` value are uses of the
+    // initialized `this` value. These uses must be replaced by the new initialized `this` SSA
+    // value.
+    DominatorTree dominatorTree = new DominatorTree(code);
+    for (InvokeDirect invoke : constructorCalls) {
+      // TODO(b/468253695): Strictly speaking we should only need to collect constrained uses.
+      //  Doing so could lead to slightly smaller code, but this is not much of a priority since
+      //  this should only occur with instrumented bytecode that is not meant to be run in prod.
+      Set<Instruction> dominatedUsers = Sets.newIdentityHashSet();
+      Map<Phi, IntList> dominatedPhiUsers = new IdentityHashMap<>();
+      if (thisValue.collectUsersDominatedByInstruction(
+          dominatorTree, dominatedUsers, dominatedPhiUsers, invoke)) {
+        // Materialize Move instruction and replace users of the uninitialized `this` value by the
+        // newly created initialized `this` value.
+        Value initializedThisValue = code.createValue(thisValue.getType());
+        initializedThisValue.setNeedsRegister(true);
+        BasicBlockInstructionListIterator iterator =
+            invoke.getBlock().listIterator(invoke.getNext());
+        Move move = new Move(initializedThisValue, thisValue);
+        move.setPosition(invoke.getPosition());
+        iterator.add(move);
+        thisValue.replaceSelectiveUsers(initializedThisValue, dominatedUsers, dominatedPhiUsers);
       }
     }
   }

@@ -11,6 +11,7 @@ import static com.android.tools.r8.ir.code.Opcodes.CONST_NUMBER;
 import static com.android.tools.r8.ir.code.Opcodes.CONST_STRING;
 import static com.android.tools.r8.ir.code.Opcodes.DEX_ITEM_BASED_CONST_STRING;
 import static com.android.tools.r8.ir.code.Opcodes.INSTANCE_OF;
+import static com.android.tools.r8.utils.MapUtils.ignoreKey;
 
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
@@ -41,6 +42,7 @@ import com.android.tools.r8.utils.StringDiagnostic;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -380,6 +382,37 @@ public class Value implements Comparable<Value>, InstructionOrValue {
         collectAliasedUsersViaAssume(configuration, user.outValue(), collectedUsers);
       }
     }
+  }
+
+  /** Returns true if any users were found. */
+  public boolean collectUsersDominatedByInstruction(
+      DominatorTree dominatorTree,
+      Set<Instruction> dominatedUsers,
+      Map<Phi, IntList> dominatedPhiUsers,
+      Instruction instruction) {
+    assert dominatedUsers.isEmpty();
+    assert dominatedPhiUsers.isEmpty();
+    for (Instruction user : this.uniqueUsers()) {
+      if (user.getBlock() == instruction.getBlock()) {
+        if (instruction.nextUntilExclusive(i -> i == user) != null) {
+          dominatedUsers.add(user);
+        }
+      } else if (dominatorTree.dominatedBy(user.getBlock(), instruction.getBlock())) {
+        dominatedUsers.add(user);
+      }
+    }
+    for (Phi phi : this.uniquePhiUsers()) {
+      for (int operandIndex = 0; operandIndex < phi.getOperands().size(); operandIndex++) {
+        Value operand = phi.getOperand(operandIndex);
+        if (operand == this) {
+          BasicBlock predecessor = phi.getBlock().getPredecessor(operandIndex);
+          if (dominatorTree.dominatedBy(predecessor, instruction.getBlock())) {
+            dominatedPhiUsers.computeIfAbsent(phi, ignoreKey(IntArrayList::new)).add(operandIndex);
+          }
+        }
+      }
+    }
+    return !dominatedUsers.isEmpty() || !dominatedPhiUsers.isEmpty();
   }
 
   public Instruction firstUser() {
