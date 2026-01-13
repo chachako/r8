@@ -25,7 +25,6 @@ import dalvik.annotation.optimization.ReachabilitySensitive;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,15 +83,15 @@ public class ReachabilitySensitiveTest extends TestBase {
   }
 
   private int getNumRegisters() {
-    // With API level >= Q we are allowed to re-use the receiver's register.
-    // See also InternalOptions.canHaveThisJitCodeDebuggingBug().
+    // With API level >= M we are allowed to re-use the receiver's register.
+    // See also InternalOptions.canHaveThisTypeVerifierBug().
     assert parameters.isDexRuntime();
-    return parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.Q) ? 2 : 3;
+    return parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.M) ? 2 : 3;
   }
 
   @Test
   public void testNoAnnotation()
-      throws IOException, CompilationFailedException, ExecutionException, NoSuchMethodException {
+      throws IOException, CompilationFailedException, NoSuchMethodException {
     CodeInspector inspector =
         tool == Tool.R8 ? compileR8(TestClass.class) : compile(TestClass.class);
     DexCode code =
@@ -105,7 +104,7 @@ public class ReachabilitySensitiveTest extends TestBase {
 
   @Test
   public void testFieldAnnotation()
-      throws IOException, CompilationFailedException, ExecutionException, NoSuchMethodException {
+      throws IOException, CompilationFailedException, NoSuchMethodException {
     CodeInspector inspector =
         tool == Tool.R8
             ? compileR8(TestClassWithAnnotatedField.class)
@@ -120,7 +119,7 @@ public class ReachabilitySensitiveTest extends TestBase {
 
   @Test
   public void testMethodAnnotation()
-      throws IOException, CompilationFailedException, ExecutionException, NoSuchMethodException {
+      throws IOException, CompilationFailedException, NoSuchMethodException {
     CodeInspector inspector =
         tool == Tool.R8
             ? compileR8(TestClassWithAnnotatedMethod.class)
@@ -140,7 +139,7 @@ public class ReachabilitySensitiveTest extends TestBase {
         (code.getDebugInfo() == null)
             || code.getDebugInfo().isPcBasedInfo()
             || Arrays.stream(code.getDebugInfo().asEventBasedInfo().events)
-                .allMatch(event -> !(event instanceof StartLocal)));
+                .noneMatch(event -> event instanceof StartLocal));
   }
 
   private void checkAnnotatedCode(DexCode code) {
@@ -162,7 +161,8 @@ public class ReachabilitySensitiveTest extends TestBase {
     checkNoLocals(code);
   }
 
-  private CodeInspector compile(Class... classes) throws CompilationFailedException, IOException {
+  private CodeInspector compile(Class<?>... classes)
+      throws CompilationFailedException, IOException {
     return testForD8()
         .addProgramClasses(classes)
         .setMinApi(parameters)
@@ -171,7 +171,8 @@ public class ReachabilitySensitiveTest extends TestBase {
         .inspector();
   }
 
-  private CodeInspector compileR8(Class... classes) throws CompilationFailedException, IOException {
+  private CodeInspector compileR8(Class<?>... classes)
+      throws CompilationFailedException, IOException {
     List<String> keepRules =
         Arrays.stream(classes)
             .map(c -> "-keep class " + c.getCanonicalName() + " { <methods>; }")

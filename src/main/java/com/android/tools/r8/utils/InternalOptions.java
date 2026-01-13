@@ -2955,7 +2955,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   //
   // See b/116683601 and b/116837585.
   public boolean canHaveThisJitCodeDebuggingBug() {
-    return canHaveBugPresentUntilExclusive(AndroidApiLevel.Q);
+    return canHaveBugPresentUntilExclusive(AndroidApiLevel.Q) && debug;
   }
 
   // The dalvik jit had a bug where the long operations add, sub, or, xor and and would write
