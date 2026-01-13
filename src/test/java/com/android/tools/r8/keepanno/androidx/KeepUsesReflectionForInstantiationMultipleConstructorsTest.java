@@ -89,11 +89,14 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
     compilationResultsClassName = getCompileMemoizerWithKeepAnnoLib(getKotlinSourcesClassName());
   }
 
-  private ExpectedRules expectedRulesJava(Class<?> conditionClass) {
+  private ExpectedRules expectedRulesJava(Class<?> conditionClass, String conditionMember) {
     Consumer<ExpectedKeepRule.Builder> setCondition =
-        b ->
-            b.setConditionClass(conditionClass)
-                .setConditionMembers("{ void foo(java.lang.Class); }");
+        b -> {
+          b.setConditionClass(conditionClass);
+          if (conditionMember != null) {
+            b.setConditionMembers(conditionMember);
+          }
+        };
     return ExpectedRules.builder()
         .add(
             ExpectedKeepRule.builder()
@@ -135,13 +138,42 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
   }
 
   @Test
-  public void testIntAndLongArgsConstructors() throws Exception {
+  public void testIntAndLongArgsConstructorsAnnotatedOnClass() throws Exception {
     testExtractedRulesAndRunJava(
-        ImmutableList.of(IntAndLongArgsConstructors.class, KeptClass.class),
-        expectedRulesJava(IntAndLongArgsConstructors.class));
+        ImmutableList.of(IntAndLongArgsConstructorsAnnotatedOnClass.class, KeptClass.class),
+        expectedRulesJava(IntAndLongArgsConstructorsAnnotatedOnClass.class, null));
   }
 
-  static class IntAndLongArgsConstructors {
+  @UsesReflectionToConstruct(
+      classConstant = KeptClass.class,
+      parameterTypes = {int.class})
+  @UsesReflectionToConstruct(
+      classConstant = KeptClass.class,
+      parameterTypes = {long.class})
+  static class IntAndLongArgsConstructorsAnnotatedOnClass {
+
+    public void foo(Class<KeptClass> clazz) throws Exception {
+      if (clazz != null) {
+        clazz.getDeclaredConstructor(int.class).newInstance(1);
+        clazz.getDeclaredConstructor(long.class).newInstance(2L);
+      }
+    }
+
+    public static void main(String[] args) throws Exception {
+      new IntAndLongArgsConstructorsAnnotatedOnClass()
+          .foo(System.nanoTime() > 0 ? KeptClass.class : null);
+    }
+  }
+
+  @Test
+  public void testIntAndLongArgsConstructorsAnnotatedOnMethod() throws Exception {
+    testExtractedRulesAndRunJava(
+        ImmutableList.of(IntAndLongArgsConstructorsAnnotatedOnMethod.class, KeptClass.class),
+        expectedRulesJava(
+            IntAndLongArgsConstructorsAnnotatedOnMethod.class, "{ void foo(java.lang.Class); }"));
+  }
+
+  static class IntAndLongArgsConstructorsAnnotatedOnMethod {
 
     @UsesReflectionToConstruct(
         classConstant = KeptClass.class,
@@ -157,7 +189,36 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
     }
 
     public static void main(String[] args) throws Exception {
-      new IntAndLongArgsConstructors().foo(System.nanoTime() > 0 ? KeptClass.class : null);
+      new IntAndLongArgsConstructorsAnnotatedOnMethod()
+          .foo(System.nanoTime() > 0 ? KeptClass.class : null);
+    }
+  }
+
+  @Test
+  public void testIntLongArgsConstructorsClassNamesAnnotatedOnClass() throws Exception {
+    testExtractedRulesAndRunJava(
+        ImmutableList.of(IntAndLongConstructorsClassNameAnnotatedOnClass.class, KeptClass.class),
+        expectedRulesJava(IntAndLongConstructorsClassNameAnnotatedOnClass.class, null));
+  }
+
+  @UsesReflectionToConstruct(
+      className = classNameOfKeptClass,
+      parameterTypes = {int.class})
+  @UsesReflectionToConstruct(
+      className = classNameOfKeptClass,
+      parameterTypes = {long.class})
+  static class IntAndLongConstructorsClassNameAnnotatedOnClass {
+
+    public void foo(Class<KeptClass> clazz) throws Exception {
+      if (clazz != null) {
+        clazz.getDeclaredConstructor(int.class).newInstance(1);
+        clazz.getDeclaredConstructor(long.class).newInstance(2L);
+      }
+    }
+
+    public static void main(String[] args) throws Exception {
+      new IntAndLongConstructorsClassNameAnnotatedOnClass()
+          .foo(System.nanoTime() > 0 ? KeptClass.class : null);
     }
   }
 
@@ -165,7 +226,7 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
   public void testIntLongArgsConstructorsClassNames() throws Exception {
     testExtractedRulesAndRunJava(
         ImmutableList.of(IntAndLongConstructorsClassName.class, KeptClass.class),
-        expectedRulesJava(IntAndLongConstructorsClassName.class));
+        expectedRulesJava(IntAndLongConstructorsClassName.class, "{ void foo(java.lang.Class); }"));
   }
 
   @Test
@@ -204,7 +265,7 @@ public class KeepUsesReflectionForInstantiationMultipleConstructorsTest
                                                         UsesReflectionToConstruct.class))
                                                 .setField("classConstant", KeptClass.class)
                                                 .setArray("parameterTypeNames", "Long"))))),
-        expectedRulesJava(ClassWithAnnotation.class));
+        expectedRulesJava(ClassWithAnnotation.class, "{ void foo(java.lang.Class); }"));
   }
 
   static class IntAndLongConstructorsClassName {

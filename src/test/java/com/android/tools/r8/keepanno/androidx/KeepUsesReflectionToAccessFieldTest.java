@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,19 +67,25 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
   }
 
   private static ExpectedRules getExpectedRulesJava(
-      Class<?> conditionClass, boolean includeSubclasses, String... consequentMembers) {
+      Class<?> conditionClass,
+      String conditionMembers,
+      boolean includeSubclasses,
+      List<String> consequentMembers) {
     java.util.function.Consumer<ExpectedKeepRule.Builder> setCondition =
-        b ->
-            b.setConditionClass(conditionClass)
-                .setConditionMembers("{ void foo(java.lang.Class); }");
+        b -> {
+          b.setConditionClass(conditionClass);
+          if (conditionMembers != null) {
+            b.setConditionMembers(conditionMembers);
+          }
+        };
     ExpectedRules.Builder builder = ExpectedRules.builder();
-    for (int i = 0; i < consequentMembers.length; i++) {
+    for (String consequentMember : consequentMembers) {
       builder.add(
           ExpectedKeepRule.builder()
               .apply(setCondition)
               .setKeepVariant("-keepclasseswithmembers")
               .setConsequentClass(KeptClass.class)
-              .setConsequentMembers(consequentMembers[i])
+              .setConsequentMembers(consequentMember)
               .build());
       if (includeSubclasses) {
         builder.add(
@@ -86,7 +93,7 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
                 .apply(setCondition)
                 .setKeepVariant("-keepclasseswithmembers")
                 .setConsequentExtendsClass(KeptClass.class)
-                .setConsequentMembers(consequentMembers[i])
+                .setConsequentMembers(consequentMember)
                 .build());
       }
     }
@@ -94,25 +101,25 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
   }
 
   private static ExpectedRules getExpectedRulesJava(
-      Class<?> conditionClass, String... consequentMembers) {
-    return getExpectedRulesJava(conditionClass, false, consequentMembers);
+      Class<?> conditionClass, List<String> consequentMembers) {
+    return getExpectedRulesJava(conditionClass, null, false, consequentMembers);
   }
 
   private static ExpectedRules getExpectedRulesKotlin(
       String conditionClass,
       String conditionMembers,
       String consequentClass,
-      String... consequentMembers) {
+      List<String> consequentMembers) {
     Consumer<ExpectedKeepRule.Builder> setCondition =
         b -> b.setConditionClass(conditionClass).setConditionMembers(conditionMembers);
     ExpectedRules.Builder builder = ExpectedRules.builder();
-    for (int i = 0; i < consequentMembers.length; i++) {
+    for (String consequentMember : consequentMembers) {
       builder.add(
           ExpectedKeepRule.builder()
               .apply(setCondition)
               .setKeepVariant("-keepclasseswithmembers")
               .setConsequentClass(consequentClass)
-              .setConsequentMembers(consequentMembers[i])
+              .setConsequentMembers(consequentMember)
               .build());
     }
     return builder.build();
@@ -166,7 +173,20 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
   }
 
   @Test
-  public void testAnyFieldType() throws Exception {
+  public void testAnyFieldTypeAnnotatedOnClass() throws Exception {
+    testExtractedRulesAndRunJava(
+        ClassWithAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnClass(
+                ClassWithAnnotation.class,
+                builder -> buildUsesReflectionToAccessField(builder, KeptClass.class, "x"))),
+        getExpectedRulesJava(ClassWithAnnotation.class, ImmutableList.of("{ *** x; }")),
+        parameters.isReference() ? StringUtils.lines("3") : StringUtils.lines("1"));
+  }
+
+  @Test
+  public void testAnyFieldTypeAnnotatedOnMethod() throws Exception {
     testExtractedRulesAndRunJava(
         ClassWithAnnotation.class,
         ImmutableList.of(KeptClass.class),
@@ -175,12 +195,16 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
                 ClassWithAnnotation.class,
                 MethodPredicate.onName("foo"),
                 builder -> buildUsesReflectionToAccessField(builder, KeptClass.class, "x"))),
-        getExpectedRulesJava(ClassWithAnnotation.class, "{ *** x; }"),
+        getExpectedRulesJava(
+            ClassWithAnnotation.class,
+            "{ void foo(java.lang.Class); }",
+            false,
+            ImmutableList.of("{ *** x; }")),
         parameters.isReference() ? StringUtils.lines("3") : StringUtils.lines("1"));
   }
 
   @Test
-  public void testIntFieldType() throws Exception {
+  public void testIntFieldTypeAnnotatedOnMethod() throws Exception {
     testExtractedRulesAndRunJava(
         ClassWithAnnotation.class,
         ImmutableList.of(KeptClass.class),
@@ -190,12 +214,31 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
                 MethodPredicate.onName("foo"),
                 builder ->
                     buildUsesReflectionToAccessField(builder, KeptClass.class, "x", int.class))),
-        getExpectedRulesJava(ClassWithAnnotation.class, "{ int x; }"),
+        getExpectedRulesJava(
+            ClassWithAnnotation.class,
+            "{ void foo(java.lang.Class); }",
+            false,
+            ImmutableList.of("{ int x; }")),
         parameters.isReference() ? StringUtils.lines("3") : StringUtils.lines("1"));
   }
 
   @Test
-  public void testMultipleFieldTypes() throws Exception {
+  public void testMultipleFieldTypesAnnotatedOnClass() throws Exception {
+    testExtractedRulesAndRunJava(
+        ClassWithAnnotation.class,
+        ImmutableList.of(KeptClass.class),
+        ImmutableList.of(
+            setAnnotationOnClass(
+                ClassWithAnnotation.class,
+                builder -> buildUsesReflectionToAccessFieldMultiple(builder, KeptClass.class))),
+        getExpectedRulesJava(
+            ClassWithAnnotation.class,
+            ImmutableList.of("{ int x; }", "{ long y; }", "{ java.lang.String s; }")),
+        StringUtils.lines("3"));
+  }
+
+  @Test
+  public void testMultipleFieldTypesAnnotatedOnMethod() throws Exception {
     testExtractedRulesAndRunJava(
         ClassWithAnnotation.class,
         ImmutableList.of(KeptClass.class),
@@ -205,12 +248,15 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
                 MethodPredicate.onName("foo"),
                 builder -> buildUsesReflectionToAccessFieldMultiple(builder, KeptClass.class))),
         getExpectedRulesJava(
-            ClassWithAnnotation.class, "{ int x; }", "{ long y; }", "{ java.lang.String s; }"),
+            ClassWithAnnotation.class,
+            "{ void foo(java.lang.Class); }",
+            false,
+            ImmutableList.of("{ int x; }", "{ long y; }", "{ java.lang.String s; }")),
         StringUtils.lines("3"));
   }
 
   @Test
-  public void testIncludeSubclasses() throws Exception {
+  public void testIncludeSubclassesAnnotatedOnMethod() throws Exception {
     testExtractedRules(
         ImmutableList.of(
             setAnnotationOnMethod(
@@ -224,7 +270,11 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
                       .setField("fieldName", "x")
                       .setField("includeSubclasses", true);
                 })),
-        getExpectedRulesJava(ClassWithAnnotation.class, true, "{ *** x; }"));
+        getExpectedRulesJava(
+            ClassWithAnnotation.class,
+            "{ void foo(java.lang.Class); }",
+            true,
+            ImmutableList.of("{ *** x; }")));
   }
 
   @Test
@@ -249,7 +299,7 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
             "com.android.tools.r8.keepanno.androidx.kt.Fields",
             "{ void foo(kotlin.reflect.KClass); }",
             "com.android.tools.r8.keepanno.androidx.kt.FieldsKeptClass",
-            "{ *** x; }"),
+            ImmutableList.of("{ *** x; }")),
         StringUtils.lines("1"));
   }
 
@@ -276,7 +326,7 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
             "com.android.tools.r8.keepanno.androidx.kt.Fields",
             "{ void foo(kotlin.reflect.KClass); }",
             "com.android.tools.r8.keepanno.androidx.kt.FieldsKeptClass",
-            "{ int x; }"),
+            ImmutableList.of("{ int x; }")),
         StringUtils.lines("1"));
   }
 
@@ -301,9 +351,7 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
             "com.android.tools.r8.keepanno.androidx.kt.Fields",
             "{ void foo(kotlin.reflect.KClass); }",
             "com.android.tools.r8.keepanno.androidx.kt.FieldsKeptClass",
-            "{ int x; }",
-            "{ long y; }",
-            "{ java.lang.String s; }"),
+            ImmutableList.of("{ int x; }", "{ long y; }", "{ java.lang.String s; }")),
         StringUtils.lines("3"));
   }
 
@@ -333,7 +381,7 @@ public class KeepUsesReflectionToAccessFieldTest extends KeepAnnoTestExtractedRu
             "com.android.tools.r8.keepanno.androidx.kt.FieldsPropertyAccess",
             "{ void foo(); }",
             "com.android.tools.r8.keepanno.androidx.kt.FieldsPropertyAccessKeptClass",
-            "{ int x; }"),
+            ImmutableList.of("{ int x; }")),
         // TODO(b/392865072): Not sure why this succeeds on DEX even though the getter getX has
         //  been removed.
         parameters.getBackend().isDex()

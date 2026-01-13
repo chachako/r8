@@ -408,6 +408,17 @@ public class KeepEdgeReader implements Opcodes {
                     .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
                     .build());
       }
+      if (AnnotationConstants.UsesReflectionToConstruct.isKotlinRepeatableContainerDescriptor(
+          descriptor)) {
+        return new UsesReflectionToConstructContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                KeepClassItemPattern.builder()
+                    .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
+                    .build());
+      }
       if (AnnotationConstants.UsesReflectionToAccessMethod.isDescriptor(descriptor)) {
         return new UsesReflectionToAccessMethodVisitor(
             parsingContext,
@@ -418,8 +429,30 @@ public class KeepEdgeReader implements Opcodes {
                     .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
                     .build());
       }
+      if (AnnotationConstants.UsesReflectionToAccessMethod.isKotlinRepeatableContainerDescriptor(
+          descriptor)) {
+        return new UsesReflectionToAccessMethodContainerVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                KeepClassItemPattern.builder()
+                    .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
+                    .build());
+      }
       if (AnnotationConstants.UsesReflectionToAccessField.isDescriptor(descriptor)) {
         return new UsesReflectionToAccessFieldVisitor(
+            parsingContext,
+            parent::accept,
+            setContext,
+            bindingsHelper ->
+                KeepClassItemPattern.builder()
+                    .setClassNamePattern(KeepQualifiedClassNamePattern.exact(className))
+                    .build());
+      }
+      if (AnnotationConstants.UsesReflectionToAccessField.isKotlinRepeatableContainerDescriptor(
+          descriptor)) {
+        return new UsesReflectionToAccessFieldContainerVisitor(
             parsingContext,
             parent::accept,
             setContext,
@@ -584,7 +617,7 @@ public class KeepEdgeReader implements Opcodes {
       }
       if (AnnotationConstants.UsesReflectionToConstruct.isKotlinRepeatableContainerDescriptor(
           descriptor)) {
-        return new UsesReflectionForInstantiationContainerVisitor(
+        return new UsesReflectionToConstructContainerVisitor(
             parsingContext,
             parent::accept,
             setContext,
@@ -1546,15 +1579,14 @@ public class KeepEdgeReader implements Opcodes {
     }
   }
 
-  private static class UsesReflectionForInstantiationContainerVisitor
-      extends AnnotationVisitorBase {
+  private static class UsesReflectionToConstructContainerVisitor extends AnnotationVisitorBase {
 
     private final AnnotationParsingContext parsingContext;
     private final Parent<KeepEdge> parent;
     Consumer<KeepEdgeMetaInfo.Builder> addContext;
     Function<UserBindingsHelper, KeepItemPattern> contextBuilder;
 
-    UsesReflectionForInstantiationContainerVisitor(
+    UsesReflectionToConstructContainerVisitor(
         AnnotationParsingContext parsingContext,
         Parent<KeepEdge> parent,
         Consumer<KeepEdgeMetaInfo.Builder> addContext,

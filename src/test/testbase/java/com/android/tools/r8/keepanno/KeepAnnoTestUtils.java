@@ -8,7 +8,6 @@ import static com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary.ANDROIDX;
 import static com.android.tools.r8.utils.FileUtils.isClassFile;
 import static com.android.tools.r8.utils.FileUtils.isJarFile;
 import static com.android.tools.r8.utils.FileUtils.isZipFile;
-import static com.android.tools.r8.utils.ZipUtils.isClassFile;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.ByteDataView;
