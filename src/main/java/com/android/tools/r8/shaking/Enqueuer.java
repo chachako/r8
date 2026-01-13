@@ -3925,15 +3925,7 @@ public class Enqueuer {
       if (keepInfoCollection != null) {
         timing.begin("Retain keep info");
         applicableRules = keepInfoCollection.getApplicableRules();
-        EnqueuerEvent preconditionEvent = UnconditionalKeepInfoEvent.get();
         keepInfo.registerCompilerSynthesizedItems(keepInfoCollection);
-        keepInfoCollection.forEachRuleInstance(
-            appView,
-            (clazz, minimumKeepInfo) ->
-                applyMinimumKeepInfoWhenLive(clazz, minimumKeepInfo, preconditionEvent),
-            (field, minimumKeepInfo) ->
-                applyMinimumKeepInfoWhenLive(field, minimumKeepInfo, preconditionEvent),
-            this::applyMinimumKeepInfoWhenLiveOrTargeted);
         timing.end();
       }
     }
@@ -4791,11 +4783,27 @@ public class Enqueuer {
                   .getUnconditionalMinimumKeepInfoOrDefault(MinimumKeepInfoCollection.empty())
                   .getOrDefault(methodReference, KeepMethodInfo.newEmptyJoiner())
                   .asMethodJoiner();
+          if (minimumKeepInfoForCompanion.isBottom()
+              && extraMinimumKeepInfoForCompanion.isBottom()) {
+            return;
+          }
+          DependentMinimumKeepInfoCollection minimumKeepInfo =
+              appView.rootSet().getDependentMinimumKeepInfo();
+          minimumKeepInfo
+              .getOrCreateUnconditionalMinimumKeepInfo()
+              .getOrCreateMinimumKeepInfoFor(companionReference)
+              .asMethodJoiner()
+              .merge(minimumKeepInfoForCompanion)
+              .merge(extraMinimumKeepInfoForCompanion);
           mutateKeepInfo(
               companion,
               (k, m) ->
-                  k.evaluateMethodRule(
-                      m, minimumKeepInfoForCompanion.merge(extraMinimumKeepInfoForCompanion)));
+                  k.joinMethod(
+                      m,
+                      joiner ->
+                          joiner
+                              .merge(minimumKeepInfoForCompanion)
+                              .merge(extraMinimumKeepInfoForCompanion)));
         });
   }
 
