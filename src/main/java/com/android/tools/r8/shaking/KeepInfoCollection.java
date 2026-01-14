@@ -235,6 +235,8 @@ public abstract class KeepInfoCollection {
         && getInfo(definition).isMinificationAllowed(configuration);
   }
 
+  public abstract KeepInfoCollection rebuildWithoutEventConsumer();
+
   public abstract boolean verifyPinnedTypesAreLive(Set<DexType> liveTypes, InternalOptions options);
 
   // TODO(b/156715504): We should try to avoid the need for iterating pinned items.
@@ -286,8 +288,10 @@ public abstract class KeepInfoCollection {
     private MaterializedRules materializedRules;
 
     private final KeepInfoCanonicalizer canonicalizer;
+    private KeepInfoCollectionEventConsumer eventConsumer;
 
-    MutableKeepInfoCollection(AppView<?> appView, Enqueuer enqueuer) {
+    MutableKeepInfoCollection(
+        AppView<?> appView, Enqueuer enqueuer, KeepInfoCollectionEventConsumer eventConsumer) {
       this(
           appView,
           enqueuer.getMode(),
@@ -297,7 +301,8 @@ public abstract class KeepInfoCollection {
           MaterializedRules.empty(),
           appView.testing().enableKeepInfoCanonicalizer
               ? KeepInfoCanonicalizer.newCanonicalizer()
-              : KeepInfoCanonicalizer.newNopCanonicalizer());
+              : KeepInfoCanonicalizer.newNopCanonicalizer(),
+          eventConsumer);
     }
 
     private MutableKeepInfoCollection(
@@ -307,7 +312,8 @@ public abstract class KeepInfoCollection {
         Map<DexMethod, KeepMethodInfo> keepMethodInfo,
         Map<DexField, KeepFieldInfo> keepFieldInfo,
         MaterializedRules materializedRules,
-        KeepInfoCanonicalizer keepInfoCanonicalizer) {
+        KeepInfoCanonicalizer keepInfoCanonicalizer,
+        KeepInfoCollectionEventConsumer eventConsumer) {
       this.appView = appView;
       this.factory = appView.dexItemFactory();
       this.mode = mode;
@@ -316,6 +322,7 @@ public abstract class KeepInfoCollection {
       this.keepFieldInfo = keepFieldInfo;
       this.materializedRules = materializedRules;
       this.canonicalizer = keepInfoCanonicalizer;
+      this.eventConsumer = eventConsumer;
     }
 
     public void setMaterializedRules(MaterializedRules materializedRules) {
@@ -372,7 +379,8 @@ public abstract class KeepInfoCollection {
               newMethodInfo,
               newFieldInfo,
               materializedRules.rewriteWithLens(lens),
-              canonicalizer);
+              canonicalizer,
+              eventConsumer);
       timing.end();
       return result;
     }
@@ -509,6 +517,7 @@ public abstract class KeepInfoCollection {
     }
 
     public void joinClass(DexProgramClass clazz, Consumer<? super KeepClassInfo.Joiner> fn) {
+      eventConsumer.acceptKeepClassInfo(clazz.getType(), fn);
       KeepClassInfo info = getClassInfo(clazz);
       if (info.isTop()) {
         assert info == KeepClassInfo.top();
@@ -601,6 +610,7 @@ public abstract class KeepInfoCollection {
     }
 
     public void joinMethod(ProgramMethod method, Consumer<? super KeepMethodInfo.Joiner> fn) {
+      eventConsumer.acceptKeepMethodInfo(method.getReference(), fn);
       KeepMethodInfo info = getMethodInfo(method);
       if (info.isTop()) {
         assert info == KeepMethodInfo.top();
@@ -621,6 +631,7 @@ public abstract class KeepInfoCollection {
     }
 
     public void joinField(ProgramField field, Consumer<? super KeepFieldInfo.Joiner> fn) {
+      eventConsumer.acceptKeepFieldInfo(field.getReference(), fn);
       KeepFieldInfo info = getFieldInfo(field);
       if (info.isTop()) {
         assert info == KeepFieldInfo.top();
@@ -649,6 +660,19 @@ public abstract class KeepInfoCollection {
     public KeepInfoCollection mutate(Consumer<MutableKeepInfoCollection> mutator) {
       mutator.accept(this);
       return this;
+    }
+
+    @Override
+    public KeepInfoCollection rebuildWithoutEventConsumer() {
+      return new MutableKeepInfoCollection(
+          appView,
+          mode,
+          keepClassInfo,
+          keepMethodInfo,
+          keepFieldInfo,
+          materializedRules,
+          canonicalizer,
+          new EmptyKeepInfoCollectionEventConsumer());
     }
 
     @Override
