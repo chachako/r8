@@ -56,10 +56,7 @@ public class TestNameRemovalInResourceTable extends TestBase {
         testForR8(parameters)
             .addProgramClasses(FooBar.class)
             .addAndroidResources(getTestResources(temp))
-            .applyIf(
-                optimized,
-                R8TestBuilder::enableOptimizedShrinking,
-                R8TestBuilder::allowStderrMessages)
+            .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
             .addKeepMainRule(FooBar.class)
             .compile();
     r8TestCompileResult

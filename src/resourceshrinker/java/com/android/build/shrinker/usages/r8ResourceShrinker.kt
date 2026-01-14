@@ -24,54 +24,63 @@ import com.android.tools.r8.ResourceShrinker
 import com.android.tools.r8.origin.PathOrigin
 import com.android.tools.r8.references.MethodReference
 import java.nio.file.Path
-
+import java.util.function.Consumer
 
 fun runResourceShrinkerAnalysis(bytes: ByteArray, file: Path, callback: AnalysisCallback) {
-    val resource =
-        ProgramResource.fromBytes(PathOrigin(file), ProgramResource.Kind.DEX, bytes, null)
-    val provider = ProgramResourceProvider { listOf(resource) }
+  val resource = ProgramResource.fromBytes(PathOrigin(file), ProgramResource.Kind.DEX, bytes, null)
+  val provider =
+    object : ProgramResourceProvider {
+      @Deprecated("Deprecated in Java")
+      override fun getProgramResources(): Collection<ProgramResource?> = listOf(resource)
 
-    val command = ResourceShrinker.Builder().addProgramResourceProvider(provider).build()
-    ResourceShrinker.run(command, AnalysisAdapter(callback))
+      override fun getProgramResources(consumer: Consumer<ProgramResource>) {
+        consumer.accept(resource)
+      }
+    }
+
+  val command = ResourceShrinker.Builder().addProgramResourceProvider(provider).build()
+  ResourceShrinker.run(command, AnalysisAdapter(callback))
 }
 
 /** An adapter so R8 API classes do not leak into other modules. */
 class AnalysisAdapter(val impl: AnalysisCallback) : ResourceShrinker.ReferenceChecker {
-    override fun shouldProcess(internalName: String): Boolean = impl.shouldProcess(internalName)
+  override fun shouldProcess(internalName: String): Boolean = impl.shouldProcess(internalName)
 
-    override fun referencedStaticField(internalName: String, fieldName: String) =
-        impl.referencedStaticField(internalName, fieldName)
+  override fun referencedStaticField(internalName: String, fieldName: String) =
+    impl.referencedStaticField(internalName, fieldName)
 
-    override fun referencedInt(value: Int) = impl.referencedInt(value)
+  override fun referencedInt(value: Int) = impl.referencedInt(value)
 
-    override fun referencedString(value: String) = impl.referencedString(value)
+  override fun referencedString(value: String) = impl.referencedString(value)
 
-    override fun referencedMethod(
-        internalName: String, methodName: String, methodDescriptor: String
-    ) = impl.referencedMethod(internalName, methodName, methodDescriptor)
+  override fun referencedMethod(
+    internalName: String,
+    methodName: String,
+    methodDescriptor: String,
+  ) = impl.referencedMethod(internalName, methodName, methodDescriptor)
 
-    override fun startMethodVisit(methodReference: MethodReference
-    ) = impl.startMethodVisit(methodReference)
+  override fun startMethodVisit(methodReference: MethodReference) =
+    impl.startMethodVisit(methodReference)
 
-    override fun endMethodVisit(methodReference: MethodReference
-    ) = impl.endMethodVisit(methodReference)
+  override fun endMethodVisit(methodReference: MethodReference) =
+    impl.endMethodVisit(methodReference)
 }
 
 interface AnalysisCallback {
 
-    fun shouldProcess(internalName: String): Boolean
+  fun shouldProcess(internalName: String): Boolean
 
-    fun referencedInt(value: Int)
+  fun referencedInt(value: Int)
 
-    fun referencedString(value: String)
+  fun referencedString(value: String)
 
-    fun referencedStaticField(internalName: String, fieldName: String)
+  fun referencedStaticField(internalName: String, fieldName: String)
 
-    fun referencedMethod(internalName: String, methodName: String, methodDescriptor: String)
+  fun referencedMethod(internalName: String, methodName: String, methodDescriptor: String)
 
-    fun startMethodVisit(methodReference: MethodReference)
+  fun startMethodVisit(methodReference: MethodReference)
 
-    fun endMethodVisit(methodReference: MethodReference)
+  fun endMethodVisit(methodReference: MethodReference)
 }
 
 class MethodVisitingStatus(var isVisiting: Boolean = false, var methodName: String? = null)

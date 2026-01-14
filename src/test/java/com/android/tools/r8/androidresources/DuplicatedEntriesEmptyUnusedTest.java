@@ -74,8 +74,7 @@ public class DuplicatedEntriesEmptyUnusedTest extends TestBase {
         .addAndroidResources(getTestResources(temp))
         .addFeatureSplitAndroidResources(
             getFeatureSplitTestResources(featureSplitTemp), FeatureSplit.class.getName())
-        .applyIf(
-            optimized, R8TestBuilder::enableOptimizedShrinking, R8TestBuilder::allowStderrMessages)
+        .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
         .addKeepMainRule(Base.class)
         .addKeepMainRule(FeatureSplitMain.class)
         .compile()

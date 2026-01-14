@@ -71,10 +71,7 @@ public class ResourceShrinkingMultiApkAsFeaturesplits extends TestBase {
                 // For the feature, we don't add the R class (we already have it in the base)
                 // and to test we add one less xml file.
                 getTestResources(featureSplitTemp, false, VIEW), featureSplitName)
-            .applyIf(
-                optimized,
-                R8TestBuilder::enableOptimizedShrinking,
-                R8TestBuilder::allowStderrMessages)
+            .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
             .addKeepMainRule(Base.class)
             .compile()
             .inspectShrunkenResources(

@@ -50,7 +50,6 @@ public class RClassResourceGeneration extends TestBase {
         .addProgramClasses(FooBar.class)
         .addAndroidResources(testResource)
         .addKeepMainRule(FooBar.class)
-        .allowStderrMessages()
         .run(parameters.getRuntime(), FooBar.class)
         // The values from the aapt2 generated R class (validated in testResourceRewriting below)
         //    drawable:

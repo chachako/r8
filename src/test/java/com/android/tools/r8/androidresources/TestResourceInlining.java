@@ -93,8 +93,7 @@ public class TestResourceInlining extends TestBase {
             })
         .addAndroidResources(getTestResources(temp))
         .addKeepMainRule(FooBar.class)
-        .applyIf(
-            optimize, R8TestBuilder::enableOptimizedShrinking, R8TestBuilder::allowStderrMessages)
+        .applyIf(optimize, R8TestBuilder::enableOptimizedShrinking)
         .addRunClasspathFiles(AndroidResourceTestingUtils.resourcesClassAsDex(temp))
         .compile()
         .inspectShrunkenResources(

@@ -43,7 +43,6 @@ public class ResourcesInFilledNewArrayDataTest extends TestBase {
         .addProgramClasses(FooBar.class)
         .addAndroidResources(getTestResources(temp))
         .addKeepMainRule(FooBar.class)
-        .allowStderrMessages()
         .compile()
         // Ensure that we have the fillednewarraydata
         .inspect(

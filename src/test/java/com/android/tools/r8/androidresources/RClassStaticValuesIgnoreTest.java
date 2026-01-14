@@ -56,7 +56,6 @@ public class RClassStaticValuesIgnoreTest extends TestBase {
             DescriptorUtils.descriptorToJavaType(RClassDescriptor))
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)
-        .allowStderrMessages()
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {

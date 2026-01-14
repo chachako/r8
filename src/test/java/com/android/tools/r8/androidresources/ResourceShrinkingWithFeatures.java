@@ -74,10 +74,7 @@ public class ResourceShrinkingWithFeatures extends TestBase {
     try {
       testForR8(parameters)
           .addProgramClasses(Base.class)
-          .applyIf(
-              optimized,
-              R8TestBuilder::enableOptimizedShrinking,
-              R8TestBuilder::allowStderrMessages)
+          .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
           .addFeatureSplit(builder -> builder.build())
           .compileWithExpectedDiagnostics(
               diagnostics -> {
@@ -117,10 +114,7 @@ public class ResourceShrinkingWithFeatures extends TestBase {
             .addAndroidResources(getTestResources(temp))
             .addFeatureSplitAndroidResources(
                 getFeatureSplitTestResources(featureSplitTemp), FeatureSplit.class.getName())
-            .applyIf(
-                optimized,
-                R8TestBuilder::enableOptimizedShrinking,
-                R8TestBuilder::allowStderrMessages)
+            .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
             .addKeepMainRule(Base.class)
             .addKeepMainRule(FeatureSplitMain.class)
             .compile();

@@ -74,8 +74,7 @@ public class ResourceShrinkingWithFeaturesAndDuplicatedResEntryTest extends Test
         .addAndroidResources(getTestResources(temp))
         .addFeatureSplitAndroidResources(
             getFeatureSplitTestResources(featureSplitTemp), FeatureSplit.class.getName())
-        .applyIf(
-            optimized, R8TestBuilder::enableOptimizedShrinking, R8TestBuilder::allowStderrMessages)
+        .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
         .addKeepMainRule(Base.class)
         .addKeepMainRule(FeatureSplit.FeatureSplitMain.class)
         .compile()

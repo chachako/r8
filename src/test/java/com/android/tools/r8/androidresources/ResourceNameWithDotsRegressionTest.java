@@ -56,7 +56,6 @@ public class ResourceNameWithDotsRegressionTest extends TestBase {
         .addRunClasspathFiles(resourcesClass)
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)
-        .allowStderrMessages()
         .compile()
         .inspectShrunkenResources(
             resourceTableInspector -> {

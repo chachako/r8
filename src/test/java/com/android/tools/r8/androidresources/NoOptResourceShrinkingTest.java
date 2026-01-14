@@ -53,8 +53,7 @@ public class NoOptResourceShrinkingTest extends TestBase {
     AndroidTestResource testResources = getTestResources(temp);
     testForR8(parameters)
         .addProgramClasses(FooBar.class)
-        .applyIf(
-            optimized, R8TestBuilder::enableOptimizedShrinking, R8TestBuilder::allowStderrMessages)
+        .applyIf(optimized, R8TestBuilder::enableOptimizedShrinking)
         .addAndroidResources(testResources)
         .addKeepMainRule(FooBar.class)
         .addDontOptimize()
