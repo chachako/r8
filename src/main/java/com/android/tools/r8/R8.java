@@ -50,6 +50,7 @@ import com.android.tools.r8.ir.desugar.itf.InterfaceMethodRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordFieldValuesRewriter;
 import com.android.tools.r8.ir.desugar.records.RecordInstructionDesugaring;
 import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaring;
+import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor;
 import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.ListIterationRewriter;
 import com.android.tools.r8.ir.optimize.NestReducer;
@@ -331,6 +332,9 @@ public class R8 {
       if (options.enableEnumUnboxing) {
         EnumUnboxingCfMethods.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
+      if (options.enableAtomicFieldUpdaterOptimization) {
+        AtomicFieldUpdaterInstrumentor.registerSynthesizedCodeReferences(appView.dexItemFactory());
+      }
       if (options.desugarRecordState().isNotOff()) {
         RecordInstructionDesugaring.registerSynthesizedCodeReferences(appView.dexItemFactory());
       }
@@ -534,6 +538,10 @@ public class R8 {
       // Collect switch maps and ordinals maps.
       if (options.enableEnumSwitchMapRemoval) {
         appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run());
+      }
+
+      if (options.enableAtomicFieldUpdaterOptimization) {
+        new AtomicFieldUpdaterInstrumentor(appViewWithLiveness).run(executorService, timing);
       }
 
       // Collect the already pruned types before creating a new app info without liveness.

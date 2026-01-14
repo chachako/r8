@@ -80,6 +80,8 @@ public class SyntheticNaming {
       generator.forSingleMethodWithGlobalMerging("TypeSwitchHelperEnum");
   public final SyntheticKind ENUM_UNBOXING_CHECK_NOT_ZERO_METHOD =
       generator.forSingleMethodWithGlobalMerging("CheckNotZero");
+  public final SyntheticKind ATOMIC_FIELD_UPDATER_HELPER =
+      generator.forFixedClass("AtomicFieldUpdaterHelper");
   public final SyntheticKind RECORD_HELPER = generator.forSingleMethodWithGlobalMerging("Record");
   public final SyntheticKind BACKPORT = generator.forSingleMethodWithGlobalMerging("Backport");
   public final SyntheticKind BACKPORT_WITH_FORWARDING =

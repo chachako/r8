@@ -52,6 +52,14 @@ public class SetUtils {
     return result;
   }
 
+  public static <A, B> HashSet<B> newHashSet(Collection<A> elements, Function<A, B> mapping) {
+    HashSet<B> result = new HashSet<>(elements.size());
+    for (var element : elements) {
+      result.add(mapping.apply(element));
+    }
+    return result;
+  }
+
   public static <T> Set<T> newIdentityHashSet(T element) {
     Set<T> result = Sets.newIdentityHashSet();
     result.add(element);

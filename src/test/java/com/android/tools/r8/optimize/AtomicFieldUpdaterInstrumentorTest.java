@@ -1,9 +1,10 @@
-// Copyright (c) 2025, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertFalse;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -19,7 +20,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterTest extends TestBase {
+public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -33,6 +34,11 @@ public class AtomicFieldUpdaterTest extends TestBase {
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     testForR8(parameters)
+        .addOptionsModification(
+            options -> {
+              assertFalse(options.enableAtomicFieldUpdaterOptimization);
+              options.enableAtomicFieldUpdaterOptimization = true;
+            })
         .addProgramClasses(testClass)
         .addKeepMainRule(testClass)
         .compile()

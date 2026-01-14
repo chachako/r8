@@ -96,6 +96,7 @@ public class ConcreteProfileCollectionAdditions extends ProfileCollectionAdditio
     }
   }
 
+  @Override
   public void applyIfContextIsInProfile(
       DexProgramClass context, Consumer<ProfileAdditionsBuilder> builderConsumer) {
     accept(additions -> additions.applyIfContextIsInProfile(context.getType(), builderConsumer));
