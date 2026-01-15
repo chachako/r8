@@ -75,6 +75,7 @@ import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -88,6 +89,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.Predicate;
 import org.objectweb.asm.Opcodes;
 
 public final class BackportedMethodRewriter implements CfInstructionDesugaring {
@@ -360,10 +362,7 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.V)) {
         initializeAndroidVMethodProviders(factory);
-        // Backport Array.equals due to slower implementation on Android T and U (b/433540561).
-        if (appView.options().testing.backportArraysEquals) {
-          initializeAndroidArraysEqualsMethodProviders(factory);
-        }
+        initializeAndroidArraysEqualsMethodProviders(factory);
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.BAKLAVA)) {
         initializeAndroidBaklavaMethodProviders(factory);
@@ -2164,46 +2163,96 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       class ArrayEqualsMethodInfo {
         private final DexType arrayType;
         private final TemplateMethodFactory provider;
+        private final TemplateMethodFactory providerRange;
 
-        private ArrayEqualsMethodInfo(DexType arrayType, TemplateMethodFactory provider) {
+        private ArrayEqualsMethodInfo(
+            DexType arrayType,
+            TemplateMethodFactory provider,
+            TemplateMethodFactory providerRange) {
           this.arrayType = arrayType;
           this.provider = provider;
+          this.providerRange = providerRange;
         }
       }
 
       ImmutableList.Builder<ArrayEqualsMethodInfo> builder = ImmutableList.builder();
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.intArrayType, BackportedMethods::ArraysMethods_equalsInt));
+              factory.intArrayType,
+              BackportedMethods::ArraysMethods_equalsInt,
+              BackportedMethods::ArraysMethods_equalsIntRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.longArrayType, BackportedMethods::ArraysMethods_equalsLong));
+              factory.longArrayType,
+              BackportedMethods::ArraysMethods_equalsLong,
+              BackportedMethods::ArraysMethods_equalsLongRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.shortArrayType, BackportedMethods::ArraysMethods_equalsShort));
+              factory.shortArrayType,
+              BackportedMethods::ArraysMethods_equalsShort,
+              BackportedMethods::ArraysMethods_equalsShortRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.byteArrayType, BackportedMethods::ArraysMethods_equalsByte));
+              factory.byteArrayType,
+              BackportedMethods::ArraysMethods_equalsByte,
+              BackportedMethods::ArraysMethods_equalsByteRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.charArrayType, BackportedMethods::ArraysMethods_equalsChar));
+              factory.charArrayType,
+              BackportedMethods::ArraysMethods_equalsChar,
+              BackportedMethods::ArraysMethods_equalsCharRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.booleanArrayType, BackportedMethods::ArraysMethods_equalsBoolean));
+              factory.booleanArrayType,
+              BackportedMethods::ArraysMethods_equalsBoolean,
+              BackportedMethods::ArraysMethods_equalsBooleanRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.floatArrayType, BackportedMethods::ArraysMethods_equalsFloat));
+              factory.floatArrayType,
+              BackportedMethods::ArraysMethods_equalsFloat,
+              BackportedMethods::ArraysMethods_equalsFloatRange));
       builder.add(
           new ArrayEqualsMethodInfo(
-              factory.doubleArrayType, BackportedMethods::ArraysMethods_equalsDouble));
+              factory.doubleArrayType,
+              BackportedMethods::ArraysMethods_equalsDouble,
+              BackportedMethods::ArraysMethods_equalsDoubleRange));
       builder
           .build()
           .forEach(
               info -> {
+                // Backport Array.equals due to slower implementation on Android T and U
+                // (b/433540561).
+                if (appView.options().testing.backportArraysEquals) {
+                  DexProto proto =
+                      factory.createProto(factory.booleanType, info.arrayType, info.arrayType);
+                  DexMethod method = factory.createMethod(factory.arraysType, proto, name);
+                  addProvider(new MethodGenerator(method, info.provider));
+                }
+
                 DexProto proto =
-                    factory.createProto(factory.booleanType, info.arrayType, info.arrayType);
+                    factory.createProto(
+                        factory.booleanType,
+                        info.arrayType,
+                        factory.intType,
+                        factory.intType,
+                        info.arrayType,
+                        factory.intType,
+                        factory.intType);
                 DexMethod method = factory.createMethod(factory.arraysType, proto, name);
-                addProvider(new MethodGenerator(method, info.provider));
+                addProvider(
+                    new MethodWithHelperGenerator(
+                        method,
+                        info.providerRange,
+                        cfInvoke ->
+                            cfInvoke.getMethod().getName().toString().equals("checkValidRange"),
+                        appView
+                            .dexItemFactory()
+                            .createProto(
+                                appView.dexItemFactory().voidType,
+                                appView.dexItemFactory().intType,
+                                appView.dexItemFactory().intType,
+                                appView.dexItemFactory().intType),
+                        BackportedMethods::ArraysMethods_checkValidRange));
               });
     }
 
@@ -2366,6 +2415,28 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       return naming.BACKPORT;
     }
 
+    @FunctionalInterface
+    interface RegisterHelperMethod {
+      void register(
+          ProgramMethod method,
+          BackportedMethodDesugaringEventConsumer eventConsumer,
+          MethodProcessingContext methodProcessingContext);
+    }
+
+    private void registerSyntheticMethod(
+        ProgramMethod method,
+        BackportedMethodDesugaringEventConsumer eventConsumer,
+        MethodProcessingContext methodProcessingContext) {
+      eventConsumer.acceptBackportedMethod(method, methodProcessingContext.getMethodContext());
+    }
+
+    void unexpectedRegisterHelperMethod(
+        ProgramMethod method,
+        BackportedMethodDesugaringEventConsumer eventConsumer,
+        MethodProcessingContext methodProcessingContext) {
+      assert false;
+    }
+
     @Override
     public Collection<CfInstruction> rewriteInstruction(
         Position position,
@@ -2374,13 +2445,18 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         BackportedMethodDesugaringEventConsumer eventConsumer,
         MethodProcessingContext methodProcessingContext,
         LocalStackAllocator localStackAllocator) {
-      ProgramMethod method = getSyntheticMethod(appView, methodProcessingContext);
-      eventConsumer.acceptBackportedMethod(method, methodProcessingContext.getMethodContext());
+      ProgramMethod method =
+          getSyntheticMethod(
+              appView, eventConsumer, methodProcessingContext, this::registerSyntheticMethod);
+      registerSyntheticMethod(method, eventConsumer, methodProcessingContext);
       return ImmutableList.of(new CfInvoke(Opcodes.INVOKESTATIC, method.getReference(), false));
     }
 
-    private ProgramMethod getSyntheticMethod(
-        AppView<?> appView, MethodProcessingContext methodProcessingContext) {
+    protected ProgramMethod getSyntheticMethod(
+        AppView<?> appView,
+        BackportedMethodDesugaringEventConsumer eventConsumer,
+        MethodProcessingContext methodProcessingContext,
+        RegisterHelperMethod unusedRegisterSyntheticMethod) {
       return appView
           .getSyntheticItems()
           .createMethod(
@@ -2409,6 +2485,81 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
 
     public Code generateTemplateMethod(DexItemFactory dexItemFactory, DexMethod method) {
       return factory.create(dexItemFactory, method);
+    }
+  }
+
+  // Version of MethodGenerator for backports which use additional helper methods. Currently only
+  // one static helper method is supported.
+  private static class MethodWithHelperGenerator extends MethodGenerator {
+    private final Predicate<CfInvoke> isHelperInvoke;
+    private final DexProto helperProto;
+    private final TemplateMethodFactory factoryHelper;
+
+    MethodWithHelperGenerator(
+        DexMethod method,
+        TemplateMethodFactory factory,
+        Predicate<CfInvoke> isHelperInvoke,
+        DexProto helperProto,
+        TemplateMethodFactory factoryHelper) {
+      super(method, factory);
+      this.isHelperInvoke = isHelperInvoke;
+      this.helperProto = helperProto;
+      this.factoryHelper = factoryHelper;
+    }
+
+    @Override
+    protected ProgramMethod getSyntheticMethod(
+        AppView<?> appView,
+        BackportedMethodDesugaringEventConsumer eventConsumer,
+        MethodProcessingContext methodProcessingContext,
+        RegisterHelperMethod registerSyntheticMethod) {
+      ProgramMethod backportMethod =
+          super.getSyntheticMethod(
+              appView,
+              eventConsumer,
+              methodProcessingContext,
+              this::unexpectedRegisterHelperMethod);
+      CfCode cfCode = backportMethod.getDefinition().getCode().asCfCode();
+
+      ProgramMethod helper =
+          appView
+              .getSyntheticItems()
+              .createMethod(
+                  this::getSyntheticKind,
+                  methodProcessingContext.createUniqueContext(),
+                  appView,
+                  builder ->
+                      builder
+                          .disableAndroidApiLevelCheck()
+                          .setProto(helperProto)
+                          .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                          .setCode(
+                              methodSig -> {
+                                Code code =
+                                    factoryHelper.create(appView.dexItemFactory(), methodSig);
+                                if (appView.options().hasMappingFileSupport()) {
+                                  return code.getCodeAsInlining(
+                                      methodSig, true, member, false, appView.dexItemFactory());
+                                }
+                                return code;
+                              }));
+
+      // Rewrite backport code to call the synthesized helper.
+      List<CfInstruction> instructions =
+          ListUtils.flatMapSameType(
+              cfCode.getInstructions(),
+              instruction -> {
+                if (instruction.isInvokeStatic() && isHelperInvoke.test(instruction.asInvoke())) {
+                  return ImmutableList.of(
+                      new CfInvoke(Opcodes.INVOKESTATIC, helper.getReference(), false));
+                }
+                return null;
+              },
+              null);
+      assert instructions != null;
+      cfCode.setInstructions(instructions);
+      registerSyntheticMethod.register(helper, eventConsumer, methodProcessingContext);
+      return backportMethod;
     }
   }
 

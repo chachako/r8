@@ -59,7 +59,9 @@ public final class BackportedMethods {
   public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
     factory.createSynthesizedType("Landroid/os/Build$VERSION;");
     factory.createSynthesizedType("Landroid/os/Build;");
+    factory.createSynthesizedType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;");
     factory.createSynthesizedType("Ljava/lang/ArithmeticException;");
+    factory.createSynthesizedType("Ljava/lang/ArrayIndexOutOfBoundsException;");
     factory.createSynthesizedType("Ljava/lang/AssertionError;");
     factory.createSynthesizedType("Ljava/lang/Double;");
     factory.createSynthesizedType("Ljava/lang/Exception;");
@@ -251,6 +253,147 @@ public final class BackportedMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ArraysMethods_checkValidRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        3,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfIfCmp(IfType.LE, ValueType.INT, label2),
+            label1,
+            new CfNew(factory.createType("Ljava/lang/IllegalArgumentException;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfNew(factory.stringBuilderType),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.voidType),
+                    factory.createString("<init>")),
+                false),
+            new CfConstString(factory.createString("fromIndex(")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfLoad(ValueType.INT, 1),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.intType),
+                    factory.createString("append")),
+                false),
+            new CfConstString(factory.createString(") > toIndex(")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.intType),
+                    factory.createString("append")),
+                false),
+            new CfConstString(factory.createString(")")),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringBuilderType, factory.stringType),
+                    factory.createString("append")),
+                false),
+            new CfInvoke(
+                182,
+                factory.createMethod(
+                    factory.stringBuilderType,
+                    factory.createProto(factory.stringType),
+                    factory.createString("toString")),
+                false),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/IllegalArgumentException;"),
+                    factory.createProto(factory.voidType, factory.stringType),
+                    factory.createString("<init>")),
+                false),
+            new CfThrow(),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.intType(), FrameType.intType(), FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 1),
+            new CfIf(IfType.GE, ValueType.INT, label4),
+            label3,
+            new CfNew(factory.createType("Ljava/lang/ArrayIndexOutOfBoundsException;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfLoad(ValueType.INT, 1),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/ArrayIndexOutOfBoundsException;"),
+                    factory.createProto(factory.voidType, factory.intType),
+                    factory.createString("<init>")),
+                false),
+            new CfThrow(),
+            label4,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.intType(), FrameType.intType(), FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 0),
+            new CfIfCmp(IfType.LE, ValueType.INT, label6),
+            label5,
+            new CfNew(factory.createType("Ljava/lang/ArrayIndexOutOfBoundsException;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/ArrayIndexOutOfBoundsException;"),
+                    factory.createProto(factory.voidType, factory.intType),
+                    factory.createString("<init>")),
+                false),
+            new CfThrow(),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2},
+                    new FrameType[] {
+                      FrameType.intType(), FrameType.intType(), FrameType.intType()
+                    })),
+            new CfReturnVoid(),
+            label7),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ArraysMethods_equalsBoolean(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -367,6 +510,153 @@ public final class BackportedMethods {
                     new FrameType[] {
                       FrameType.initializedNonNullReference(factory.booleanArrayType),
                       FrameType.initializedNonNullReference(factory.booleanArrayType)
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ArraysMethods_equalsBooleanRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.BOOLEAN_OR_BYTE),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.BOOLEAN_OR_BYTE),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.booleanArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
                     })),
             new CfConstNumber(1, ValueType.INT),
             new CfReturn(ValueType.INT),
@@ -499,6 +789,153 @@ public final class BackportedMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ArraysMethods_equalsByteRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.BOOLEAN_OR_BYTE),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.BOOLEAN_OR_BYTE),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.byteArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ArraysMethods_equalsChar(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -615,6 +1052,153 @@ public final class BackportedMethods {
                     new FrameType[] {
                       FrameType.initializedNonNullReference(factory.charArrayType),
                       FrameType.initializedNonNullReference(factory.charArrayType)
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ArraysMethods_equalsCharRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.CHAR),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.CHAR),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.charArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
                     })),
             new CfConstNumber(1, ValueType.INT),
             new CfReturn(ValueType.INT),
@@ -762,6 +1346,168 @@ public final class BackportedMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ArraysMethods_equalsDoubleRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.DOUBLE),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/Double;"),
+                    factory.createProto(factory.longType, factory.doubleType),
+                    factory.createString("doubleToLongBits")),
+                false),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.DOUBLE),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/Double;"),
+                    factory.createProto(factory.longType, factory.doubleType),
+                    factory.createString("doubleToLongBits")),
+                false),
+            new CfCmp(Cmp.Bias.NONE, NumericType.LONG),
+            new CfIf(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.doubleArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ArraysMethods_equalsFloat(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -900,6 +1646,167 @@ public final class BackportedMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ArraysMethods_equalsFloatRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.FLOAT),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/Float;"),
+                    factory.createProto(factory.intType, factory.floatType),
+                    factory.createString("floatToIntBits")),
+                false),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.FLOAT),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/Float;"),
+                    factory.createProto(factory.intType, factory.floatType),
+                    factory.createString("floatToIntBits")),
+                false),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.floatArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ArraysMethods_equalsInt(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -1016,6 +1923,153 @@ public final class BackportedMethods {
                     new FrameType[] {
                       FrameType.initializedNonNullReference(factory.intArrayType),
                       FrameType.initializedNonNullReference(factory.intArrayType)
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ArraysMethods_equalsIntRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.INT),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.INT),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.intArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
                     })),
             new CfConstNumber(1, ValueType.INT),
             new CfReturn(ValueType.INT),
@@ -1149,6 +2203,154 @@ public final class BackportedMethods {
         ImmutableList.of());
   }
 
+  public static CfCode ArraysMethods_equalsLongRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        4,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.LONG),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.LONG),
+            new CfCmp(Cmp.Bias.NONE, NumericType.LONG),
+            new CfIf(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.longArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode ArraysMethods_equalsShort(DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();
     CfLabel label1 = new CfLabel();
@@ -1265,6 +2467,153 @@ public final class BackportedMethods {
                     new FrameType[] {
                       FrameType.initializedNonNullReference(factory.shortArrayType),
                       FrameType.initializedNonNullReference(factory.shortArrayType)
+                    })),
+            new CfConstNumber(1, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label12),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
+  public static CfCode ArraysMethods_equalsShortRange(DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    CfLabel label4 = new CfLabel();
+    CfLabel label5 = new CfLabel();
+    CfLabel label6 = new CfLabel();
+    CfLabel label7 = new CfLabel();
+    CfLabel label8 = new CfLabel();
+    CfLabel label9 = new CfLabel();
+    CfLabel label10 = new CfLabel();
+    CfLabel label11 = new CfLabel();
+    CfLabel label12 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        3,
+        9,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 1),
+            new CfLoad(ValueType.INT, 2),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label1,
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfArrayLength(),
+            new CfLoad(ValueType.INT, 4),
+            new CfLoad(ValueType.INT, 5),
+            new CfInvoke(
+                184,
+                factory.createMethod(
+                    factory.createType("Lcom/android/tools/r8/ir/desugar/backports/ArraysMethods;"),
+                    factory.createProto(
+                        factory.voidType, factory.intType, factory.intType, factory.intType),
+                    factory.createString("checkValidRange")),
+                false),
+            label2,
+            new CfLoad(ValueType.INT, 2),
+            new CfLoad(ValueType.INT, 1),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 6),
+            label3,
+            new CfLoad(ValueType.INT, 5),
+            new CfLoad(ValueType.INT, 4),
+            new CfArithmeticBinop(CfArithmeticBinop.Opcode.Sub, NumericType.INT),
+            new CfStore(ValueType.INT, 7),
+            label4,
+            new CfLoad(ValueType.INT, 6),
+            new CfLoad(ValueType.INT, 7),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label6),
+            label5,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label6,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfConstNumber(0, ValueType.INT),
+            new CfStore(ValueType.INT, 8),
+            label7,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfLoad(ValueType.INT, 8),
+            new CfLoad(ValueType.INT, 6),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
+            label8,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfLoad(ValueType.INT, 1),
+            new CfIinc(1, 1),
+            new CfArrayLoad(MemberType.SHORT),
+            new CfLoad(ValueType.OBJECT, 3),
+            new CfLoad(ValueType.INT, 4),
+            new CfIinc(4, 1),
+            new CfArrayLoad(MemberType.SHORT),
+            new CfIfCmp(IfType.EQ, ValueType.INT, label10),
+            label9,
+            new CfConstNumber(0, ValueType.INT),
+            new CfReturn(ValueType.INT),
+            label10,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
+                    })),
+            new CfIinc(8, 1),
+            new CfGoto(label7),
+            label11,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0, 1, 2, 3, 4, 5, 6, 7},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.initializedNonNullReference(factory.shortArrayType),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType(),
+                      FrameType.intType()
                     })),
             new CfConstNumber(1, ValueType.INT),
             new CfReturn(ValueType.INT),
