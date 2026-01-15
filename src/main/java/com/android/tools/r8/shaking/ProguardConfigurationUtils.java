@@ -148,7 +148,7 @@ public class ProguardConfigurationUtils {
   // -keepclassmembers,allow* !abstract class * extends T { void <init>(); }
   private static ProguardKeepRule buildKeepClassMembersNoShrinkingOfInitializerOnSubclasses(
       DexItemFactory factory, DexClass clazz) {
-    return ProguardKeepRule.builder()
+    return KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule.builder()
         .setClassNames(ProguardClassNameList.singletonList(ProguardTypeMatcher.allClassesMatcher()))
         .setClassType(ProguardClassType.CLASS)
         .setInheritanceClassName(ProguardTypeMatcher.create(clazz.getType()))

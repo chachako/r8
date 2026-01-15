@@ -18,6 +18,7 @@ import static java.util.Collections.emptySet;
 
 import com.android.build.shrinker.r8integration.R8ResourceShrinkerState;
 import com.android.tools.r8.Diagnostic;
+import com.android.tools.r8.blastradius.BlastRadiusReporter;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfInvoke;
@@ -4596,7 +4597,7 @@ public class Enqueuer {
 
   private void reportBlastRadius() {
     if (blastRadius != null) {
-      blastRadius.build().report();
+      BlastRadiusReporter.create().report(blastRadius.build().getBlastRadius());
     }
   }
 

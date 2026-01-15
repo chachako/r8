@@ -3,28 +3,28 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.blastradius;
 
-import static com.android.tools.r8.utils.MapUtils.ignoreKey;
-
-import com.android.tools.r8.errors.Unimplemented;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.shaking.KeepFieldInfo;
+import com.android.tools.r8.shaking.KeepInfo;
 import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.utils.InternalOptions;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class RootSetBlastRadius {
 
-  @SuppressWarnings("UnusedVariable")
   private final Map<ProguardKeepRuleBase, RootSetBlastRadiusForRule> blastRadius;
 
   private RootSetBlastRadius(Map<ProguardKeepRuleBase, RootSetBlastRadiusForRule> blastRadius) {
@@ -41,9 +41,8 @@ public class RootSetBlastRadius {
         : null;
   }
 
-  public void report() {
-    // TODO(b/441055269): Implement.
-    throw new Unimplemented();
+  public Collection<RootSetBlastRadiusForRule> getBlastRadius() {
+    return blastRadius.values();
   }
 
   public static class Builder implements KeepInfoCollectionEventConsumer {
@@ -54,36 +53,47 @@ public class RootSetBlastRadius {
     @Override
     public void acceptKeepClassInfo(
         DexType type, Consumer<? super KeepClassInfo.Joiner> keepInfoEffect) {
-      KeepClassInfo.Joiner joiner = KeepClassInfo.newEmptyJoiner();
-      keepInfoEffect.accept(joiner);
-      for (ProguardKeepRuleBase rule : joiner.getRules()) {
-        RootSetBlastRadiusForRule ruleBlastRadius =
-            blastRadius.computeIfAbsent(rule, ignoreKey(RootSetBlastRadiusForRule::new));
-        ruleBlastRadius.addMatchedClass(type);
-      }
+      acceptKeepInfo(
+          type,
+          keepInfoEffect,
+          KeepClassInfo.newEmptyJoiner(),
+          RootSetBlastRadiusForRule::addMatchedClass);
     }
 
     @Override
     public void acceptKeepFieldInfo(
         DexField field, Consumer<? super KeepFieldInfo.Joiner> keepInfoEffect) {
-      KeepFieldInfo.Joiner joiner = KeepFieldInfo.newEmptyJoiner();
-      keepInfoEffect.accept(joiner);
-      for (ProguardKeepRuleBase rule : joiner.getRules()) {
-        RootSetBlastRadiusForRule ruleBlastRadius =
-            blastRadius.computeIfAbsent(rule, ignoreKey(RootSetBlastRadiusForRule::new));
-        ruleBlastRadius.addMatchedField(field);
-      }
+      acceptKeepInfo(
+          field,
+          keepInfoEffect,
+          KeepFieldInfo.newEmptyJoiner(),
+          RootSetBlastRadiusForRule::addMatchedField);
     }
 
     @Override
     public void acceptKeepMethodInfo(
         DexMethod method, Consumer<? super KeepMethodInfo.Joiner> keepInfoEffect) {
-      KeepMethodInfo.Joiner joiner = KeepMethodInfo.newEmptyJoiner();
-      keepInfoEffect.accept(joiner);
-      for (ProguardKeepRuleBase rule : joiner.getRules()) {
+      acceptKeepInfo(
+          method,
+          keepInfoEffect,
+          KeepMethodInfo.newEmptyJoiner(),
+          RootSetBlastRadiusForRule::addMatchedMethod);
+    }
+
+    private <R extends DexReference, J extends KeepInfo.Joiner<?, ?, ?>> void acceptKeepInfo(
+        R reference,
+        Consumer<? super J> keepInfoEffect,
+        J emptyJoiner,
+        BiConsumer<RootSetBlastRadiusForRule, R> addReferenceToRuleBlastRadius) {
+      keepInfoEffect.accept(emptyJoiner);
+      for (ProguardKeepRuleBase rule : emptyJoiner.getRules()) {
+        if (rule.isProguardIfRule()) {
+          // Perform attribution to the root -if rule.
+          rule = rule.asProguardIfRule().getParentOrThis();
+        }
         RootSetBlastRadiusForRule ruleBlastRadius =
-            blastRadius.computeIfAbsent(rule, ignoreKey(RootSetBlastRadiusForRule::new));
-        ruleBlastRadius.addMatchedMethod(method);
+            blastRadius.computeIfAbsent(rule, RootSetBlastRadiusForRule::new);
+        addReferenceToRuleBlastRadius.accept(ruleBlastRadius, reference);
       }
     }
 

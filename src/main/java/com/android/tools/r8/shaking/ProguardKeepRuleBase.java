@@ -133,7 +133,7 @@ public class ProguardKeepRuleBase extends ProguardConfigurationRule {
   }
 
   @Override
-  String modifierString() {
+  protected String modifierString() {
     return modifiers.toString();
   }
 }

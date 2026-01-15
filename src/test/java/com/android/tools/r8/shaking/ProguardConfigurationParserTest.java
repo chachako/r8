@@ -1640,16 +1640,16 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(3, ifCount);
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**$$ModuleAdapter", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("A", if0.subsequentRule.getClassNames().toString());
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("A", if0.getSubsequentRule().getClassNames().toString());
     ProguardIfRule if1 = (ProguardIfRule) config.getRules().get(1);
     assertEquals("**$$InjectAdapter", if1.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if1.subsequentRule.getType());
-    assertEquals("B", if1.subsequentRule.getClassNames().toString());
+    assertEquals(ProguardKeepRuleType.KEEP, if1.getSubsequentRule().getType());
+    assertEquals("B", if1.getSubsequentRule().getClassNames().toString());
     ProguardIfRule if2 = (ProguardIfRule) config.getRules().get(2);
     assertEquals("**$$StaticInjection", if2.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if2.subsequentRule.getType());
-    assertEquals("C", if2.subsequentRule.getClassNames().toString());
+    assertEquals(ProguardKeepRuleType.KEEP, if2.getSubsequentRule().getType());
+    assertEquals("C", if2.getSubsequentRule().getClassNames().toString());
   }
 
   @Test
@@ -1665,15 +1665,15 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**$R**", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("**$D<2>", if0.subsequentRule.getClassNames().toString());
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("**$D<2>", if0.getSubsequentRule().getClassNames().toString());
 
     // Test <2> literally refers to the second wildcard in the rule.
     Iterator<ProguardWildcard> it1 = if0.getClassNames().getWildcards().iterator();
     it1.next();
     ProguardWildcard secondWildcardInIf = it1.next();
     assertTrue(secondWildcardInIf.isPattern());
-    Iterator<ProguardWildcard> it2 = if0.subsequentRule.getWildcards().iterator();
+    Iterator<ProguardWildcard> it2 = if0.getSubsequentRule().getWildcards().iterator();
     it2.next();
     ProguardWildcard backReference = it2.next();
     assertTrue(backReference.isBackReference());
@@ -1695,10 +1695,10 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("**.D<2>", if0.subsequentRule.getClassNames().toString());
-    assertEquals(1, if0.subsequentRule.getMemberRules().size());
-    ProguardMemberRule fieldRule = if0.subsequentRule.getMemberRules().get(0);
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("**.D<2>", if0.getSubsequentRule().getClassNames().toString());
+    assertEquals(1, if0.getSubsequentRule().getMemberRules().size());
+    ProguardMemberRule fieldRule = if0.getSubsequentRule().getMemberRules().get(0);
     assertEquals("<1>.F<2>", fieldRule.getType().toString());
   }
 
@@ -1717,10 +1717,10 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("**.D<2>", if0.subsequentRule.getClassNames().toString());
-    assertEquals(1, if0.subsequentRule.getMemberRules().size());
-    ProguardMemberRule fieldRule = if0.subsequentRule.getMemberRules().get(0);
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("**.D<2>", if0.getSubsequentRule().getClassNames().toString());
+    assertEquals(1, if0.getSubsequentRule().getMemberRules().size());
+    ProguardMemberRule fieldRule = if0.getSubsequentRule().getMemberRules().get(0);
     assertEquals("fld<2>", fieldRule.getName().toString());
   }
 
@@ -1739,10 +1739,10 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("**.D<2>", if0.subsequentRule.getClassNames().toString());
-    assertEquals(1, if0.subsequentRule.getMemberRules().size());
-    ProguardMemberRule methodRule = if0.subsequentRule.getMemberRules().get(0);
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("**.D<2>", if0.getSubsequentRule().getClassNames().toString());
+    assertEquals(1, if0.getSubsequentRule().getMemberRules().size());
+    ProguardMemberRule methodRule = if0.getSubsequentRule().getMemberRules().get(0);
     assertEquals("<1>.M<2>", methodRule.getType().toString());
   }
 
@@ -1782,10 +1782,10 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("**.D<2>", if0.subsequentRule.getClassNames().toString());
-    assertEquals(1, if0.subsequentRule.getMemberRules().size());
-    ProguardMemberRule methodRule = if0.subsequentRule.getMemberRules().get(0);
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("**.D<2>", if0.getSubsequentRule().getClassNames().toString());
+    assertEquals(1, if0.getSubsequentRule().getMemberRules().size());
+    ProguardMemberRule methodRule = if0.getSubsequentRule().getMemberRules().get(0);
     assertEquals("<3>_delegate", methodRule.getName().toString());
   }
 
@@ -1806,10 +1806,10 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
-    assertEquals(ProguardKeepRuleType.KEEP, if0.subsequentRule.getType());
-    assertEquals("**.D<2>", if0.subsequentRule.getClassNames().toString());
-    assertEquals(1, if0.subsequentRule.getMemberRules().size());
-    ProguardMemberRule methodRule = if0.subsequentRule.getMemberRules().get(0);
+    assertEquals(ProguardKeepRuleType.KEEP, if0.getSubsequentRule().getType());
+    assertEquals("**.D<2>", if0.getSubsequentRule().getClassNames().toString());
+    assertEquals(1, if0.getSubsequentRule().getMemberRules().size());
+    ProguardMemberRule methodRule = if0.getSubsequentRule().getMemberRules().get(0);
     assertEquals("<3>", methodRule.getType().toString());
     assertEquals("<4>", methodRule.getName().toString());
   }
@@ -2723,7 +2723,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     ifRule.getClassNames().matches(type);
 
     // Materialize the subsequent rule.
-    ProguardKeepRule materializedSubsequentRule = ifRule.subsequentRule.materialize(dexItemFactory);
+    ProguardKeepRule materializedSubsequentRule =
+        ifRule.getSubsequentRule().materialize(dexItemFactory);
 
     // Verify that the class name matcher of the materialized rule has a specific type.
     ProguardClassNameList classNameList = materializedSubsequentRule.getClassNames();

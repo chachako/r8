@@ -245,6 +245,20 @@ public abstract class ProguardClassSpecification {
     return origin;
   }
 
+  public String getOriginString() {
+    if (position instanceof TextRange) {
+      TextRange textRange = (TextRange) position;
+      return origin.toString()
+          + ":"
+          + textRange.getStart().getLine()
+          + ":"
+          + textRange.getStart().getOffset();
+    } else {
+      assert false : position.getClass().getTypeName();
+      return origin.toString();
+    }
+  }
+
   public Position getPosition() {
     return position;
   }
