@@ -12,15 +12,6 @@ rootProject.name = "d8-r8"
 
 // Bootstrap building by downloading dependencies.
 val dependencies_bucket = "r8-deps"
-val root = rootProject.projectDir
-
-fun getRepoRoot() : File {
-  var current = root
-  while (!current.getName().equals("d8_r8")) {
-    current = current.getParentFile()
-  }
-  return current.getParentFile()
-}
 
 fun downloadFromGoogleStorage(outputDir : File) {
   val targz = File(outputDir.toString() + ".tar.gz")
@@ -65,7 +56,7 @@ fun downloadFromGoogleStorage(outputDir : File) {
   }
 }
 
-val thirdParty = getRepoRoot().resolve("third_party")
+val thirdParty = rootProject.projectDir.resolve("../third_party")
 downloadFromGoogleStorage(thirdParty.resolve("dependencies"))
 downloadFromGoogleStorage(thirdParty.resolve("dependencies_plugin"))
 
@@ -89,13 +80,13 @@ dependencyResolutionManagement {
   }
 }
 
-includeBuild(root.resolve("shared"))
-includeBuild(root.resolve("assistant"))
-includeBuild(root.resolve("keepanno"))
-includeBuild(root.resolve("resourceshrinker"))
+includeBuild(rootProject.projectDir.resolve("shared"))
+includeBuild(rootProject.projectDir.resolve("assistant"))
+includeBuild(rootProject.projectDir.resolve("keepanno"))
+includeBuild(rootProject.projectDir.resolve("resourceshrinker"))
 
 // We need to include src/main as a composite-build otherwise our test-modules
 // will compete with the test to compile the source files.
-includeBuild(root.resolve("main"))
-includeBuild(root.resolve("library_desugar"))
-includeBuild(root.resolve("test"))
+includeBuild(rootProject.projectDir.resolve("main"))
+includeBuild(rootProject.projectDir.resolve("library_desugar"))
+includeBuild(rootProject.projectDir.resolve("test"))
