@@ -109,41 +109,12 @@ def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
             raise Exception('Failed to execute gradle')
         return return_value
 
-
-def RunGradleWrapperIn(args, cwd, throw_on_failure=True, env=None):
-    return RunGradleIn('./gradlew', args, cwd, throw_on_failure, env=env)
-
-
 def RunGradle(args, throw_on_failure=True, env=None):
     return RunGradleIn(get_gradle(),
                        args,
                        utils.REPO_ROOT,
                        throw_on_failure,
                        env=env)
-
-
-def RunGradleExcludeDeps(args, throw_on_failure=True, env=None):
-    EnsureDeps()
-    args.append('-Pexclude_deps')
-    return RunGradle(args, throw_on_failure, env=env)
-
-
-def RunGradleInGetOutput(gradleCmd, args, cwd, env=None):
-    EnsureDeps()
-    cmd = [gradleCmd]
-    cmd.extend(args)
-    utils.PrintCmd(cmd)
-    with utils.ChangedWorkingDirectory(cwd):
-        return subprocess.check_output(cmd, env=GetJavaEnv(env)).decode('utf-8')
-
-
-def RunGradleWrapperInGetOutput(args, cwd, env=None):
-    return RunGradleInGetOutput('./gradlew', args, cwd, env=env)
-
-
-def RunGradleGetOutput(args, env=None):
-    return RunGradleInGetOutput(get_gradle(), args, utils.REPO_ROOT, env=env)
-
 
 def Main():
     (options, args) = ParseOptions()
