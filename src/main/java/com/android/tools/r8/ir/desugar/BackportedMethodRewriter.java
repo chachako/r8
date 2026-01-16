@@ -509,6 +509,18 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         method = factory.createMethod(mathType, proto, name);
         addProvider(
             new MethodGenerator(method, BackportedMethods::MathMethods_unsignedPowExactLong));
+
+        // Math.powExact(int, int)
+        name = factory.createString("powExact");
+        proto = factory.createProto(factory.intType, factory.intType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(new MethodGenerator(method, BackportedMethods::MathMethods_powExactInt));
+
+        // Math.powExact(long, int)
+        name = factory.createString("powExact");
+        proto = factory.createProto(factory.longType, factory.longType, factory.intType);
+        method = factory.createMethod(mathType, proto, name);
+        addProvider(new MethodGenerator(method, BackportedMethods::MathMethods_powExactLong));
       }
     }
 

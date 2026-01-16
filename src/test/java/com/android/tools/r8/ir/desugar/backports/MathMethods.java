@@ -488,4 +488,46 @@ public final class MathMethods {
 
     return MathStub.unsignedMultiplyExact(p, result);
   }
+
+  public static int powExactInt(int x, int y) {
+    int result = x;
+    int operand = y;
+    if (operand < 0) {
+      throw new ArithmeticException("negative exponent");
+    }
+    if (operand == 0) {
+      return 1;
+    }
+
+    int p = 1;
+    while (operand > 1) {
+      if ((operand & 1) != 0) {
+        p *= x;
+      }
+      result = Math.multiplyExact(result, result);
+      operand >>>= 1;
+    }
+    return Math.multiplyExact(p, result);
+  }
+
+  public static long powExactLong(long x, int y) {
+    long result = x;
+    int operand = y;
+    if (operand < 0) {
+      throw new ArithmeticException("negative exponent");
+    }
+    if (operand == 0) {
+      return 1;
+    }
+
+    long p = 1;
+    while (operand > 1) {
+      if ((operand & 0b1) != 0) {
+        p *= result;
+      }
+      result = Math.multiplyExact(result, result);
+      operand >>>= 1;
+    }
+    return Math.multiplyExact(p, result);
+  }
 }

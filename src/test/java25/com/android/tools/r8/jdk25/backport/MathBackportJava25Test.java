@@ -33,6 +33,94 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
       testUnsignedMultiplyExactIntInt();
       testUnsignedPowExactLong();
       testUnsignedPowExactInt();
+      testPowExactLong();
+      testPowExactInt();
+    }
+
+    static void testPowExactLong() {
+      try {
+        Math.powExact(42L, -1);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
+
+      assertEquals(1, Math.powExact(0L, 0));
+      assertEquals(0, Math.powExact(0L, 1));
+      assertEquals(0, Math.powExact(0L, 2));
+
+      assertEquals(1, Math.powExact(-1L, 0));
+      assertEquals(-1, Math.powExact(-1L, 1));
+      assertEquals(1, Math.powExact(-1L, 2));
+
+      assertEquals(1, Math.powExact(1L, 0));
+      assertEquals(1, Math.powExact(1L, 1));
+      assertEquals(1, Math.powExact(1L, 2));
+
+      assertEquals(1, Math.powExact(2L, 0));
+      assertEquals(2, Math.powExact(2L, 1));
+      assertEquals(4, Math.powExact(2L, 2));
+
+      assertEquals(1, Math.powExact(Long.MIN_VALUE, 0));
+      assertEquals(Long.MIN_VALUE, Math.powExact(Long.MIN_VALUE, 1));
+      try {
+        Math.powExact(Long.MIN_VALUE, 2);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
+
+      assertEquals(1, Math.powExact(Long.MAX_VALUE, 0));
+      assertEquals(Long.MAX_VALUE, Math.powExact(Long.MAX_VALUE, 1));
+      try {
+        Math.powExact(Long.MAX_VALUE, 2);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
+
+      assertEquals(4096, Math.powExact((long) (256 / 16), 3));
+      assertEquals(512, Math.powExact((long) (256 / 32), 3));
+    }
+
+    static void testPowExactInt() {
+      try {
+        Math.powExact(42, -1);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
+
+      assertEquals(1, Math.powExact(0, 0));
+      assertEquals(0, Math.powExact(0, 1));
+      assertEquals(0, Math.powExact(0, 2));
+
+      assertEquals(1, Math.powExact(-1, 0));
+      assertEquals(-1, Math.powExact(-1, 1));
+      assertEquals(1, Math.powExact(-1, 2));
+
+      assertEquals(1, Math.powExact(1, 0));
+      assertEquals(1, Math.powExact(1, 1));
+      assertEquals(1, Math.powExact(1, 2));
+
+      assertEquals(1, Math.powExact(2, 0));
+      assertEquals(2, Math.powExact(2, 1));
+      assertEquals(4, Math.powExact(2, 2));
+
+      assertEquals(1, Math.powExact(Integer.MIN_VALUE, 0));
+      assertEquals(Integer.MIN_VALUE, Math.powExact(Integer.MIN_VALUE, 1));
+      try {
+        Math.powExact(Integer.MIN_VALUE, 2);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
+
+      assertEquals(1, Math.powExact(Integer.MAX_VALUE, 0));
+      assertEquals(Integer.MAX_VALUE, Math.powExact(Integer.MAX_VALUE, 1));
+      try {
+        Math.powExact(Integer.MAX_VALUE, 2);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
+
+      assertEquals(4096, Math.powExact(256 / 16, 3));
+      assertEquals(512, Math.powExact(256 / 32, 3));
     }
 
     static void testUnsignedPowExactLong() {

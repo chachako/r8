@@ -42,6 +42,7 @@ public class BackportMethodsStub {
   }
 
   static class MathStub {
+
     public static int unsignedMultiplyExact(int x, int y) {
       return 0;
     }
