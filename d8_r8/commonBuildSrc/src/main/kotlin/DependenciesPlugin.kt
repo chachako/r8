@@ -69,7 +69,7 @@ enum class Jdk(val folder: String, val version: Int) {
     } else if (os.isMacOsX) {
       subFolder = if (isJdk8()) "darwin-x86" else "osx"
     } else {
-      assert(os.isWindows())
+      assert(os.isWindows)
       if (isJdk8()) {
         throw RuntimeException("No Jdk8 on Windows")
       }
