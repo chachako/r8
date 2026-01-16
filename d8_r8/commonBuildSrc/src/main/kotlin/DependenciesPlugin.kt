@@ -92,7 +92,7 @@ fun Project.getRoot(): File {
 }
 
 // See https://datatracker.ietf.org/doc/html/rfc4122#section-4.3 for the algorithm.
-fun uuid5(namespace: UUID, name: String): UUID? {
+fun uuid5(namespace: UUID, name: String): UUID {
   val md = MessageDigest.getInstance("SHA-1")
   md.update(uuidToBytes(namespace))
   md.update(name.encodeToByteArray())
@@ -106,12 +106,12 @@ fun uuid5(namespace: UUID, name: String): UUID? {
   return uuidFromBytes(sha1Bytes)
 }
 
-private fun uuidFromBytes(data: ByteArray): UUID? {
+private fun uuidFromBytes(data: ByteArray): UUID {
   assert(data.size >= 16)
   return UUID(toNetworkOrder(data, 0), toNetworkOrder(data, 8))
 }
 
-private fun uuidToBytes(uuid: UUID): ByteArray? {
+private fun uuidToBytes(uuid: UUID): ByteArray {
   val result = ByteArray(16)
   fromNetworkByteOrder(uuid.mostSignificantBits, result, 0)
   fromNetworkByteOrder(uuid.leastSignificantBits, result, 8)
@@ -129,7 +129,7 @@ private fun fromNetworkByteOrder(value: Long, dest: ByteArray, destIndex: Int) {
 }
 
 fun Project.header(title: String): String {
-  return "****** ${title} ******"
+  return "****** $title ******"
 }
 
 /**
@@ -215,7 +215,7 @@ fun Project.buildExampleJars(name: String): Task {
 }
 
 fun getOutputName(dest: String, taskName: String): String {
-  if (taskName.equals("compileTestJava")) {
+  if (taskName == "compileTestJava") {
     return dest
   }
   return "${dest}_${taskName.replace('-', '_')}"
@@ -257,7 +257,7 @@ fun File.resolveAll(vararg xs: String): File {
 fun Project.getJavaHome(jdk: Jdk): File {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
   var osFolder = "linux"
-  if (os.isWindows()) {
+  if (os.isWindows) {
     osFolder = "windows"
   }
   if (os.isMacOsX) {
@@ -268,13 +268,13 @@ fun Project.getJavaHome(jdk: Jdk): File {
 
 fun Project.getCompilerPath(jdk: Jdk): String {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
-  val binary = if (os.isWindows()) "javac.exe" else "javac"
+  val binary = if (os.isWindows) "javac.exe" else "javac"
   return getJavaHome(jdk).resolveAll("bin", binary).toString()
 }
 
 fun Project.getJavaPath(jdk: Jdk): String {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
-  val binary = if (os.isWindows()) "java.exe" else "java"
+  val binary = if (os.isWindows) "java.exe" else "java"
   return getJavaHome(jdk).resolveAll("bin", binary).toString()
 }
 
@@ -317,9 +317,8 @@ fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
 fun Project.getClasspath(vararg paths: File): String {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
   assert(!paths.isEmpty())
-  val separator = if (os.isWindows()) ";" else ":"
-  var classpath = paths.joinToString(separator = separator) { it -> it.toString() }
-  return classpath
+  val separator = if (os.isWindows) ";" else ":"
+  return paths.joinToString(separator = separator) { it.toString() }
 }
 
 fun Project.baseCompilerCommandLine(
@@ -392,11 +391,11 @@ fun Project.createR8LibCommandLine(
     add("python3")
     add("${getRoot().resolve("tools").resolve("create_r8lib.py")}")
     add("--r8compiler")
-    add("${r8Compiler}")
+    add("$r8Compiler")
     add("--r8jar")
-    add("${input}")
+    add("$input")
     add("--output")
-    add("${output}")
+    add("$output")
     pgConf.forEach {
       add("--pg-conf")
       add("$it")
@@ -439,7 +438,7 @@ fun Project.createR8LibCommandLine(
 object JvmCompatibility {
   val sourceCompatibility = JavaVersion.VERSION_11
   val targetCompatibility = JavaVersion.VERSION_11
-  val release = 11
+  const val release = 11
 }
 
 object Versions {
