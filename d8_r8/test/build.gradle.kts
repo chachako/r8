@@ -21,6 +21,7 @@ java {
 
 dependencies { }
 
+val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
@@ -489,9 +490,11 @@ tasks {
     dependsOn(mainSourcesTask)
     dependsOn(resourceShrinkerSourcesTask)
     dependsOn(keepAnnoSourcesTask)
+    dependsOn(blastRadiusSourcesTask)
     from(mainSourcesTask.outputs.files.map(::zipTree))
     from(resourceShrinkerSourcesTask.outputs.files.map(::zipTree))
     from(keepAnnoSourcesTask.outputs.files.map(::zipTree))
+    from(blastRadiusSourcesTask.outputs.files.map(::zipTree))
     archiveClassifier.set("sources")
     archiveFileName.set("r8-src.jar")
     destinationDirectory.set(getRoot().resolveAll("build", "libs"))

@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.blastradius;
 
+import com.android.tools.r8.blastradius.proto.KeepRuleBlastRadiusCollection;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -17,6 +18,11 @@ import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.utils.InternalOptions;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -43,6 +49,16 @@ public class RootSetBlastRadius {
 
   public Collection<RootSetBlastRadiusForRule> getBlastRadius() {
     return blastRadius.values();
+  }
+
+  public void writeToFile(Path printBlastRadiusFile) {
+    // TODO(b/441055269): Unimplemented.
+    KeepRuleBlastRadiusCollection collection = KeepRuleBlastRadiusCollection.newBuilder().build();
+    try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
+      collection.writeTo(output);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public static class Builder implements KeepInfoCollectionEventConsumer {

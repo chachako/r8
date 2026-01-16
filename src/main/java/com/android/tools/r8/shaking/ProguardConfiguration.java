@@ -62,6 +62,7 @@ public class ProguardConfiguration {
     private boolean obfuscating = true;
     private boolean shrinking = true;
     private boolean printBlastRadius;
+    private Path printBlastRadiusFile;
     private boolean printConfiguration;
     private Path printConfigurationFile;
     private boolean printUsage;
@@ -230,8 +231,12 @@ public class ProguardConfiguration {
 
     @Override
     public void enablePrintBlastRadius(
-        ProguardConfigurationSourceParser parser, Position position, TextPosition positionStart) {
+        Path printBlastRadiusFile,
+        ProguardConfigurationSourceParser parser,
+        Position position,
+        TextPosition positionStart) {
       this.printBlastRadius = true;
+      this.printBlastRadiusFile = printBlastRadiusFile;
     }
 
     @Override
@@ -518,6 +523,7 @@ public class ProguardConfiguration {
               obfuscating,
               shrinking,
               printBlastRadius,
+              printBlastRadiusFile,
               printConfiguration,
               printConfigurationFile,
               printUsage,
@@ -567,6 +573,7 @@ public class ProguardConfiguration {
   private final boolean obfuscating;
   private final boolean shrinking;
   private final boolean printBlastRadius;
+  private final Path printBlastRadiusFile;
   private final boolean printConfiguration;
   private final Path printConfigurationFile;
   private final boolean printUsage;
@@ -609,6 +616,7 @@ public class ProguardConfiguration {
       boolean obfuscating,
       boolean shrinking,
       boolean printBlastRadius,
+      Path printBlastRadiusFile,
       boolean printConfiguration,
       Path printConfigurationFile,
       boolean printUsage,
@@ -647,6 +655,7 @@ public class ProguardConfiguration {
     this.obfuscating = obfuscating;
     this.shrinking = shrinking;
     this.printBlastRadius = printBlastRadius;
+    this.printBlastRadiusFile = printBlastRadiusFile;
     this.printConfiguration = printConfiguration;
     this.printConfigurationFile = printConfigurationFile;
     this.printUsage = printUsage;
@@ -749,6 +758,10 @@ public class ProguardConfiguration {
 
   public boolean isPrintBlastRadius() {
     return printBlastRadius;
+  }
+
+  public Path getPrintBlastRadiusFile() {
+    return printBlastRadiusFile;
   }
 
   public boolean isPrintConfiguration() {

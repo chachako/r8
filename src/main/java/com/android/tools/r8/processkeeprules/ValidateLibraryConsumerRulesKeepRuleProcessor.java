@@ -208,7 +208,10 @@ class ValidateLibraryConsumerRulesKeepRuleProcessor implements ProguardConfigura
 
   @Override
   public void enablePrintBlastRadius(
-      ProguardConfigurationSourceParser parser, Position position, TextPosition positionStart) {
+      Path printBlastRadiusFile,
+      ProguardConfigurationSourceParser parser,
+      Position position,
+      TextPosition positionStart) {
     handleRule(parser, position, "-printblastradius");
   }
 

@@ -221,6 +221,7 @@ java {
 
 dependencies {
   implementation(":assistant")
+  implementation(":blastradius")
   implementation(":keepanno")
   implementation(":resourceshrinker")
   compileOnly(Deps.androidxCollection)
@@ -315,6 +316,7 @@ spdxSbom {
 }
 
 val assistantJarTask = projectTask("assistant", "jar")
+val blastRadiusJarTask = projectTask("blastradius", "jar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
@@ -444,15 +446,14 @@ tasks {
   }
 
   val swissArmyKnife by registering(Jar::class) {
-    dependsOn(keepAnnoJarTask)
-    dependsOn(assistantJarTask)
-    dependsOn(resourceShrinkerJarTask)
+    dependsOn(assistantJarTask, blastRadiusJarTask, keepAnnoJarTask, resourceShrinkerJarTask)
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     from(sourceSets.main.get().output)
     from(sourceSets["turbo"].output)
     exclude("com/android/tools/r8/threading/providers/**")
-    from(keepAnnoJarTask.outputs.files.map(::zipTree))
     from(assistantJarTask.outputs.files.map(::zipTree))
+    from(blastRadiusJarTask.outputs.files.map(::zipTree))
+    from(keepAnnoJarTask.outputs.files.map(::zipTree))
     from(resourceShrinkerJarTask.outputs.files.map(::zipTree))
     from(getRoot().resolve("LICENSE"))
     entryCompression = ZipEntryCompression.STORED

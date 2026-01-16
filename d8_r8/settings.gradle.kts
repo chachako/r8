@@ -82,6 +82,7 @@ dependencyResolutionManagement {
 
 includeBuild(rootProject.projectDir.resolve("shared"))
 includeBuild(rootProject.projectDir.resolve("assistant"))
+includeBuild(rootProject.projectDir.resolve("blastradius"))
 includeBuild(rootProject.projectDir.resolve("keepanno"))
 includeBuild(rootProject.projectDir.resolve("resourceshrinker"))
 

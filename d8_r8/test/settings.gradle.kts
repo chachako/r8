@@ -26,6 +26,7 @@ rootProject.name = "r8-tests"
 val root = rootProject.projectDir.parentFile
 includeBuild(root.resolve("shared"))
 includeBuild(root.resolve("assistant"))
+includeBuild(root.resolve("blastradius"))
 includeBuild(root.resolve("keepanno"))
 includeBuild(root.resolve("main"))
 includeBuild(root.resolve("resourceshrinker"))

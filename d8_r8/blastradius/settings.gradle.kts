@@ -1,4 +1,4 @@
-// Copyright (c) 2023, the R8 project authors. Please see the AUTHORS file
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -21,11 +21,4 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "r8"
-
-val root = rootProject.projectDir.parentFile
-includeBuild(root.resolve("blastradius"))
-includeBuild(root.resolve("shared"))
-includeBuild(root.resolve("assistant"))
-includeBuild(root.resolve("keepanno"))
-includeBuild(root.resolve("resourceshrinker"))
+rootProject.name = "blastradius"

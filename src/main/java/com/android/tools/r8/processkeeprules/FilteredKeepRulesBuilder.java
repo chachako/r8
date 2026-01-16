@@ -312,7 +312,10 @@ public class FilteredKeepRulesBuilder implements ProguardConfigurationParserCons
 
   @Override
   public void enablePrintBlastRadius(
-      ProguardConfigurationSourceParser parser, Position position, TextPosition positionStart) {
+      Path printBlastRadiusFile,
+      ProguardConfigurationSourceParser parser,
+      Position position,
+      TextPosition positionStart) {
     writeComment(parser, positionStart);
   }
 
