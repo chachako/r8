@@ -288,28 +288,14 @@ public final class MathMethods {
     if (x == Integer.MIN_VALUE && y == -1) {
       throw new ArithmeticException("integer overflow");
     }
-    // Inlined: return Math.ceilDiv(x, y);
-    int div = x / y;
-    int rem = x % y;
-    boolean sameSign = (x ^ y) >= 0;
-    if (sameSign && (rem != 0)) {
-      return div + 1;
-    }
-    return div;
+    return MathStub.ceilDiv(x, y);
   }
 
   public static long ceilDivExactLongLong(long x, long y) {
     if (x == Long.MIN_VALUE && y == -1) {
       throw new ArithmeticException("long overflow");
     }
-    // Inlined: return Math.ceilDiv(x, y);
-    long div = x / y;
-    long rem = x % y;
-    boolean sameSign = (x ^ y) >= 0;
-    if (sameSign && (rem != 0)) {
-      return div + 1;
-    }
-    return div;
+    return MathStub.ceilDiv(x, y);
   }
 
   public static int ceilDivIntInt(int x, int y) {
@@ -323,14 +309,7 @@ public final class MathMethods {
   }
 
   public static long ceilDivLongInt(long x, int y) {
-    // Inlined: return Math.ceilDiv(x, (long) y);
-    long div = x / (long) y;
-    long rem = x % (long) y;
-    boolean sameSign = (x ^ (long) y) >= 0;
-    if (sameSign && (rem != 0)) {
-      return div + 1;
-    }
-    return div;
+    return MathStub.ceilDiv(x, (long) y);
   }
 
   public static long ceilDivLongLong(long x, long y) {
@@ -353,10 +332,7 @@ public final class MathMethods {
   }
 
   public static int ceilModLongInt(long x, int y) {
-    // Inlined: return (int) Math.ceilMod(x, (long) y);
-    long rem = x % y;
-    boolean sameSign = (x ^ y) >= 0;
-    return (int) ((sameSign && rem != 0) ? rem - y : rem);
+    return (int) MathStub.ceilMod(x, (long) y);
   }
 
   public static long ceilModLongLong(long x, long y) {
@@ -386,28 +362,14 @@ public final class MathMethods {
     if (x == Integer.MIN_VALUE && y == -1) {
       throw new ArithmeticException("integer overflow");
     }
-    // Inlined: return Math.floorDiv(x,y);
-    int div = x / y;
-    int rem = x - y * div;
-    if (rem == 0) {
-      return div;
-    }
-    int signum = 1 | ((x ^ y) >> (Integer.SIZE - 1));
-    return signum < 0 ? div - 1 : div;
+    return Math.floorDiv(x, y);
   }
 
   public static long floorDivExactLong(long x, long y) {
     if (x == Long.MIN_VALUE && y == -1) {
       throw new ArithmeticException("long overflow");
     }
-    // Inlined: return Math.floorDiv(x,y);
-    long div = x / y;
-    long rem = x - y * div;
-    if (rem == 0L) {
-      return div;
-    }
-    long signum = 1L | ((x ^ y) >> (Long.SIZE - 1));
-    return signum < 0L ? div - 1L : div;
+    return Math.floorDiv(x, y);
   }
 
   public static long unsignedMultiplyHigh(long x, long y) {
