@@ -4,20 +4,9 @@
 
 package com.android.tools.r8.ir.desugar.backports;
 
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.UnsafeStub;
+
 public final class UnsafeMethods {
-  // Stub out sun.misc.Unsafe to avoid compiler issues with referring to sun.misc.Unsafe.
-  private static class UnsafeStub {
-
-    public boolean compareAndSwapObject(
-        Object receiver, long offset, Object expect, Object update) {
-      throw new RuntimeException("Stub called.");
-    }
-
-    public Object getObject(Object receiver, long offset) {
-      throw new RuntimeException("Stub called.");
-    }
-  }
-
   // Workaround Android S issue with compareAndSwapObject (b/211646483).
   public static boolean compareAndSwapObject(
       UnsafeStub unsafe, Object receiver, long offset, Object expect, Object update) {

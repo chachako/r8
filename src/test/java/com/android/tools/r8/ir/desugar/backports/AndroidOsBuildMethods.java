@@ -4,22 +4,10 @@
 
 package com.android.tools.r8.ir.desugar.backports;
 
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildVersionStub;
+
 public final class AndroidOsBuildMethods {
-  // Stub out android.os.Build$VERSION as it does not exist when building R8.
-  private static class AndroidOsBuildStub {
-    public static int getMajorSdkVersion(int sdkIntFull) {
-      return -1;
-    }
-
-    public static int getMinorSdkVersion(int sdkIntFull) {
-      return -1;
-    }
-  }
-
-  // Stub out android.os.Build$VERSION as it does not exist when building R8.
-  private static class AndroidOsBuildVersionStub {
-    public static int SDK_INT;
-  }
 
   public static int getMinorSdkVersion(int sdkIntFull) {
     if (AndroidOsBuildVersionStub.SDK_INT < 36) {

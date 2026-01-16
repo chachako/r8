@@ -4,12 +4,9 @@
 
 package com.android.tools.r8.ir.desugar.backports;
 
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildVersionStub;
+
 public final class AndroidOsBuildVersionMethods {
-  // Stub out android.os.Build$VERSION as it does not exist when building R8.
-  private static class AndroidOsBuildVersionStub {
-    public static int SDK_INT;
-    public static int SDK_INT_FULL;
-  }
 
   // Android runtime value of field android.os.Build$VERSION.SDK_INT_FULL for all Android
   // versions. Calculated from android.os.Build$VERSION.SDK_INT before Baklava (API level 36).

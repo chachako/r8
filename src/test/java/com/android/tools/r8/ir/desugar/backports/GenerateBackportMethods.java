@@ -14,14 +14,21 @@ import com.android.tools.r8.cf.code.CfInvoke;
 import com.android.tools.r8.cf.code.CfStaticFieldRead;
 import com.android.tools.r8.cfmethodgeneration.MethodGenerationBase;
 import com.android.tools.r8.graph.CfCode;
-import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.AndroidOsBuildVersionStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.LongStub;
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.UnsafeStub;
+import com.android.tools.r8.utils.DescriptorUtils;
 import com.android.tools.r8.utils.FileUtils;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,6 +74,8 @@ public class GenerateBackportMethods extends MethodGenerationBase {
           ThrowableMethods.class,
           UnsafeMethods.class);
 
+  private Map<DexType, DexType> stubMap;
+
   protected final TestParameters parameters;
 
   @Parameters(name = "{0}")
@@ -93,108 +102,48 @@ public class GenerateBackportMethods extends MethodGenerationBase {
     return 2021;
   }
 
-  private static CfInstruction rewriteToJava9API(
-      DexItemFactory itemFactory, CfInstruction instruction) {
-    // Rewrite static invoke of javaUtilLongParseUnsignedLongStub to j.l.Long.parseUnsignedLong.
+  @Override
+  protected String generateMethods() throws IOException {
+    stubMap =
+        ImmutableMap.of(
+            classToType(LongStub.class),
+            factory.boxedLongType,
+            classToType(UnsafeStub.class),
+            factory.unsafeType,
+            classToType(AndroidOsBuildStub.class),
+            factory.androidOsBuildType,
+            classToType(AndroidOsBuildVersionStub.class),
+            factory.androidOsBuildVersionType);
+    return super.generateMethods();
+  }
+
+  private DexType classToType(Class<?> clazz) {
+    return factory.createType(DescriptorUtils.javaClassToDescriptor(clazz));
+  }
+
+  private CfInstruction rewrite(CfInstruction instruction) {
     if (instruction.isInvoke()
-        && instruction
-            .asInvoke()
-            .getMethod()
-            .getName()
-            .toString()
-            .equals("javaLangLongParseUnsignedLongStub")) {
+        && stubMap.containsKey(instruction.asInvoke().getMethod().getHolderType())) {
       CfInvoke invoke = instruction.asInvoke();
       return new CfInvoke(
           invoke.getOpcode(),
-          itemFactory.createMethod(
-              itemFactory.createType("Ljava/lang/Long;"),
-              invoke.getMethod().getProto(),
-              itemFactory.createString("parseUnsignedLong")),
-          invoke.isInterface());
-    } else {
-      return instruction;
-    }
-  }
-
-  private static CfInstruction rewriteToUnsafe(
-      DexItemFactory itemFactory, CfInstruction instruction) {
-    // Rewrite references to UnsafeStub to sun.misc.Unsafe.
-    if (instruction.isInvoke()) {
-      String name = instruction.asInvoke().getMethod().getName().toString();
-      if (name.equals("compareAndSwapObject") || name.equals("getObject")) {
-        CfInvoke invoke = instruction.asInvoke();
-        return new CfInvoke(
-            invoke.getOpcode(),
-            itemFactory.createMethod(
-                itemFactory.createType("Lsun/misc/Unsafe;"),
-                invoke.getMethod().getProto(),
-                itemFactory.createString(name)),
-            invoke.isInterface());
-      }
-    }
-    if (instruction.isFrame()) {
-      return instruction
-          .asFrame()
-          .mapReferenceTypes(
-              type ->
-                  (type.getTypeName().endsWith("$UnsafeStub"))
-                      ? itemFactory.createType("Lsun/misc/Unsafe;")
-                      : type);
-    }
-    return instruction;
-  }
-
-  private static CfInstruction rewriteToAndroidOsBuild(
-      DexItemFactory itemFactory, CfInstruction instruction) {
-    // Rewrite references to UnsafeStub to sun.misc.Unsafe.
-    if (instruction.isInvokeStatic()) {
-      CfInvoke invoke = instruction.asInvoke();
-      return new CfInvoke(
-          invoke.getOpcode(),
-          itemFactory.createMethod(
-              itemFactory.createType("Landroid/os/Build;"),
+          factory.createMethod(
+              stubMap.get(invoke.getMethod().getHolderType()),
               invoke.getMethod().getProto(),
               invoke.getMethod().getName()),
           invoke.isInterface());
     }
-    if (instruction.isFrame()) {
-      return instruction
-          .asFrame()
-          .mapReferenceTypes(
-              type -> {
-                throw new RuntimeException("Unexpected CfFrame instruction.");
-              });
-    }
-    return instruction;
-  }
-
-  private static CfInstruction rewriteToAndroidOsBuildVersion(
-      DexItemFactory itemFactory, CfInstruction instruction) {
-    // Rewrite references to UnsafeStub to sun.misc.Unsafe.
     if (instruction.isStaticFieldGet()
-        && instruction
-            .asFieldInstruction()
-            .getField()
-            .getHolderType()
-            .toString()
-            .contains("Stub")) {
+        && stubMap.containsKey(instruction.asFieldInstruction().getField().getHolderType())) {
       CfStaticFieldRead fieldGet = instruction.asStaticFieldGet();
       return new CfStaticFieldRead(
-          itemFactory.createField(
-              itemFactory.createType("Landroid/os/Build$VERSION;"),
+          factory.createField(
+              stubMap.get(fieldGet.getField().getHolderType()),
               fieldGet.getField().getType(),
               fieldGet.getField().getName()));
     }
     if (instruction.isFrame()) {
-      return instruction
-          .asFrame()
-          .mapReferenceTypes(
-              type -> {
-                if (type.toString().contains("Stub")) {
-                  throw new RuntimeException("Unexpected CfFrame instruction.");
-                }
-                return type;
-              });
+      return instruction.asFrame().mapReferenceTypes(type -> stubMap.getOrDefault(type, type));
     }
     return instruction;
   }
@@ -205,38 +154,8 @@ public class GenerateBackportMethods extends MethodGenerationBase {
       // Don't include stubs targeted only for rewriting in the generated code.
       return null;
     }
-    if (holderName.equals("LongMethods") && methodName.equals("parseUnsignedLongWithRadix")) {
-      code.setInstructions(
-          code.getInstructions().stream()
-              .map(instruction -> rewriteToJava9API(factory, instruction))
-              .collect(Collectors.toList()));
-    }
-    if (holderName.equals("UnsafeMethods") && methodName.equals("compareAndSwapObject")) {
-      code.setInstructions(
-          code.getInstructions().stream()
-              .map(instruction -> rewriteToUnsafe(factory, instruction))
-              .collect(Collectors.toList()));
-    }
-    if (holderName.equals("ExecutorServiceMethods") && methodName.equals("closeExecutorService")) {
-      code.setInstructions(
-          code.getInstructions().stream()
-              .map(instruction -> rewriteToAndroidOsBuildVersion(factory, instruction))
-              .collect(Collectors.toList()));
-    }
-    if (holderName.equals("AndroidOsBuildVersionMethods") && methodName.equals("getSdkIntFull")) {
-      code.setInstructions(
-          code.getInstructions().stream()
-              .map(instruction -> rewriteToAndroidOsBuildVersion(factory, instruction))
-              .collect(Collectors.toList()));
-    }
-    if (holderName.equals("AndroidOsBuildMethods")
-        && (methodName.equals("getMinorSdkVersion") || methodName.equals("getMajorSdkVersion"))) {
-      code.setInstructions(
-          code.getInstructions().stream()
-              .map(instruction -> rewriteToAndroidOsBuildVersion(factory, instruction))
-              .map(instruction -> rewriteToAndroidOsBuild(factory, instruction))
-              .collect(Collectors.toList()));
-    }
+    code.setInstructions(
+        code.getInstructions().stream().map(this::rewrite).collect(Collectors.toList()));
     return code;
   }
 

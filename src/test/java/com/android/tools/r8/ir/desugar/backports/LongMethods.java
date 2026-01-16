@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir.desugar.backports;
 
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.LongStub;
+
 public final class LongMethods {
 
   public static int hashCode(long l) {
@@ -114,7 +116,7 @@ public final class LongMethods {
   }
 
   public static long parseUnsignedLongWithRadix(String s, int radix) {
-    return javaLangLongParseUnsignedLongStub(s, 0, s.length(), radix);
+    return LongStub.parseUnsignedLong(s, 0, s.length(), radix);
   }
 
   public static long parseUnsignedLongSubsequenceWithRadix(
