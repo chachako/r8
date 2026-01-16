@@ -441,4 +441,51 @@ public final class MathMethods {
     }
     throw new ArithmeticException("unsigned long overflow");
   }
+
+  public static int unsignedPowExactInt(int x, int y) {
+    int result = x;
+    if (y < 0) {
+      throw new ArithmeticException("negative exponent");
+    }
+    if (y == 0) {
+      return 1;
+    }
+
+    long mask = 0xFFFF_FFFFL;
+
+    int p = 1;
+    while (y > 1) {
+      if ((y & 1) != 0) {
+        p *= result;
+      }
+      result = MathStub.unsignedMultiplyExact(result, result);
+      y >>>= 1;
+    }
+
+    return MathStub.unsignedMultiplyExact(p, result);
+  }
+
+  public static long unsignedPowExactLong(long x, int n) {
+    long result = x;
+    if (n < 0) {
+      throw new ArithmeticException("negative exponent");
+    }
+    if (n == 0) {
+      return 1;
+    }
+
+    int intShift = 32;
+    long mask32 = 0xFFFFFFFFL;
+
+    long p = 1;
+    while (n > 1) {
+      if ((n & 1) != 0) {
+        p *= result;
+      }
+      result = MathStub.unsignedMultiplyExact(result, result);
+      n >>>= 1;
+    }
+
+    return MathStub.unsignedMultiplyExact(p, result);
+  }
 }
