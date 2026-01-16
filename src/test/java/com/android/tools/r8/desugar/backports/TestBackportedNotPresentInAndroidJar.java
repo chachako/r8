@@ -8,6 +8,7 @@ import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
@@ -16,6 +17,7 @@ import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.ir.desugar.BackportedMethodRewriter;
 import com.android.tools.r8.references.MethodReference;
@@ -28,6 +30,8 @@ import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.android.tools.r8.utils.codeinspector.FieldSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -54,7 +58,7 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
     return getTestParameters().withNoneRuntime().build();
   }
 
-  private Set<DexMethod> expectedToAlwaysBePresentInAndroidJar(DexItemFactory factory)
+  private static Set<DexMethod> expectedToAlwaysBePresentInAndroidJar(DexItemFactory factory)
       throws Exception {
     MethodReference AtomicReferenceFieldUpdater_compareAndSet =
         Reference.methodFromMethod(
@@ -88,8 +92,46 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
         factory.createMethod(BigDecimal_stripTrailingZeros));
   }
 
-  @Test
-  public void testBackportedMethodsPerAPILevel() throws Exception {
+  private static ImmutableMap<DexMethod, AndroidApiLevel> backportedBeyondApiLevelWhereIntroduced(
+      DexItemFactory factory, boolean includeAllArraysEquals) {
+    final List<DexType> primitiveTypesArrays =
+        ImmutableList.of(
+            factory.byteArrayType,
+            factory.charArrayType,
+            factory.shortArrayType,
+            factory.intArrayType,
+            factory.longArrayType,
+            factory.floatArrayType,
+            factory.doubleArrayType,
+            factory.booleanArrayType);
+
+    ImmutableMap.Builder<DexMethod, AndroidApiLevel> builder = ImmutableMap.builder();
+    for (DexType primitiveArrayType : primitiveTypesArrays) {
+      if (includeAllArraysEquals) {
+        DexProto proto =
+            factory.createProto(factory.booleanType, primitiveArrayType, primitiveArrayType);
+        DexMethod method =
+            factory.createMethod(factory.arraysType, proto, factory.createString("equals"));
+        builder.put(method, AndroidApiLevel.U);
+      }
+      DexProto proto =
+          factory.createProto(
+              factory.booleanType,
+              primitiveArrayType,
+              factory.intType,
+              factory.intType,
+              primitiveArrayType,
+              factory.intType,
+              factory.intType);
+      DexMethod method =
+          factory.createMethod(factory.arraysType, proto, factory.createString("equals"));
+      builder.put(method, AndroidApiLevel.U);
+    }
+    return builder.build();
+  }
+
+  private static void testBackportedMethodsPerAPILevel(boolean includeAllArraysEquals)
+      throws Exception {
     for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
       if (apiLevel == AndroidApiLevel.MAIN) {
         continue;
@@ -103,7 +145,9 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
       // android.jar for that level.
       CodeInspector inspector = new CodeInspector(ToolHelper.getAndroidJar(apiLevel));
       InternalOptions options = new InternalOptions();
+      DexItemFactory factory = options.dexItemFactory();
       options.setMinApiLevel(apiLevel);
+      options.testing.backportArraysEquals = includeAllArraysEquals;
       List<DexMethod> backportedMethods = new ArrayList<>();
       List<DexField> backportedFields = new ArrayList<>();
       BackportedMethodRewriter.generateListOfBackportedMethodsAndFields(
@@ -112,7 +156,9 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
           ThreadUtils.getExecutorService(options),
           backportedMethods::add,
           backportedFields::add);
-      Set<DexMethod> alwaysPresent = expectedToAlwaysBePresentInAndroidJar(options.itemFactory);
+      Set<DexMethod> alwaysPresent = expectedToAlwaysBePresentInAndroidJar(factory);
+      ImmutableMap<DexMethod, AndroidApiLevel> backportedBeyond =
+          backportedBeyondApiLevelWhereIntroduced(factory, includeAllArraysEquals);
       for (DexMethod method : backportedMethods) {
         // Two different DexItemFactories are in play, but as toSourceString is used for lookup
         // that is not an issue.
@@ -124,10 +170,15 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
                 Arrays.stream(method.proto.parameters.values)
                     .map(DexType::toSourceString)
                     .collect(Collectors.toList()));
-        assertThat(
-            foundInAndroidJar + " present in " + apiLevel,
-            foundInAndroidJar,
-            notIf(isPresent(), !alwaysPresent.contains(method)));
+        if (foundInAndroidJar.isPresent()
+            && backportedBeyond.containsKey(foundInAndroidJar.getMethod().getReference())) {
+          assertTrue(apiLevel.isLessThanOrEqualTo(backportedBeyond.get(method)));
+        } else {
+          assertThat(
+              foundInAndroidJar + " present in " + apiLevel,
+              foundInAndroidJar,
+              notIf(isPresent(), !alwaysPresent.contains(method)));
+        }
       }
       for (DexField field : backportedFields) {
         // Two different DexItemFactories are in play, but as toSourceString is used for lookup
@@ -139,5 +190,15 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
             foundInAndroidJar + " present in " + apiLevel, foundInAndroidJar, not(isPresent()));
       }
     }
+  }
+
+  @Test
+  public void testBackportedMethodsPerAPILevel() throws Exception {
+    testBackportedMethodsPerAPILevel(false);
+  }
+
+  @Test
+  public void testBackportedMethodsPerAPILevelWithAllArraysEquals() throws Exception {
+    testBackportedMethodsPerAPILevel(true);
   }
 }
