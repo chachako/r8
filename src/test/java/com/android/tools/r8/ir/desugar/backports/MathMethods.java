@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir.desugar.backports;
 
+import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.MathStub;
+
 public final class MathMethods {
 
   public static int addExactInt(int x, int y) {
@@ -409,18 +411,7 @@ public final class MathMethods {
   }
 
   public static long unsignedMultiplyHigh(long x, long y) {
-    long x1 = x >> 32;
-    long x2 = x & 0xFFFFFFFFL;
-    long y1 = y >> 32;
-    long y2 = y & 0xFFFFFFFFL;
-
-    long z2 = x2 * y2;
-    long t = x1 * y2 + (z2 >>> 32);
-    long z1 = t & 0xFFFFFFFFL;
-    long z0 = t >> 32;
-    z1 += x2 * y1;
-
-    long result = x1 * y1 + z0 + (z1 >> 32);
+    long result = MathStub.multiplyHigh(x, y);
     if (x < 0) {
       result += y;
     }
@@ -428,5 +419,26 @@ public final class MathMethods {
       result += x;
     }
     return result;
+  }
+
+  public static int unsignedMultiplyExactIntInt(int x, int y) {
+    long r = (x & 0xFFFF_FFFFL) * (y & 0xFFFF_FFFFL);
+    if (r >>> 32 != 0) {
+      throw new ArithmeticException("unsigned integer overflow");
+    }
+    return (int) r;
+  }
+
+  public static long unsignedMultiplyExactLongInt(long x, int y) {
+    return MathStub.unsignedMultiplyExact(x, y & 0xFFFF_FFFFL);
+  }
+
+  public static long unsignedMultiplyExactLongLong(long x, long y) {
+    long l = x * y;
+    long h = MathStub.unsignedMultiplyHigh(x, y);
+    if (h == 0) {
+      return l;
+    }
+    throw new ArithmeticException("unsigned long overflow");
   }
 }
