@@ -18,11 +18,11 @@ REPOSITORIES = [
     'B-Google=https://maven.google.com/',
     'C-Maven Central=https://repo1.maven.org/maven2/',
     "D-Gradle Plugins=https://plugins.gradle.org/m2/",
-    'E-AndroidX=https://androidx.dev/snapshots/builds/14305680/artifacts/repository',
+    'E-AndroidX=https://androidx.dev/snapshots/builds/14725829/artifacts/repository',
 ]
 
 ANDROIDX_COLLECTION_VERSION = '1.6.0-SNAPSHOT'
-ANDROIDX_TRACING_DRIVER_VERSION = '1.0.0-SNAPSHOT'
+ANDROIDX_TRACING_VERSION = '2.0.0-SNAPSHOT'
 ASM_VERSION = '9.9'  # When updating update tools/asmifier.py and Toolhelper as well.
 FASTUTIL_VERSION = '7.2.1'
 KOTLIN_METADATA_VERSION = '2.2.10'
@@ -46,14 +46,14 @@ STUDIO_SDK_VERSION = '31.5.0-alpha04'
 BUILD_DEPENDENCIES = [
     'androidx.collection:collection:{version}'.format(
         version=ANDROIDX_COLLECTION_VERSION),
-    'androidx.tracing:tracing-driver:{version}'.format(
-        version=ANDROIDX_TRACING_DRIVER_VERSION),
-    'androidx.tracing:tracing-driver-jvm:{version}'.format(
-        version=ANDROIDX_TRACING_DRIVER_VERSION),
-    'androidx.tracing:tracing-driver-wire:{version}'.format(
-        version=ANDROIDX_TRACING_DRIVER_VERSION),
-    'androidx.tracing:tracing-driver-wire-jvm:{version}'.format(
-        version=ANDROIDX_TRACING_DRIVER_VERSION),
+    'androidx.tracing:tracing:{version}'.format(
+        version=ANDROIDX_TRACING_VERSION),
+    'androidx.tracing:tracing-desktop:{version}'.format(
+        version=ANDROIDX_TRACING_VERSION),
+    'androidx.tracing:tracing-wire:{version}'.format(
+        version=ANDROIDX_TRACING_VERSION),
+    'androidx.tracing:tracing-wire-desktop:{version}'.format(
+        version=ANDROIDX_TRACING_VERSION),
     'com.google.code.gson:gson:{version}'.format(version=GSON_VERSION),
     'com.google.guava:guava:{version}'.format(version=GUAVA_VERSION),
     'it.unimi.dsi:fastutil:{version}'.format(version=FASTUTIL_VERSION),

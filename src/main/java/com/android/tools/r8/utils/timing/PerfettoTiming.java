@@ -5,13 +5,16 @@ package com.android.tools.r8.utils.timing;
 
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
 
-import androidx.tracing.driver.CounterTrack;
-import androidx.tracing.driver.ProcessTrack;
-import androidx.tracing.driver.ThreadTrack;
-import androidx.tracing.driver.TraceContext;
-import androidx.tracing.driver.TraceDriver;
-import androidx.tracing.driver.wire.TraceSink;
-import androidx.tracing.driver.wire.TraceSinkUtils;
+import androidx.tracing.CounterTrack;
+import androidx.tracing.EventMetadataCloseable;
+import androidx.tracing.ProcessTrack;
+import androidx.tracing.PropagationUnsupportedToken;
+import androidx.tracing.ThreadTrack;
+import androidx.tracing.TraceContext;
+import androidx.tracing.TraceDriver;
+import androidx.tracing.wire.TraceDriverUtils;
+import androidx.tracing.wire.TraceSink;
+import androidx.tracing.wire.TraceSinkUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import java.io.File;
 import java.io.IOException;
@@ -24,12 +27,12 @@ import okio.BufferedSink;
 import okio.Okio;
 
 public class PerfettoTiming extends TimingImplBase {
-
-  private final TraceSink sink;
+  // The API now allows you to specify the category and in the future let you conditionally turn on
+  // categories.
+  private static final String TRACE_CATEGORY = "R8";
   private final TraceDriver traceDriver;
   private final ProcessTrack processTrack;
   private final ThreadTrack threadTrack;
-
   private int depth = 0;
   private CounterTrack memoryTrack;
   private Future<Void> memoryTracker;
@@ -37,6 +40,7 @@ public class PerfettoTiming extends TimingImplBase {
 
   public PerfettoTiming(String title, InternalOptions options, ExecutorService executorService) {
     int sequenceId = 1;
+    TraceSink sink;
     if (options.perfettoTraceDumpFile != null) {
       BufferedSink bufferedSink;
       try {
@@ -50,9 +54,10 @@ public class PerfettoTiming extends TimingImplBase {
       File directory = new File(options.perfettoTraceDumpDirectory);
       sink = TraceSinkUtils.TraceSink(directory, sequenceId);
     }
-    traceDriver = new TraceDriver(sink, true);
+    // Populates the process track correctly.
+    traceDriver = TraceDriverUtils.TraceDriver(sink);
     TraceContext traceContext = traceDriver.getContext();
-    processTrack = traceContext.getOrCreateProcessTrack(1, title);
+    processTrack = traceContext.getProcess();
     int mainThreadId = (int) Thread.currentThread().getId();
     threadTrack = processTrack.getOrCreateThreadTrack(mainThreadId, "Main thread");
     begin(title);
@@ -88,7 +93,13 @@ public class PerfettoTiming extends TimingImplBase {
   @Override
   public Timing begin(String title) {
     assert threadTrack.getId() == Thread.currentThread().getId();
-    threadTrack.beginSection(title);
+    // Actually dispatch events to trace sink after adding any additional event metadata if needed.
+    // You can do so by using: eventMetadataCloseable.metadata.add* APIs.
+    // R8 is using the low level track APIs (and Java) which is why the API looks the way it does.
+    EventMetadataCloseable eventMetadataCloseable =
+        threadTrack.beginSection$tracing(
+            TRACE_CATEGORY, title, PropagationUnsupportedToken.INSTANCE);
+    eventMetadataCloseable.metadata.dispatchToTraceSink();
     depth++;
     return this;
   }
@@ -111,8 +122,7 @@ public class PerfettoTiming extends TimingImplBase {
     end();
     assert depth == 0 : depth;
     awaitMemoryTracker();
-    traceDriver.getContext().flush();
-    sink.close();
+    traceDriver.close();
   }
 
   private void awaitMemoryTracker() {
