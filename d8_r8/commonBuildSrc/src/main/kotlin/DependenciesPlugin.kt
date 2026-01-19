@@ -128,10 +128,6 @@ private fun fromNetworkByteOrder(value: Long, dest: ByteArray, destIndex: Int) {
   for (i in 0..7) dest[i + destIndex] = (value shr (7 - i) * 8 and 0xffL).toByte()
 }
 
-fun Project.header(title: String): String {
-  return "****** $title ******"
-}
-
 /**
  * Builds a jar for each sub folder in a test source set.
  *
@@ -148,8 +144,8 @@ fun Project.buildExampleJars(name: String): Task {
     extensions
       .getByType(JavaPluginExtension::class.java)
       .sourceSets
-      // The TEST_SOURCE_SET_NAME is the source set defined by writing java { sourcesets.test { ...
-      // }}
+      // The TEST_SOURCE_SET_NAME is the source set defined by writing
+      // java { sourcesets.test { ... }}
       .getByName(SourceSet.TEST_SOURCE_SET_NAME)
   val destinationDir = getRoot().resolveAll("build", "test", name)
   val generateDir = getRoot().resolveAll("build", "generated", name)
@@ -176,7 +172,7 @@ fun Project.buildExampleJars(name: String): Task {
                 }
                 .get()
           }
-          jarTasks.add(
+          val jarTask =
             tasks
               .register<Jar>("jar-$name-${exampleDir.name}-$taskName") {
                 dependsOn(taskName)
@@ -206,7 +202,7 @@ fun Project.buildExampleJars(name: String): Task {
                 }
               }
               .get()
-          )
+          jarTasks.add(jarTask)
         }
       }
     }
@@ -214,14 +210,14 @@ fun Project.buildExampleJars(name: String): Task {
   return tasks.register(getExampleJarsTaskName(name)) { dependsOn(jarTasks.toTypedArray()) }.get()
 }
 
-fun getOutputName(dest: String, taskName: String): String {
+private fun getOutputName(dest: String, taskName: String): String {
   if (taskName == "compileTestJava") {
     return dest
   }
   return "${dest}_${taskName.replace('-', '_')}"
 }
 
-fun Project.getExampleJarsTaskName(name: String): String {
+fun getExampleJarsTaskName(name: String): String {
   return "build-example-jars-$name"
 }
 
@@ -233,9 +229,9 @@ fun Project.resolve(
 }
 
 /**
- * When using composite builds, referecing tasks in other projects do not give a Task but a
+ * When using composite builds, referencing tasks in other projects do not give a Task but a
  * TaskReference. To get outputs from other tasks we need to have a proper task and gradle do not
- * provide a way of getting a Task from a TaskReference. We use a trick where create a synthetic
+ * provide a way of getting a Task from a TaskReference. We use a trick where we create a synthetic
  * task that depends on the task of interest, allowing us to look at the graph and obtain the actual
  * reference. Remove this code if gradle starts supporting this natively.
  */
@@ -314,7 +310,7 @@ fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
   }
 }
 
-fun Project.getClasspath(vararg paths: File): String {
+private fun getClasspath(vararg paths: File): String {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
   assert(!paths.isEmpty())
   val separator = if (os.isWindows) ";" else ":"
@@ -385,7 +381,6 @@ fun Project.createR8LibCommandLine(
   replaceFromJar: File? = null,
   versionJar: File? = null,
   enableKeepAnnotations: Boolean = true,
-  includeApiDatabase: Boolean = true,
 ): List<String> {
   return buildList {
     add("python3")
@@ -1033,7 +1028,7 @@ object ThirdPartyDeps {
     )
 }
 
-fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
+private fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
   return listOf(
       "libcore_latest",
       "lib-main",
@@ -1060,7 +1055,7 @@ fun getThirdPartyAndroidJars(): List<ThirdPartyDependency> {
     .map(::getThirdPartyAndroidJar)
 }
 
-fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
+private fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
   return ThirdPartyDependency(
     version,
     Paths.get("third_party", "android_jar", version).toFile(),
@@ -1068,7 +1063,7 @@ fun getThirdPartyAndroidJar(version: String): ThirdPartyDependency {
   )
 }
 
-fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
+private fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
   return listOf(
       listOf("host", "art-master"),
       listOf("host", "art-16.0.0"),
@@ -1089,7 +1084,7 @@ fun getThirdPartyAndroidVms(): List<ThirdPartyDependency> {
     .map(::getThirdPartyAndroidVm)
 }
 
-fun getThirdPartyAndroidVm(version: List<String>): ThirdPartyDependency {
+private fun getThirdPartyAndroidVm(version: List<String>): ThirdPartyDependency {
   return ThirdPartyDependency(
     version.last(),
     Paths.get("tools", "linux", *version.slice(0..version.size - 2).toTypedArray(), version.last())
@@ -1104,7 +1099,7 @@ fun getThirdPartyAndroidVm(version: List<String>): ThirdPartyDependency {
   )
 }
 
-fun getJdks(): List<ThirdPartyDependency> {
+private fun getJdks(): List<ThirdPartyDependency> {
   val os: OperatingSystem = DefaultNativePlatform.getCurrentOperatingSystem()
   if (os.isLinux || os.isMacOsX) {
     return Jdk.values().map { it.getThirdPartyDependency() }
@@ -1113,7 +1108,7 @@ fun getJdks(): List<ThirdPartyDependency> {
   }
 }
 
-fun getThirdPartyProguards(): List<ThirdPartyDependency> {
+private fun getThirdPartyProguards(): List<ThirdPartyDependency> {
   return listOf("proguard-7.0.0", "proguard-7.7.0").map {
     ThirdPartyDependency(
       it,
@@ -1123,7 +1118,7 @@ fun getThirdPartyProguards(): List<ThirdPartyDependency> {
   }
 }
 
-fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
+private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
   return listOf(
       "kotlin-compiler-1.3.72",
       "kotlin-compiler-1.4.20",
@@ -1147,7 +1142,7 @@ fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
     }
 }
 
-fun getThirdPartyDesugarLibraryReleases(): List<ThirdPartyDependency> {
+private fun getThirdPartyDesugarLibraryReleases(): List<ThirdPartyDependency> {
   return listOf("1.0.9", "1.0.10", "1.1.0", "1.1.1", "1.1.5", "2.0.3").map {
     ThirdPartyDependency(
       "desugar-library-release-$it",
@@ -1157,7 +1152,7 @@ fun getThirdPartyDesugarLibraryReleases(): List<ThirdPartyDependency> {
   }
 }
 
-fun getInternalIssues(): List<ThirdPartyDependency> {
+private fun getInternalIssues(): List<ThirdPartyDependency> {
   return listOf("issue-127524985").map {
     ThirdPartyDependency(
       "internal-$it",
@@ -1169,7 +1164,7 @@ fun getInternalIssues(): List<ThirdPartyDependency> {
   }
 }
 
-fun getGmsCoreVersions(): List<ThirdPartyDependency> {
+private fun getGmsCoreVersions(): List<ThirdPartyDependency> {
   return listOf("gmscore_v10", "latest").map {
     ThirdPartyDependency(
       "gmscore-version-$it",
@@ -1181,7 +1176,7 @@ fun getGmsCoreVersions(): List<ThirdPartyDependency> {
   }
 }
 
-private fun Project.allDependencies(): List<ThirdPartyDependency> {
+private fun allDependencies(): List<ThirdPartyDependency> {
   val allDeps = mutableListOf<ThirdPartyDependency>()
   ThirdPartyDeps::class.declaredMemberProperties.forEach {
     val value = it.get(ThirdPartyDeps)
@@ -1194,19 +1189,19 @@ private fun Project.allDependencies(): List<ThirdPartyDependency> {
   return allDeps
 }
 
-fun Project.allPublicDependencies(): List<ThirdPartyDependency> {
+fun allPublicDependencies(): List<ThirdPartyDependency> {
   return allDependencies().filter { x -> !x.testOnly && x.type == DependencyType.GOOGLE_STORAGE }
 }
 
-fun Project.allPublicTestDependencies(): List<ThirdPartyDependency> {
+fun allPublicTestDependencies(): List<ThirdPartyDependency> {
   return allDependencies().filter { x -> x.testOnly && x.type == DependencyType.GOOGLE_STORAGE }
 }
 
-fun Project.allInternalDependencies(): List<ThirdPartyDependency> {
+fun allInternalDependencies(): List<ThirdPartyDependency> {
   return allDependencies().filter { x -> !x.testOnly && x.type == DependencyType.X20 }
 }
 
-fun Project.allInternalTestDependencies(): List<ThirdPartyDependency> {
+fun allInternalTestDependencies(): List<ThirdPartyDependency> {
   return allDependencies().filter { x -> x.testOnly && x.type == DependencyType.X20 }
 }
 
