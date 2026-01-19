@@ -33,8 +33,9 @@ public class DoNotCrashOnAccessToThisRunner extends DebugTestBase {
                     temp,
                     ImmutableList.of(ToolHelper.getClassFileForTestClass(CLASS)),
                     options -> {
-                      // Release mode so receiver can be clobbered.
-                      options.debug = false;
+                      // From R8 9.1 we no longer support connecting a debugger to a release build
+                      // on ART 7.
+                      options.debug = true;
                       // Api level M so that the workarounds for Lollipop verifier doesn't
                       // block the receiver register. We want to check b/116683601 which
                       // happens on at least 7.0.0.
