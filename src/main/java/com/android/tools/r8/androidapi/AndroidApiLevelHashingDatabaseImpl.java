@@ -278,7 +278,7 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
               } else {
                 byte apiLevelForReference =
                     dataAccess.getApiLevelForReference(uniqueDescriptorForReference, ref);
-                return (apiLevelForReference <= 0)
+                return apiLevelForReference <= 0
                     ? Optional.empty()
                     : Optional.of(AndroidApiLevel.getAndroidApiLevel(apiLevelForReference));
               }

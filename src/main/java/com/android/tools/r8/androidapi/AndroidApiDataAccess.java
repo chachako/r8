@@ -337,9 +337,8 @@ public abstract class AndroidApiDataAccess {
     @Override
     boolean payloadHasConstantPoolValue(int offset, int length, byte[] value) {
       assert length == value.length;
-      mappedByteBuffer.position(offset);
-      for (byte expected : value) {
-        if (expected != mappedByteBuffer.get()) {
+      for (int i = 0; i < length; i++) {
+        if (value[i] != mappedByteBuffer.get(offset + i)) {
           return false;
         }
       }
