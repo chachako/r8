@@ -1231,6 +1231,14 @@ public abstract class Instruction
     return null;
   }
 
+  public boolean isStringConcat() {
+    return false;
+  }
+
+  public StringConcat asStringConcat() {
+    return null;
+  }
+
   public boolean isStaticFieldInstruction() {
     return false;
   }

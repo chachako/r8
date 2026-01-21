@@ -48,6 +48,9 @@ public class DeterminismAnalysis {
         // Unless we can nail down the single target for these invocations.
         return false;
       }
+      if (instr.isStringConcat()) {
+        return !instr.asStringConcat().mightCallToStringWithSideEffects(appView);
+      }
       if (instr.isCreatingInstanceOrArray()) {
         // Unless we determine the new instance/array is local.
         return false;

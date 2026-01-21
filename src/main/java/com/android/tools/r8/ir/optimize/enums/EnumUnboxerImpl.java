@@ -1586,7 +1586,7 @@ public class EnumUnboxerImpl extends EnumUnboxer {
 
     // Calls to java.lang.String.
     if (targetHolder.getType().isIdenticalTo(factory.stringType)) {
-      if (singleTargetReference.isIdenticalTo(factory.stringMembers.valueOf)) {
+      if (singleTargetReference.isIdenticalTo(factory.stringMembers.valueOfObject)) {
         addRequiredNameData(enumClass);
         return Reason.ELIGIBLE;
       }

@@ -132,9 +132,15 @@ public class NonEmptyCfInstructionDesugaringCollection extends CfInstructionDesu
     }
     RecordInstructionDesugaring recordRewriter = RecordInstructionDesugaring.create(appView);
     addIfNotNull(desugarings, recordRewriter);
+    // When running D8 CF->CF, there is no chance to lower StringConcat instructions later on, so
+    // convert directly to StringBuilder right away in this case.
     StringConcatInstructionDesugaring stringConcatDesugaring =
-        new StringConcatInstructionDesugaring(appView);
-    desugarings.add(stringConcatDesugaring);
+        appView.options().enableStringConcatInstruction
+                && (appView.options().isGeneratingDex()
+                    || appView.enableWholeProgramOptimizations())
+            ? null
+            : new StringConcatInstructionDesugaring(appView);
+    addIfNotNull(desugarings, stringConcatDesugaring);
     LambdaInstructionDesugaring lambdaDesugaring = new LambdaInstructionDesugaring(appView);
     desugarings.add(lambdaDesugaring);
     interfaceMethodRewriter =

@@ -163,7 +163,9 @@ public class UnrepresentableInDexInstructionRemover implements CfInstructionDesu
     @SuppressWarnings("BadImport")
     DesugarDescription compute(CfInstruction instruction) {
       CfInvokeDynamic invokeDynamic = instruction.asInvokeDynamic();
-      if (invokeDynamic == null) {
+      if (invokeDynamic == null
+          || (appView.options().enableStringConcatInstruction
+              && invokeDynamic.isStringConcat(appView.dexItemFactory()))) {
         return null;
       }
       return DesugarDescription.builder()

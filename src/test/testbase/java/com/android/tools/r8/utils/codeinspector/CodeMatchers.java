@@ -327,7 +327,7 @@ public class CodeMatchers {
   public static Predicate<InstructionSubject> isInvokeWithTarget(
       String returnType, String holderType, String methodName, List<String> parameterTypes) {
     return instruction -> {
-      if (!instruction.isInvoke()) {
+      if (!instruction.isInvokeMethod()) {
         return false;
       }
       DexMethod invokedMethod = instruction.getMethod();

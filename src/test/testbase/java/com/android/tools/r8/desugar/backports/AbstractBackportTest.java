@@ -278,16 +278,16 @@ public abstract class AbstractBackportTest extends TestBase {
     ClassSubject testSubject = inspector.clazz(testClassName);
     assertThat(testSubject, isPresent());
 
-    List<InstructionSubject> javaInvokeStatics = testSubject.allMethods()
-        .stream()
-        // Do not count @IgnoreInvokes-annotated methods.
-        .filter(i -> !i.annotation(IgnoreInvokes.class.getName()).isPresent())
-        .flatMap(MethodSubject::streamInstructions)
-        .filter(InstructionSubject::isInvoke)
-        .filter(is -> is.getMethod().holder.toSourceString().equals(targetClass.getName()))
-        // Do not count invokes if explicitly ignored.
-        .filter(is -> !ignoredInvokes.contains(is.getMethod().name.toString()))
-        .collect(toList());
+    List<InstructionSubject> javaInvokeStatics =
+        testSubject.allMethods().stream()
+            // Do not count @IgnoreInvokes-annotated methods.
+            .filter(i -> !i.annotation(IgnoreInvokes.class.getName()).isPresent())
+            .flatMap(MethodSubject::streamInstructions)
+            .filter(InstructionSubject::isInvokeMethod)
+            .filter(is -> is.getMethod().holder.toSourceString().equals(targetClass.getName()))
+            // Do not count invokes if explicitly ignored.
+            .filter(is -> !ignoredInvokes.contains(is.getMethod().name.toString()))
+            .collect(toList());
 
     AndroidApiLevel apiLevel = parameters.getApiLevel();
     long expectedTargetInvokes = getTargetInvokesCount(apiLevel);

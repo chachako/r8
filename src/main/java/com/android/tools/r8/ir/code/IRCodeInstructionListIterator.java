@@ -16,6 +16,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.utils.InternalOptions;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -165,6 +166,10 @@ public class IRCodeInstructionListIterator implements InstructionListIterator {
     throw new Unimplemented();
   }
 
+  public BasicBlock splitCopyCatchHandlers(InternalOptions options) {
+    return instructionIterator.splitCopyCatchHandlers(code, blockIterator, options);
+  }
+
   @Override
   public BasicBlock inlineInvoke(
       AppView<?> appView,
@@ -256,6 +261,12 @@ public class IRCodeInstructionListIterator implements InstructionListIterator {
       InternalOptions options) {
     return instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
         code, blockIterator, instructionsToAdd, options);
+  }
+
+  public void addPossiblyThrowingInstructionToPossiblyThrowingBlock(
+      Instruction instructionToAdd, InternalOptions options) {
+    addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+        Collections.singletonList(instructionToAdd), options);
   }
 
   public void addPossiblyThrowingInstructionsToPossiblyThrowingBlock(

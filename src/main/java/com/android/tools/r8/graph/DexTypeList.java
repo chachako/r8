@@ -7,8 +7,11 @@ import static com.android.tools.r8.utils.PredicateUtils.not;
 
 import com.android.tools.r8.dex.IndexedItemCollection;
 import com.android.tools.r8.dex.MixedSectionCollection;
+import com.android.tools.r8.lightir.LirConstant;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.IntObjConsumer;
+import com.android.tools.r8.utils.structural.CompareToVisitor;
+import com.android.tools.r8.utils.structural.HashingVisitor;
 import com.android.tools.r8.utils.structural.StructuralItem;
 import com.android.tools.r8.utils.structural.StructuralMapping;
 import com.android.tools.r8.utils.structural.StructuralSpecification;
@@ -21,7 +24,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class DexTypeList extends DexItem implements Iterable<DexType>, StructuralItem<DexTypeList> {
+public class DexTypeList extends DexItem
+    implements Iterable<DexType>, StructuralItem<DexTypeList>, LirConstant {
 
   private static final DexTypeList theEmptyTypeList = new DexTypeList();
 
@@ -40,7 +44,8 @@ public class DexTypeList extends DexItem implements Iterable<DexType>, Structura
   }
 
   public DexTypeList(DexType[] values) {
-    assert values != null && values.length > 0;
+    assert values != null;
+    assert values.length > 0;
     this.values = values;
   }
 
@@ -184,5 +189,21 @@ public class DexTypeList extends DexItem implements Iterable<DexType>, Structura
     DexType[] newValues = values.clone();
     Arrays.sort(newValues);
     return new DexTypeList(newValues);
+  }
+
+  @Override
+  public LirConstantOrder getLirConstantOrder() {
+    return LirConstantOrder.TYPE_LIST;
+  }
+
+  @Override
+  public int internalLirConstantAcceptCompareTo(LirConstant other, CompareToVisitor visitor) {
+    DexTypeList otherArgTypes = (DexTypeList) other;
+    return acceptCompareTo(otherArgTypes, visitor);
+  }
+
+  @Override
+  public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
+    acceptHashing(visitor);
   }
 }

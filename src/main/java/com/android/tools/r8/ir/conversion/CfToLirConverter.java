@@ -20,8 +20,10 @@ import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.passes.BranchSimplifier;
+import com.android.tools.r8.ir.conversion.passes.CodeRewriterPass;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
 import com.android.tools.r8.ir.conversion.passes.ConstResourceNumberRewriter;
+import com.android.tools.r8.ir.conversion.passes.StringConcatCreator;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.ir.optimize.membervaluepropagation.AssumePropagator;
@@ -35,6 +37,8 @@ import com.android.tools.r8.shaking.assume.AssumeInfoCollection;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -46,9 +50,14 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
 
   public CfToLirConverter(AppView<AppInfoWithClassHierarchy> appView, Enqueuer enqueuer) {
     this.appView = appView;
-    this.codeRewriterPassCollection =
-        new CodeRewriterPassCollection(
-            new ConstResourceNumberRewriter(appView), new StringSwitchConverter(appView));
+    List<CodeRewriterPass<?>> extraPasses = new ArrayList<>(3);
+    extraPasses.add(new ConstResourceNumberRewriter(appView));
+    extraPasses.add(new StringSwitchConverter(appView));
+    if (appView.options().enableStringConcatInstruction) {
+      extraPasses.add(new StringConcatCreator(appView));
+    }
+
+    this.codeRewriterPassCollection = new CodeRewriterPassCollection(extraPasses);
     this.enqueuer = enqueuer;
   }
 
@@ -130,6 +139,7 @@ public class CfToLirConverter implements FinishedEnqueuerAnalysis {
       new BranchSimplifier(appView).simplifyIf(code);
       new DeadCodeRemover(appView).run(code, Timing.empty());
     }
+
     LirCode<Integer> lirCode =
         IR2LirConverter.translate(
             code,

@@ -14,6 +14,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
+import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.Nullability;
@@ -31,7 +32,9 @@ import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.NewInstance;
+import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StaticGet;
+import com.android.tools.r8.ir.code.StringConcat;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.utils.InternalOptions;
@@ -39,6 +42,7 @@ import com.android.tools.r8.utils.ValueUtils;
 import com.android.tools.r8.utils.ValueUtils.ArrayValues;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -214,7 +218,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
         }
         break;
       case 'v':
-        if (singleTargetReference.isIdenticalTo(stringMembers.valueOf)) {
+        if (singleTargetReference.isIdenticalTo(stringMembers.valueOfObject)) {
           optimizeValueOf(code, instructionIterator, invoke.asInvokeStatic(), affectedValues);
         }
         break;
@@ -659,8 +663,40 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
       }
     }
 
+    Instruction newInstruction;
     ArrayList<Instruction> newInstructions = new ArrayList<>();
+    if (appView.options().enableStringConcatInstruction) {
+      newInstruction =
+          createStringConcat(code, formatInvoke, parsedSpec, elementValues, newInstructions);
+    } else {
+      newInstruction =
+          createStringBuilderChain(
+              code,
+              formatInvoke,
+              specInstruction.getPosition(),
+              parsedSpec,
+              elementValues,
+              newInstructions);
+    }
+    instructionIterator.replaceCurrentInstruction(newInstruction, affectedValues);
+    instructionIterator.previous();
+    instructionIterator =
+        instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+            code, blockIterator, newInstructions, appView.options());
+    if (DEBUG) {
+      debugLog(code, "String.format(): Optimized.");
+    }
+    return instructionIterator;
+  }
 
+  private Instruction createStringBuilderChain(
+      IRCode code,
+      InvokeStatic formatInvoke,
+      Position specPosition,
+      SimpleStringFormatSpec parsedSpec,
+      List<Value> elementValues,
+      ArrayList<Instruction> newInstructions) {
+    Instruction newInstruction;
     // Rely on StringBuilder optimizations to convert this to using the string constructor (plus
     // other StringBuilder / valueOf optimizations that may apply).
     NewInstance newInstance =
@@ -690,9 +726,8 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
         ConstString constString =
             ConstString.builder()
                 .setValue(dexItemFactory.createString(part.value))
-                .setPosition(specInstruction)
-                .setFreshOutValue(
-                    code, TypeElement.stringClassType(appView, Nullability.definitelyNotNull()))
+                .setPosition(specPosition)
+                .setFreshOutValue(appView, code)
                 .build();
         newInstructions.add(constString);
         paramValue = constString.outValue();
@@ -703,9 +738,8 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
           ConstString constString =
               ConstString.builder()
                   .setValue(dexItemFactory.createString(part.formatChar == 'b' ? "false" : "null"))
-                  .setPosition(specInstruction)
-                  .setFreshOutValue(
-                      code, TypeElement.stringClassType(appView, Nullability.definitelyNotNull()))
+                  .setPosition(specPosition)
+                  .setFreshOutValue(appView, code)
                   .build();
           newInstructions.add(constString);
           paramValue = constString.outValue();
@@ -746,17 +780,57 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
             .setFreshOutValue(code, dexItemFactory.stringType.toTypeElement(appView))
             .build();
 
-    // Replace the String.format(), but for simplicity, leave all other array and valueOf() invokes
-    // to be removed by dead code elimination.
-    instructionIterator.replaceCurrentInstruction(toStringInvoke, affectedValues);
-    instructionIterator.previous();
-    instructionIterator =
-        instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-            code, blockIterator, newInstructions, appView.options());
-    if (DEBUG) {
-      debugLog(code, "String.format(): Optimized.");
+    // Replace the String.format(), but for simplicity, leave all other array and valueOf()
+    // invokes to be removed by dead code elimination.
+    newInstruction = toStringInvoke;
+    return newInstruction;
+  }
+
+  private StringConcat createStringConcat(
+      IRCode code,
+      Instruction formatInstruction,
+      SimpleStringFormatSpec parsedSpec,
+      List<Value> elementValues,
+      ArrayList<Instruction> newInstructions) {
+    int numParts = parsedSpec.parts.size();
+    List<Value> argValues = new ArrayList<>(numParts);
+    DexType[] argTypes = new DexType[numParts];
+    Arrays.fill(argTypes, dexItemFactory.objectType);
+
+    for (int i = 0; i < numParts; ++i) {
+      SimpleStringFormatSpec.Part part = parsedSpec.parts.get(i);
+      DexString newConstStringValue = null;
+      if (part.isLiteral()) {
+        newConstStringValue = dexItemFactory.createString(part.value);
+      } else {
+        Value paramValue = elementValues.get(part.placeholderIdx);
+        if (part.formatChar == 'b' && isArrayElementAlwaysNull(paramValue)) {
+          newConstStringValue = dexItemFactory.falseString;
+        } else if (paramValue == null) {
+          newConstStringValue = dexItemFactory.nullString;
+        } else {
+          argValues.add(paramValue);
+        }
+      }
+      if (newConstStringValue != null) {
+        ConstString constString =
+            ConstString.builder()
+                .setFreshOutValue(appView, code)
+                .setPosition(formatInstruction.getPosition())
+                .setValue(newConstStringValue)
+                .build();
+        argValues.add(constString.outValue());
+        newInstructions.add(constString);
+      }
     }
-    return instructionIterator;
+    // Need to create a new Value to mark it as non-null.
+    Value newOutValue = null;
+    if (formatInstruction.outValue() != null) {
+      newOutValue =
+          code.createValue(TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
+    }
+    return StringConcat.createNormalized(
+        appView, newOutValue, new DexTypeList(argTypes), argValues);
   }
 
   private boolean isArrayElementAlwaysNull(Value value) {

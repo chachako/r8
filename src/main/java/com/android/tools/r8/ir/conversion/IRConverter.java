@@ -37,6 +37,8 @@ import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
 import com.android.tools.r8.ir.conversion.passes.FilledNewArrayRewriter;
 import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.ir.conversion.passes.ParentConstructorHoistingCodeRewriter;
+import com.android.tools.r8.ir.conversion.passes.StringConcatCreator;
+import com.android.tools.r8.ir.conversion.passes.StringConcatRemover;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchConverter;
 import com.android.tools.r8.ir.conversion.passes.StringSwitchRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
@@ -592,6 +594,12 @@ public class IRConverter {
       new StringSwitchConverter(appView)
           .run(code, methodProcessor, methodProcessingContext, timing);
     }
+    // The same is true for StringConcat (and also applies to CF).
+    if (appView.options().enableStringConcatInstruction
+        && (!options.getTestingOptions().isSupportedLirPhase()
+            || options.isGeneratingClassFiles())) {
+      new StringConcatCreator(appView).run(code, timing);
+    }
 
     if (options.canHaveArtStringNewInitBug()) {
       timing.begin("Check for new-init issue");
@@ -761,6 +769,12 @@ public class IRConverter {
     // being introduced will be canonicalized if possible.
     new StringSwitchRemover(appView, identifierNameStringMarker)
         .run(code, methodProcessor, methodProcessingContext, timing);
+    previous = printMethod(code, "IR after StringSwitchRemover (SSA)", previous);
+    if (!options.getTestingOptions().isSupportedLirPhase()
+        && options.enableStringConcatInstruction) {
+      new StringConcatRemover(appView).run(code, timing);
+      previous = printMethod(code, "IR after StringConcatRemover (SSA)", previous);
+    }
 
     // TODO(mkroghj) Test if shorten live ranges is worth it.
     if (options.isGeneratingDex()) {
@@ -940,6 +954,9 @@ public class IRConverter {
     if (!code.getConversionOptions().isGeneratingLir()) {
       new FilledNewArrayRewriter(appView).run(code, timing);
       new StringSwitchRemover(appView, identifierNameStringMarker).run(code, timing);
+      if (appView.options().enableStringConcatInstruction) {
+        new StringConcatRemover(appView).run(code, timing);
+      }
     }
     code.removeRedundantBlocks();
     deadCodeRemover.run(code, timing);
