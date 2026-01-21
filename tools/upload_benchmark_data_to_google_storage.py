@@ -168,9 +168,17 @@ def RecordBenchmarkResults(commit, benchmarks, benchmark_data, is_try):
             'benchmarks': benchmarks
         }
         if is_try:
-            # TODO(christofferqa): We should find the first parent on main
-            # to support running try jobs for CL chains.
-            data['parent_hash'] = commit.parent_hash()
+            parent_hash = commit.parent_hash()
+            try:
+                # Find the merge base between the parent commit and origin/main.
+                merge_base = subprocess.check_output(
+                    ['git', 'merge-base', parent_hash, 'origin/main'],
+                stderr=subprocess.PIPE, text=True).strip()
+                data['parent_hash'] = merge_base
+            except subprocess.CalledProcessError:
+                # Fallback to the direct parent if merge-base fails (e.g., if
+                # origin/main doesn't exist or there is no common ancestor).
+                data['parent_hash'] = parent_hash
         version = commit.version()
         if version:
             data['version'] = version
