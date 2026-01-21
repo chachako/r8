@@ -464,7 +464,7 @@ public final class MathMethods {
     int p = 1;
     while (operand > 1) {
       if ((operand & 1) != 0) {
-        p *= x;
+        p *= result;
       }
       result = Math.multiplyExact(result, result);
       operand >>>= 1;

@@ -11337,7 +11337,7 @@ public final class BackportedMethods {
             new CfIf(IfType.EQ, ValueType.INT, label10),
             label9,
             new CfLoad(ValueType.INT, 4),
-            new CfLoad(ValueType.INT, 0),
+            new CfLoad(ValueType.INT, 2),
             new CfArithmeticBinop(CfArithmeticBinop.Opcode.Mul, NumericType.INT),
             new CfStore(ValueType.INT, 4),
             label10,

@@ -121,6 +121,9 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
 
       assertEquals(4096, Math.powExact(256 / 16, 3));
       assertEquals(512, Math.powExact(256 / 32, 3));
+
+      assertEquals(1 << -2, Math.powExact(2, Integer.SIZE - 2));
+      assertEquals(-1 << -1, Math.powExact(-2, Integer.SIZE - 1));
     }
 
     static void testUnsignedPowExactLong() {
