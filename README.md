@@ -72,9 +72,9 @@ a jar file: `build/libs/r8.jar` which contains both R8 and D8.
 
 Follow the instructions in the above section.
 
-1. Open the project `r8/d8_r8` in IntelliJ
+1. Open the root project `r8/` in IntelliJ
 2. Navigate to "Settings" > "Build, Execution, Deployment" > "Build Tools" > "Gradle"
-   1. Select `r8/third_party/gradle` as "Local installation" in "Distribution" 
+   1. Select `r8/third_party/gradle` as "Local installation" in "Distribution"
    2. Select `r8/third_party/openjdk/jdk-11/linux` as "Gradle JVM"
 3. Sync the project using Gradle
 

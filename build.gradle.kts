@@ -7,6 +7,19 @@ plugins {
   id("dependencies-plugin")
 }
 
+java {
+  sourceSets {
+    main {
+      java.setSrcDirs(emptyList<File>())
+      resources.setSrcDirs(emptyList<File>())
+    }
+    test {
+      java.setSrcDirs(emptyList<File>())
+      resources.setSrcDirs(emptyList<File>())
+    }
+  }
+}
+
 tasks {
   "clean" {
     dependsOn(gradle.includedBuild("commonBuildSrc").task(":clean"))

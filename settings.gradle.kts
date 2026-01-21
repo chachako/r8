@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// TODO(b/270105162): Move this file out the repository root when old gradle is removed.
-
 import java.nio.file.Files
 import java.nio.file.attribute.FileTime
 import org.gradle.internal.os.OperatingSystem
@@ -56,38 +54,38 @@ fun downloadFromGoogleStorage(outputDir : File) {
   }
 }
 
-val thirdParty = rootProject.projectDir.resolve("../third_party")
+val thirdParty = rootProject.projectDir.resolve("third_party")
 downloadFromGoogleStorage(thirdParty.resolve("dependencies"))
 downloadFromGoogleStorage(thirdParty.resolve("dependencies_plugin"))
 
 pluginManagement {
   repositories {
     maven {
-      url = uri("file:../third_party/dependencies_plugin")
+      url = uri("file:third_party/dependencies_plugin")
     }
     maven {
-      url = uri("file:../third_party/dependencies")
+      url = uri("file:third_party/dependencies")
     }
   }
-  includeBuild(rootProject.projectDir.resolve("commonBuildSrc"))
+  includeBuild(rootProject.projectDir.resolve("d8_r8/commonBuildSrc"))
 }
 
 dependencyResolutionManagement {
   repositories {
     maven {
-      url = uri("file:../third_party/dependencies")
+      url = uri("file:third_party/dependencies")
     }
   }
 }
 
-includeBuild(rootProject.projectDir.resolve("shared"))
-includeBuild(rootProject.projectDir.resolve("assistant"))
-includeBuild(rootProject.projectDir.resolve("blastradius"))
-includeBuild(rootProject.projectDir.resolve("keepanno"))
-includeBuild(rootProject.projectDir.resolve("resourceshrinker"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/assistant"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/blastradius"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
 
 // We need to include src/main as a composite-build otherwise our test-modules
 // will compete with the test to compile the source files.
-includeBuild(rootProject.projectDir.resolve("main"))
-includeBuild(rootProject.projectDir.resolve("library_desugar"))
-includeBuild(rootProject.projectDir.resolve("test"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/main"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/library_desugar"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/test"))
