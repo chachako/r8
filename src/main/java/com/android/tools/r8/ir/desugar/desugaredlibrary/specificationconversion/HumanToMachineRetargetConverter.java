@@ -117,6 +117,10 @@ public class HumanToMachineRetargetConverter {
       Consumer<DexEncodedMethod> staticRetarget,
       Consumer<DexEncodedMethod> nonEmulatedVirtualRetarget) {
     DexClass holder = appInfo.definitionFor(method.holder);
+    if (holder == null) {
+      missingReferences.add(method.holder);
+      return;
+    }
     DexEncodedMethod foundMethod = holder.lookupMethod(method);
     if (foundMethod == null) {
       missingReferences.add(method);
