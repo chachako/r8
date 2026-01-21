@@ -34,6 +34,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.zip.ZipEntry;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -125,6 +126,8 @@ public class SanityCheck extends TestBase {
             } else if (apiDatabaseFiles.contains(name)) {
               // Allow all api database files.
               apiDatabaseFiles.remove(name);
+              // Check that the entry is stored uncompressed.
+              assertEquals(ZipEntry.STORED, entry.getMethod());
             } else if (name.endsWith("/")) {
               assertTrue("Unexpected directory entry in" + jar, allowDirectories);
             } else {

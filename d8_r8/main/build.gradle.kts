@@ -4,11 +4,18 @@
 
 import com.google.gson.Gson
 import java.io.ByteArrayOutputStream
+import java.io.FileOutputStream
 import java.net.URI
 import java.nio.charset.Charset
+import java.nio.file.Files
 import java.nio.file.Files.readString
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.UUID
+import java.util.zip.CRC32
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -337,6 +344,11 @@ fun mainJarDependencies() : FileCollection {
 tasks {
   jar {
     from(sourceSets["turbo"].output)
+    doLast {
+      enforceUncompressedEntries(
+          archiveFile.get().asFile,
+          setOf("resources/new_api_database.ser"))
+    }
   }
 
   withType<Exec> {
@@ -677,6 +689,54 @@ fun enableCheck(task: JavaCompile, warning: String) {
   } else {
     task.options.errorprone.warn(warning)
   }
+}
+
+/**
+ * Re-packages a JAR file to ensure specific entries are stored uncompressed (STORED).
+ * @param jarFile The target JAR file to modify in-place.
+ * @param uncompressedEntries A set of file paths to store uncompressed.
+ */
+fun enforceUncompressedEntries(jarFile: File, uncompressedEntries: Set<String>) {
+  if (!jarFile.exists()) return
+  val tempJarFile = jarFile.resolveSibling(jarFile.name + ".tmp")
+  ZipFile(jarFile).use { zip ->
+    ZipOutputStream(FileOutputStream(tempJarFile)).use { zos ->
+      val entries = zip.entries()
+      while (entries.hasMoreElements()) {
+        val entry = entries.nextElement()
+        val newEntry = ZipEntry(entry.name)
+
+        if (uncompressedEntries.contains(entry.name)) {
+          // Read data into memory to calculate CRC and size required for STORED method.
+          val bytes = zip.getInputStream(entry).readAllBytes()
+          newEntry.method = ZipEntry.STORED
+          newEntry.size = bytes.size.toLong()
+          newEntry.compressedSize = bytes.size.toLong()
+          newEntry.crc = CRC32().apply { update(bytes) }.value
+          zos.putNextEntry(newEntry)
+          zos.write(bytes)
+        } else {
+          // Copy metadata and stream content directly.
+          newEntry.method = entry.method
+          if (newEntry.method == ZipEntry.STORED) {
+            newEntry.size = entry.size
+            newEntry.compressedSize = entry.compressedSize
+            newEntry.crc = entry.crc
+          }
+          zos.putNextEntry(newEntry)
+          zip.getInputStream(entry).copyTo(zos)
+        }
+        zos.closeEntry()
+      }
+    }
+  }
+
+  // Overwrite the original jar.
+  Files.move(
+    tempJarFile.toPath(),
+    jarFile.toPath(),
+    StandardCopyOption.REPLACE_EXISTING
+  )
 }
 
 tasks.withType<JavaCompile> {
