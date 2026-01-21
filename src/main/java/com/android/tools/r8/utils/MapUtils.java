@@ -6,6 +6,7 @@ package com.android.tools.r8.utils;
 
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.StringUtils.BraceType;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
@@ -236,6 +237,13 @@ public class MapUtils {
       return trimCapacity(map, IdentityHashMap::new);
     }
     return map;
+  }
+
+  public static <K, V> HashMultimap<K, V> convertMapWithCollectionValuesToMultimap(
+      Map<K, Collection<V>> updaterClassesConcurrent) {
+    HashMultimap<K, V> updaterClasses = HashMultimap.create();
+    updaterClassesConcurrent.forEach(updaterClasses::putAll);
+    return updaterClasses;
   }
 
   public static <K, V> Map<K, V> unmodifiableForTesting(Map<K, V> map) {

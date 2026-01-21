@@ -35,17 +35,17 @@ import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
+import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Predicates;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,11 +60,12 @@ import org.objectweb.asm.Opcodes;
  *
  * <pre>
  * class Example {
+ *   volatile T dataField;
  *   static final AtomicReferenceFieldUpdater updater;
  *
  *   static {
  *     ..
- *     updater = AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someField");
+ *     updater = AtomicReferenceFieldUpdater.newUpdater(Example.class, T.class, "dataField");
  *     ..
  *   }
  * }
@@ -72,19 +73,21 @@ import org.objectweb.asm.Opcodes;
  *
  * </blockquote>
  *
- * and converts them to (in bytecode the arguments are reused not recomputed):
+ * (where a write like above is the only write to the field) and converts them to (in bytecode the
+ * arguments are reused not recomputed):
  *
  * <blockquote>
  *
  * <pre>
  * class Example {
+ *   volatile T dataField;
  *   static final AtomicReferenceFieldUpdater updater;
  *   static final long updater$offset;
  *
  *   static {
  *     ..
- *     updater = AtomicReferenceFieldUpdater.newUpdater(SomeClass.class, SomeType.class, "someField");
- *     updater$offset = SyntheticUnsafeClass.unsafe.objectFieldOffset(SomeClass.class.getDeclaredField("someField"));
+ *     updater = AtomicReferenceFieldUpdater.newUpdater(Example.class, T.class, "dataField");
+ *     updater$offset = SyntheticUnsafeClass.unsafe.objectFieldOffset(Example.class.getDeclaredField("dataField"));
  *
  *     ..
  *   }
@@ -119,11 +122,21 @@ public class AtomicFieldUpdaterInstrumentor {
   private final DexMethod objectFieldOffset;
   private static final String unsafeFieldName = "unsafe";
   private static final String getUnsafeMethodName = "getUnsafe";
+  private final boolean debugLogEnabled;
+  private final ConcurrentHashMap<DexField, String> debugLogs;
 
   public AtomicFieldUpdaterInstrumentor(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
 
     itemFactory = appView.dexItemFactory();
+
+    if (appView.options().getTestingOptions().enableAtomicFieldUpdaterInstrumentorDebugLogs) {
+      debugLogEnabled = true;
+      debugLogs = new ConcurrentHashMap<>();
+    } else {
+      debugLogEnabled = false;
+      debugLogs = null;
+    }
 
     objectFieldOffset =
         itemFactory.createMethod(
@@ -137,7 +150,7 @@ public class AtomicFieldUpdaterInstrumentor {
   // TODO(b/453628974): Make sure that original AtomicUpdater fields are removed if all uses are
   //                    optimized away (fields and clinit writes).
   public void run(ExecutorService service, Timing timing) throws ExecutionException {
-    timing.begin("AtomicUpdater field extender");
+    timing.begin("AtomicFieldUpdaterInstrumentor");
 
     var classesWithAtomics = findClassesWithAtomics(service, timing);
     if (!classesWithAtomics.isEmpty()) {
@@ -146,39 +159,240 @@ public class AtomicFieldUpdaterInstrumentor {
       addOffsetFields(classesWithAtomics, unsafeClass, profiling, service, timing);
       profiling.commit(appView);
     }
+
+    if (debugLogEnabled && !debugLogs.isEmpty()) {
+      var reporter = appView.reporter();
+      var sb = new StringBuilder();
+      debugLogs.forEach(
+          (field, reason) -> {
+            sb.append(reason).append(System.lineSeparator());
+          });
+      reporter.info(sb.toString());
+    }
+
     timing.end();
   }
 
-  private void addOffsetFields(
-      Multimap<DexProgramClass, DexEncodedField> classesWithAtomics,
-      UnsafeClassInfo unsafeClass,
-      ProfileCollectionAdditions profiling,
-      ExecutorService service,
-      Timing timing)
-      throws ExecutionException {
-    ConcurrentHashMap<DexField, DexField> offsetFields = new ConcurrentHashMap<>();
+  private Multimap<DexProgramClass, UpdaterFieldInfo<Void>> findClassesWithAtomics(
+      ExecutorService service, Timing timing) throws ExecutionException {
+    var updaterClassesConcurrent =
+        new ConcurrentHashMap<DexProgramClass, Collection<UpdaterFieldInfo<Void>>>();
     ThreadUtils.processItemsThatMatches(
-        classesWithAtomics.keySet(),
-        Predicates.alwaysTrue(),
-        (clazz, threadTiming) ->
-            addOffsetFieldsToClass(
-                clazz,
-                classesWithAtomics.get(clazz),
-                offsetFields,
-                unsafeClass.unsafeInstanceField,
-                profiling,
-                threadTiming),
+        appView.appInfo().classes(),
+        AtomicFieldUpdaterInstrumentor::mightHaveUpdaterFields,
+        (clazz, threadTiming) -> findOffsetFields(clazz, updaterClassesConcurrent, threadTiming),
         appView.options(),
         service,
         timing,
-        timing.beginMerger("AtomicUpdater offset field writes", service));
-    if (!profiling.isNop()) {
-      profiling.addMethodIfContextIsInProfile(
-          unsafeClass.getUnsafeMethod, unsafeClass.classInitializer);
+        timing.beginMerger("AtomicFieldUpdaterInstrumentor", service));
+    return MapUtils.convertMapWithCollectionValuesToMultimap(updaterClassesConcurrent);
+  }
+
+  private static boolean mightHaveUpdaterFields(DexProgramClass clazz) {
+    // TODO(b/453628974): Check constant pool?
+    return clazz.hasClassInitializer() && clazz.hasStaticFields();
+  }
+
+  private void reportFailureToInstrument(DexField field, String reason) {
+    if (debugLogEnabled) {
+      assert !debugLogs.containsKey(field);
+      debugLogs.put(
+          field,
+          "Cannot instrument "
+              + field.getHolderType().toSourceString()
+              + "."
+              + field.name.toString()
+              + ": "
+              + reason);
     }
-    var builder = FieldAccessInfoCollectionModifier.builder();
-    offsetFields.values().forEach(builder::addField);
-    builder.build().modify(appView);
+  }
+
+  private void reportSuccessfulInstrumentation(DexField field) {
+    if (debugLogEnabled) {
+      assert !debugLogs.containsKey(field);
+      debugLogs.put(
+          field,
+          "Can instrument    "
+              + field.getHolderType().toSourceString()
+              + "."
+              + field.name.toString());
+    }
+  }
+
+  private void findOffsetFields(
+      DexProgramClass clazz,
+      ConcurrentHashMap<DexProgramClass, Collection<UpdaterFieldInfo<Void>>> updaterClasses,
+      Timing timing) {
+    timing.begin("AtomicFieldUpdaterInstrumentor: " + clazz.getSimpleName());
+
+    // Find relevant fields that are initialized in their clinit.
+    var initialUpdaterFields = new HashSet<DexField>();
+    clazz.forEachStaticFieldMatching(
+        this::isStaticFinalFieldUpdaterField,
+        field -> {
+          // Check that fields are constructed with known information, i.e. a single write of a
+          // direct
+          // and valid call to
+          // AtomicReferenceFieldUpdater.newUpdater(ThisClass.class, FieldType.class, "fieldName").
+          var f = new ProgramField(clazz, field);
+          if (!appView
+              .appInfoWithLiveness()
+              .isStaticFieldWrittenOnlyInEnclosingStaticInitializer(f)) {
+            reportFailureToInstrument(field.getReference(), "written outside class initializer");
+          } else {
+            initialUpdaterFields.add(field.getReference());
+          }
+        });
+
+    // Construct clinit IR.
+    var classInitializer = clazz.getProgramClassInitializer();
+    assert classInitializer != null;
+    var genericCode = classInitializer.getDefinition().getCode();
+    assert genericCode.isLirCode();
+    var ir = genericCode.asLirCode().buildIR(classInitializer, appView);
+    var it = ir.instructionListIterator();
+
+    // Iterate instructions to find singular syntactically obvious writes.
+    var fieldInfos = new HashMap<DexField, UpdaterFieldInfo<Void>>();
+    while (it.hasNext()) {
+      var next = it.next();
+      if (!next.isStaticPut()) {
+        continue;
+      }
+      var staticPut = next.asStaticPut();
+      var modifiedField = staticPut.getField();
+      if (!initialUpdaterFields.contains(modifiedField)) {
+        continue;
+      }
+      if (fieldInfos.containsKey(modifiedField)) {
+        reportFailureToInstrument(modifiedField, "multiple writes");
+        fieldInfos.remove(modifiedField);
+        initialUpdaterFields.remove(modifiedField);
+        continue;
+      }
+      var updaterInfo = resolveNewUpdaterCall(clazz, modifiedField, staticPut.getFirstOperand());
+      if (updaterInfo == null) {
+        // Statically unknown call - give up (resolveNewUpdaterCall already reports the reason).
+        fieldInfos.remove(modifiedField);
+        initialUpdaterFields.remove(modifiedField);
+        continue;
+      }
+      reportSuccessfulInstrumentation(modifiedField);
+      fieldInfos.put(modifiedField, updaterInfo);
+    }
+
+    for (var field : initialUpdaterFields) {
+      if (!fieldInfos.containsKey(field)) {
+        reportFailureToInstrument(field, "found no field writes");
+      }
+    }
+
+    // Store information in concurrent collection.
+    if (!fieldInfos.isEmpty()) {
+      // Assert might allow concurrent writes, but this is just for sanity checking.
+      assert !updaterClasses.containsKey(clazz);
+      updaterClasses.put(clazz, fieldInfos.values());
+    }
+    timing.end();
+  }
+
+  private boolean isStaticFinalFieldUpdaterField(DexEncodedField field) {
+    return field.isStatic()
+        && field.isFinal()
+        && field
+            .getType()
+            .isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater);
+  }
+
+  /**
+   * Returns program information if {@code updaterCall} is a direct call to {@code
+   * newUpdater(ThisClass.class, FieldType.class, "fieldName")} of a valid field.
+   */
+  private UpdaterFieldInfo<Void> resolveNewUpdaterCall(
+      DexProgramClass clazz, DexField updaterField, Value updaterCall) {
+    if (updaterCall.isPhi()) {
+      reportFailureToInstrument(updaterField, "initialized by phi function");
+      return null;
+    }
+    Instruction input = updaterCall.definition;
+    if (!input.isInvokeStatic()) {
+      reportFailureToInstrument(updaterField, "not initialized by static call");
+      return null;
+    }
+    InvokeStatic invokeStatic = input.asInvokeStatic();
+    if (!invokeStatic
+        .getInvokedMethod()
+        .isIdenticalTo(itemFactory.atomicFieldUpdaterMethods.referenceUpdater)) {
+      reportFailureToInstrument(updaterField, "not initialized by newUpdater call");
+      return null;
+    }
+    assert invokeStatic.arguments().size() == 3;
+    var holderValue = invokeStatic.getFirstArgument();
+    if (holderValue.isPhi()) {
+      reportFailureToInstrument(updaterField, "newUpdater(HERE, _, _) is defined by phi function");
+      return null;
+    }
+    var holderIns = holderValue.definition;
+    if (!holderIns.isConstClass()) {
+      reportFailureToInstrument(updaterField, "newUpdater(HERE, _, _) is not a constant class");
+      return null;
+    }
+    var holder = holderIns.asConstClass().getType();
+    if (!holder.isIdenticalTo(clazz.getType())) {
+      reportFailureToInstrument(updaterField, "newUpdater(HERE, _, _) is not the current class");
+      return null;
+    }
+    var fieldTypeValue = invokeStatic.getSecondArgument();
+    if (fieldTypeValue.isPhi()) {
+      reportFailureToInstrument(updaterField, "newUpdater(_, HERE, _) is defined by phi function");
+      return null;
+    }
+    var fieldTypeIns = fieldTypeValue.definition;
+    if (!fieldTypeIns.isConstClass()) {
+      reportFailureToInstrument(updaterField, "newUpdater(_, HERE, _) is not a constant class");
+      return null;
+    }
+    var fieldType = fieldTypeIns.asConstClass().getType();
+    var fieldNameValue = invokeStatic.getThirdArgument();
+    if (fieldNameValue.isPhi()) {
+      reportFailureToInstrument(updaterField, "newUpdater(_, _, HERE) is defined by phi function");
+      return null;
+    }
+    var fieldNameIns = fieldNameValue.definition;
+    if (!fieldNameIns.isDexItemBasedConstString()) {
+      reportFailureToInstrument(
+          updaterField, "newUpdater(_, _, HERE) is not a dex-item-based string");
+      return null;
+    }
+    var fieldNameReference = fieldNameIns.asDexItemBasedConstString().getItem();
+    if (!fieldNameReference.isDexField()) {
+      reportFailureToInstrument(
+          updaterField, "newUpdater(_, _, HERE) is a dex reference to a non-field");
+      return null;
+    }
+    var reflectedFieldReference = fieldNameReference.asDexField();
+    if (!reflectedFieldReference.getHolderType().isIdenticalTo(clazz.getType())) {
+      reportFailureToInstrument(
+          updaterField, "newUpdater(_, _, HERE) is a dex reference to a field of another class.");
+      return null;
+    }
+    if (!reflectedFieldReference.type.isIdenticalTo(fieldType)) {
+      reportFailureToInstrument(
+          updaterField, "newUpdater(_, TYPE, FIELD) FIELD's type and TYPE disagree");
+      return null;
+    }
+    var reflectedField = clazz.lookupProgramField(reflectedFieldReference);
+    if (reflectedField == null) {
+      reportFailureToInstrument(updaterField, "newUpdater(..) does not validly refer to a field");
+      return null;
+    }
+    if (!reflectedField.getAccessFlags().isVolatile()) {
+      reportFailureToInstrument(updaterField, "reflected field is not volatile");
+      return null;
+    }
+    // TODO(b/453628974): Assert that newUpdater has no side effects in this case.
+    return UpdaterFieldInfo.create(
+        updaterField, holderValue, fieldNameValue, invokeStatic.getPosition());
   }
 
   private UnsafeClassInfo synthesizeUnsafeClass(
@@ -216,46 +430,10 @@ public class AtomicFieldUpdaterInstrumentor {
     return new UnsafeClassInfo(classInitializer, unsafeField, getUnsafeMethod);
   }
 
-  private static class UnsafeClassInfo {
-
-    public final ProgramMethod classInitializer;
-    public final ProgramField unsafeInstanceField;
-    public final ProgramMethod getUnsafeMethod;
-
-    private UnsafeClassInfo(
-        ProgramMethod classInitializer,
-        ProgramField unsafeInstanceField,
-        ProgramMethod getUnsafeMethod) {
-      this.classInitializer = classInitializer;
-      this.unsafeInstanceField = unsafeInstanceField;
-      this.getUnsafeMethod = getUnsafeMethod;
-    }
-  }
-
-  private Multimap<DexProgramClass, DexEncodedField> findClassesWithAtomics(
-      ExecutorService service, Timing timing) throws ExecutionException {
-    var updaterClassesConcurrent = new ConcurrentHashMap<DexProgramClass, Set<DexEncodedField>>();
-    ThreadUtils.processItemsThatMatches(
-        appView.appInfo().classes(),
-        AtomicFieldUpdaterInstrumentor::mightHaveUpdaterFields,
-        (clazz, threadTiming) -> findOffsetFields(clazz, updaterClassesConcurrent, threadTiming),
-        appView.options(),
-        service,
-        timing,
-        timing.beginMerger("AtomicUpdater field extender", service));
-    return convertConcurrentHashMap(updaterClassesConcurrent);
-  }
-
-  private static boolean mightHaveUpdaterFields(DexProgramClass clazz) {
-    // TODO(b/453628974): Check constant pool?
-    return clazz.hasClassInitializer();
-  }
-
-  private static <K, V> HashMultimap<K, V> convertConcurrentHashMap(
-      ConcurrentHashMap<K, Set<V>> updaterClassesConcurrent) {
-    HashMultimap<K, V> updaterClasses = HashMultimap.create();
-    updaterClassesConcurrent.forEach(updaterClasses::putAll);
-    return updaterClasses;
+  private static DexProgramClass getDeterministicContext(
+      Collection<DexProgramClass> classesWithAtomics) {
+    assert !classesWithAtomics.isEmpty();
+    return Collections.min(classesWithAtomics);
   }
 
   private void buildUnsafeClass(SyntheticProgramClassBuilder builder) {
@@ -314,43 +492,46 @@ public class AtomicFieldUpdaterInstrumentor {
                                 new CfReturnVoid()))));
   }
 
-  private static DexProgramClass getDeterministicContext(Set<DexProgramClass> classesWithAtomics) {
-    assert !classesWithAtomics.isEmpty();
-    return Collections.min(classesWithAtomics);
-  }
-
-  private void findOffsetFields(
-      DexProgramClass clazz,
-      ConcurrentHashMap<DexProgramClass, Set<DexEncodedField>> updaterClasses,
-      Timing timing) {
-    timing.begin("AtomicUpdater field extender: " + clazz.getSimpleName());
-    // TODO(b/453628974): This is a non-final abstract class, we need to make sure it is created by
-    //                    newUpdater to make sure that its the actual class we can assume code
-    //                    about.
-    var updaterFields =
-        ImmutableSet.copyOf(clazz.staticFields(this::isStaticFinalFieldUpdaterField));
-    if (!updaterFields.isEmpty()) {
-      updaterClasses.put(clazz, updaterFields);
+  private <T> void addOffsetFields(
+      Multimap<DexProgramClass, UpdaterFieldInfo<T>> classesWithAtomics,
+      UnsafeClassInfo unsafeClass,
+      ProfileCollectionAdditions profiling,
+      ExecutorService service,
+      Timing timing)
+      throws ExecutionException {
+    ConcurrentHashMap<DexField, DexField> offsetFields = new ConcurrentHashMap<>();
+    ThreadUtils.processItemsThatMatches(
+        classesWithAtomics.keySet(),
+        Predicates.alwaysTrue(),
+        (clazz, threadTiming) ->
+            addOffsetFieldsToClass(
+                clazz,
+                classesWithAtomics.get(clazz),
+                offsetFields,
+                unsafeClass.unsafeInstanceField,
+                profiling,
+                threadTiming),
+        appView.options(),
+        service,
+        timing,
+        timing.beginMerger("AtomicFieldUpdaterInstrumentor", service));
+    if (!profiling.isNop()) {
+      profiling.addMethodIfContextIsInProfile(
+          unsafeClass.getUnsafeMethod, unsafeClass.classInitializer);
     }
-    timing.end();
+    var builder = FieldAccessInfoCollectionModifier.builder();
+    offsetFields.values().forEach(builder::addField);
+    builder.build().modify(appView);
   }
 
-  private boolean isStaticFinalFieldUpdaterField(DexEncodedField field) {
-    return field.isStatic()
-        && field.isFinal()
-        && field
-            .getType()
-            .isIdenticalTo(itemFactory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater);
-  }
-
-  private DexEncodedField createOffsetField(ProgramField updaterField) {
-    assert isStaticFinalFieldUpdaterField(updaterField.getDefinition());
+  private DexEncodedField createOffsetField(
+      DexProgramClass clazz, UpdaterFieldInfo<?> updaterFieldInfo) {
     DexField offsetField =
         itemFactory.createFreshFieldNameWithoutHolder(
-            updaterField.getHolderType(),
+            clazz.getType(),
             itemFactory.longType,
-            updaterField.getName().toString() + "$offset",
-            field -> updaterField.getHolder().lookupField(field) == null);
+            updaterFieldInfo.field.name.toString() + "$offset",
+            field -> clazz.lookupField(field) == null);
     return DexEncodedField.syntheticBuilder()
         .setField(offsetField)
         .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
@@ -358,9 +539,9 @@ public class AtomicFieldUpdaterInstrumentor {
         .build();
   }
 
-  private void addOffsetFieldsToClass(
+  private <T> void addOffsetFieldsToClass(
       DexProgramClass clazz,
-      Collection<DexEncodedField> updaterFields,
+      Collection<UpdaterFieldInfo<T>> updaterFields,
       ConcurrentHashMap<DexField, DexField> offsetFields,
       ProgramField unsafeInstanceField,
       ProfileCollectionAdditions profiling,
@@ -369,21 +550,25 @@ public class AtomicFieldUpdaterInstrumentor {
     var method = clazz.getProgramClassInitializer();
     assert method != null;
 
-    var updaterToOffsetFieldMap = new HashMap<DexField, DexEncodedField>();
-    for (var field : updaterFields) {
-      var offsetField = createOffsetField(new ProgramField(clazz, field));
-      updaterToOffsetFieldMap.put(field.getReference(), offsetField);
-      offsetFields.put(field.getReference(), offsetField.getReference());
+    var extendedUpdaterFields = new HashMap<DexField, UpdaterFieldInfo<DexField>>();
+    var fieldsToAdd = new ArrayList<DexEncodedField>(updaterFields.size());
+    for (var updaterFieldInfo : updaterFields) {
+      var offsetField = createOffsetField(clazz, updaterFieldInfo);
+      extendedUpdaterFields.put(
+          updaterFieldInfo.field, updaterFieldInfo.copyWithOffsetField(offsetField.getReference()));
+      offsetFields.put(updaterFieldInfo.field, offsetField.getReference());
+      fieldsToAdd.add(offsetField);
     }
-    clazz.appendStaticFields(ImmutableList.sortedCopyOf(updaterToOffsetFieldMap.values()));
+    Collections.sort(fieldsToAdd);
+    clazz.appendStaticFields(fieldsToAdd);
 
-    extendClassInitializer(unsafeInstanceField, method, updaterToOffsetFieldMap, profiling, timing);
+    extendClassInitializer(unsafeInstanceField, method, extendedUpdaterFields, profiling, timing);
   }
 
   private void extendClassInitializer(
       ProgramField unsafeInstanceField,
       ProgramMethod classInitializer,
-      Map<DexField, DexEncodedField> updaterToOffsetFieldMap,
+      Map<DexField, UpdaterFieldInfo<DexField>> updaterFields,
       ProfileCollectionAdditions profiling,
       Timing timing) {
     var code = classInitializer.getDefinition().getCode();
@@ -392,12 +577,15 @@ public class AtomicFieldUpdaterInstrumentor {
     var it = ir.instructionListIterator();
     while (it.hasNext()) {
       var next = it.next();
-      UpdaterCreationInfo updaterInfo = resolveNewUpdaterCall(updaterToOffsetFieldMap, next);
-      if (updaterInfo == null) {
+      if (!next.isStaticPut()) {
         continue;
       }
-      var newInstructions =
-          addOffsetFieldWrite(ir, unsafeInstanceField, updaterInfo, updaterInfo.offsetField);
+      var staticPut = next.asStaticPut();
+      var updaterFieldInfo = updaterFields.get(staticPut.getField());
+      if (updaterFieldInfo == null) {
+        continue;
+      }
+      var newInstructions = addOffsetFieldWrite(ir, unsafeInstanceField, updaterFieldInfo);
       // TODO(b/453628974): Add test with catch handler to verify this case.
       it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(newInstructions, appView.options());
       profiling.addMethodIfContextIsInProfile(
@@ -409,10 +597,7 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   private Collection<Instruction> addOffsetFieldWrite(
-      IRCode ir,
-      ProgramField unsafeInstanceField,
-      UpdaterCreationInfo creationInfo,
-      DexField offsetField) {
+      IRCode ir, ProgramField unsafeInstanceField, UpdaterFieldInfo<DexField> creationInfo) {
     var newInstructions = new ArrayList<Instruction>(4);
     Instruction unsafeInstance =
         new StaticGet(
@@ -440,47 +625,11 @@ public class AtomicFieldUpdaterInstrumentor {
     getOffset.setPosition(creationInfo.position);
     newInstructions.add(getOffset);
 
-    StaticPut staticPut = new StaticPut(getOffset.outValue(), offsetField);
+    StaticPut staticPut = new StaticPut(getOffset.outValue(), creationInfo.offsetField);
     staticPut.setPosition(creationInfo.position);
     newInstructions.add(staticPut);
 
     return newInstructions;
-  }
-
-  /**
-   * Returns program information if {@code next} is a {@code StaticPut} to an updater field of a
-   * value from a direct call to {@code newUpdater(clazz, fieldType, fieldName)}.
-   */
-  private UpdaterCreationInfo resolveNewUpdaterCall(
-      Map<DexField, DexEncodedField> updaterToOffsetFieldMap, Instruction next) {
-    if (!next.isStaticPut()) {
-      return null;
-    }
-    var nextPut = next.asStaticPut();
-    DexField updaterField = nextPut.getField();
-    if (!updaterToOffsetFieldMap.containsKey(updaterField)) {
-      return null;
-    }
-    var offsetField = updaterToOffsetFieldMap.get(updaterField).getReference();
-    Value putInput = nextPut.getFirstOperand();
-    if (putInput.isPhi()) {
-      return null;
-    }
-    Instruction input = putInput.definition;
-    if (!input.isInvokeStatic()) {
-      return null;
-    }
-    InvokeStatic invokeStatic = input.asInvokeStatic();
-    if (!invokeStatic
-        .getInvokedMethod()
-        .isIdenticalTo(itemFactory.atomicFieldUpdaterMethods.referenceUpdater)) {
-      return null;
-    }
-    assert invokeStatic.arguments().size() == 3;
-    var holdingClass = invokeStatic.getFirstArgument();
-    var fieldName = invokeStatic.getThirdArgument();
-    return new UpdaterCreationInfo(
-        holdingClass, offsetField, fieldName, invokeStatic.getPosition());
   }
 
   public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
@@ -489,19 +638,53 @@ public class AtomicFieldUpdaterInstrumentor {
     VarHandleDesugaringMethods.registerSynthesizedCodeReferences(factory);
   }
 
-  private static class UpdaterCreationInfo {
+  private static class UnsafeClassInfo {
+
+    public final ProgramMethod classInitializer;
+    public final ProgramField unsafeInstanceField;
+    public final ProgramMethod getUnsafeMethod;
+
+    private UnsafeClassInfo(
+        ProgramMethod classInitializer,
+        ProgramField unsafeInstanceField,
+        ProgramMethod getUnsafeMethod) {
+      this.classInitializer = classInitializer;
+      this.unsafeInstanceField = unsafeInstanceField;
+      this.getUnsafeMethod = getUnsafeMethod;
+    }
+  }
+
+  // The OffsetField type parameter is used to track the nullness of offsetField statically
+  // (Either Void or DexField).
+  private static class UpdaterFieldInfo<OffsetField> {
+
+    public final DexField field;
 
     public final Value holdingClass;
-    public final DexField offsetField;
     public final Value fieldName;
     public final Position position;
+    public final OffsetField offsetField;
 
-    public UpdaterCreationInfo(
-        Value holdingClass, DexField offsetField, Value reflectedFieldName, Position position) {
+    private UpdaterFieldInfo(
+        DexField field,
+        Value holdingClass,
+        Value reflectedFieldName,
+        Position position,
+        OffsetField offsetField) {
+      this.field = field;
       this.holdingClass = holdingClass;
-      this.offsetField = offsetField;
       this.fieldName = reflectedFieldName;
       this.position = position;
+      this.offsetField = offsetField;
+    }
+
+    public static UpdaterFieldInfo<Void> create(
+        DexField field, Value holdingClass, Value reflectedFieldName, Position position) {
+      return new UpdaterFieldInfo<>(field, holdingClass, reflectedFieldName, position, null);
+    }
+
+    public <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
+      return new UpdaterFieldInfo<>(field, holdingClass, fieldName, position, offsetField);
     }
   }
 }

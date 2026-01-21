@@ -4,14 +4,19 @@
 package com.android.tools.r8.optimize;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,8 +43,10 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
             options -> {
               assertFalse(options.enableAtomicFieldUpdaterOptimization);
               options.enableAtomicFieldUpdaterOptimization = true;
+              options.testing.enableAtomicFieldUpdaterInstrumentorDebugLogs = true;
             })
         .addProgramClasses(testClass)
+        .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
         .compile()
         .inspect(
@@ -53,6 +60,19 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
                       "compareAndSet",
                       ImmutableList.of(
                           "java.lang.Object", "java.lang.Object", "java.lang.Object")));
+            })
+        .inspectDiagnosticMessages(
+            diagnostics -> {
+              assertEquals(1, diagnostics.getInfos().size());
+              Diagnostic diagnostic = diagnostics.getInfos().get(0);
+              List<String> diagnosticLines =
+                  StringUtils.splitLines(diagnostic.getDiagnosticMessage());
+              for (String message : diagnosticLines) {
+                assertTrue(
+                    "Does not contain 'Can instrument': " + message,
+                    message.contains("Can instrument"));
+              }
+              assertEquals(1, diagnosticLines.size());
             });
   }
 
@@ -61,8 +81,7 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
 
     private volatile Object myString;
 
-    @SuppressWarnings("rawtypes")
-    private static final AtomicReferenceFieldUpdater myString$FU;
+    private static final AtomicReferenceFieldUpdater<TestClass, Object> myString$FU;
 
     static {
       myString$FU =
@@ -74,7 +93,6 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
       myString = "Hello";
     }
 
-    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
       System.out.println(myString$FU.compareAndSet(new TestClass(), "Hello", "World!"));
     }
