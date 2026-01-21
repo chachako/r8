@@ -1055,12 +1055,16 @@ public class Enqueuer {
       EnqueuerEvent preconditionEvent) {
     assert minimumKeepInfo.verifyShrinkingDisallowedWithRule(options);
     DexDefinition precondition = preconditionEvent.getDefinition(appInfo());
-    enqueueKeepRuleInstantiatedType(clazz, minimumKeepInfo.getRules(), precondition);
+    enqueueKeepRuleInstantiatedType(
+        clazz, minimumKeepInfo.getReasons(), minimumKeepInfo.getRules(), precondition);
   }
 
   private void enqueueKeepRuleInstantiatedType(
-      DexProgramClass clazz, Set<ProguardKeepRuleBase> rules, DexDefinition precondition) {
-    KeepReasonWitness witness = graphReporter.reportKeepClass(precondition, rules, clazz);
+      DexProgramClass clazz,
+      Set<KeepReason> reasons,
+      Set<ProguardKeepRuleBase> rules,
+      DexDefinition precondition) {
+    KeepReasonWitness witness = graphReporter.reportKeepClass(precondition, reasons, rules, clazz);
     if (clazz.isAnnotation()) {
       worklist.enqueueMarkAnnotationInstantiatedAction(clazz, witness);
     } else if (clazz.isInterface()) {
@@ -1148,7 +1152,7 @@ public class Enqueuer {
       return;
     }
     // TODO(b/120959039): This needs the set of instance member as preconditon.
-    enqueueKeepRuleInstantiatedType(holder, compatRules, null);
+    enqueueKeepRuleInstantiatedType(holder, Set.of(), compatRules, null);
   }
 
   //
@@ -2467,10 +2471,10 @@ public class Enqueuer {
   }
 
   private void enqueueHolderWithDependentInstanceConstructor(
-      ProgramMethod instanceInitializer, Set<ProguardKeepRuleBase> reasons) {
+      ProgramMethod instanceInitializer, Set<KeepReason> reasons, Set<ProguardKeepRuleBase> rules) {
     DexProgramClass holder = instanceInitializer.getHolder();
     applyMinimumKeepInfoWhenLive(holder, KeepClassInfo.newEmptyJoiner().disallowOptimization());
-    enqueueKeepRuleInstantiatedType(holder, reasons, instanceInitializer.getDefinition());
+    enqueueKeepRuleInstantiatedType(holder, reasons, rules, instanceInitializer.getDefinition());
   }
 
   private void processAnnotations(ProgramDefinition annotatedItem) {
@@ -4156,7 +4160,8 @@ public class Enqueuer {
       enqueueMethodDueToNoShrinkingRule(method, minimumKeepInfo, preconditionEvent);
 
       if (method.getDefinition().isInstanceInitializer()) {
-        enqueueHolderWithDependentInstanceConstructor(method, minimumKeepInfo.getRules());
+        enqueueHolderWithDependentInstanceConstructor(
+            method, minimumKeepInfo.getReasons(), minimumKeepInfo.getRules());
       }
     }
   }

@@ -129,9 +129,15 @@ public class GraphReporter {
   }
 
   KeepReasonWitness reportKeepClass(
-      DexDefinition precondition, Collection<ProguardKeepRuleBase> rules, DexProgramClass clazz) {
-    assert !rules.isEmpty() || !options.isShrinking();
+      DexDefinition precondition,
+      Collection<KeepReason> reasons,
+      Collection<ProguardKeepRuleBase> rules,
+      DexProgramClass clazz) {
+    assert !reasons.isEmpty() || !rules.isEmpty() || !options.isShrinking();
     if (keptGraphConsumer != null) {
+      for (KeepReason reason : reasons) {
+        registerClass(clazz, reason);
+      }
       for (ProguardKeepRuleBase rule : rules) {
         reportKeepClass(precondition, rule, clazz);
       }
