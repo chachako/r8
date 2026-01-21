@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.SingleTestRunResult;
 import com.android.tools.r8.TestCompilerBuilder;
 import com.android.tools.r8.graph.DexItemFactory;
+import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerOptions;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.BottomUpOutlinerTestBase;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
@@ -45,7 +46,10 @@ public class ThrowBlockOutlinerNeverCompileTest extends BottomUpOutlinerTestBase
             .addInnerClasses(getClass())
             .addOptionsModification(
                 options -> {
-                  assertFalse(options.getBottomUpOutlinerOptions().neverCompile);
+                  BottomUpOutlinerOptions bottomUpOutlinerOptions =
+                      options.getBottomUpOutlinerOptions();
+                  assertFalse(bottomUpOutlinerOptions.neverCompileStringBuilderOutlines);
+                  assertFalse(bottomUpOutlinerOptions.neverCompileThrowOutlines);
                 })
             .apply(this::configure)
             .compile()
@@ -60,8 +64,11 @@ public class ThrowBlockOutlinerNeverCompileTest extends BottomUpOutlinerTestBase
             .addInnerClasses(getClass())
             .addOptionsModification(
                 options -> {
-                  assertFalse(options.getBottomUpOutlinerOptions().neverCompile);
-                  options.getBottomUpOutlinerOptions().neverCompile = true;
+                  BottomUpOutlinerOptions bottomUpOutlinerOptions =
+                      options.getBottomUpOutlinerOptions();
+                  assertFalse(bottomUpOutlinerOptions.neverCompileStringBuilderOutlines);
+                  assertFalse(bottomUpOutlinerOptions.neverCompileThrowOutlines);
+                  options.getBottomUpOutlinerOptions().neverCompileThrowOutlines = true;
                 })
             .apply(this::configure)
             .compile()

@@ -31,9 +31,13 @@ public class BottomUpOutlinerOptions {
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.outliner.users", Integer.MAX_VALUE);
 
-  public boolean neverCompile =
+  public boolean neverCompileThrowOutlines =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
-          "com.android.tools.r8.outliner.nevercompile", false);
+          "com.android.tools.r8.outliner.nevercompilethrowoutlines", false);
+
+  public boolean neverCompileStringBuilderOutlines =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.outliner.nevercompilestringbuilderoutlines", false);
 
   public Consumer<Collection<Outline>> outlineConsumerForTesting = null;
   public Predicate<Outline> outlineStrategyForTesting = null;

@@ -329,7 +329,11 @@ public class Outline implements LirConstant {
   }
 
   private DexAnnotationSet createAnnotations(AppView<?> appView) {
-    if (appView.options().getBottomUpOutlinerOptions().neverCompile) {
+    boolean neverCompile =
+        isStringBuilderToStringOutline()
+            ? appView.options().getBottomUpOutlinerOptions().neverCompileStringBuilderOutlines
+            : appView.options().getBottomUpOutlinerOptions().neverCompileThrowOutlines;
+    if (neverCompile) {
       DexItemFactory factory = appView.dexItemFactory();
       DexEncodedAnnotation encodedAnnotation =
           new DexEncodedAnnotation(
