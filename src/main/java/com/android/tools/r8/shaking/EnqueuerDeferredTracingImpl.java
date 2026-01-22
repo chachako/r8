@@ -29,7 +29,6 @@ import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.IRFinalizer;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
-import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.ThrowCatchOptimizer;
 import com.android.tools.r8.ir.optimize.AssumeInserter;
 import com.android.tools.r8.ir.optimize.info.OptimizationInfoRemover;
@@ -377,7 +376,6 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing
     // Run dead code elimination.
     new ThrowCatchOptimizer(appView).run(ir, Timing.empty());
     rewriter.getDeadCodeRemover().run(ir, Timing.empty());
-    new AssumeRemover(appView).run(ir, Timing.empty());
 
     // Finalize out of IR.
     IRFinalizer<?> finalizer =

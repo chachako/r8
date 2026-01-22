@@ -43,6 +43,7 @@ import com.android.tools.r8.ir.desugar.desugaredlibrary.disabledesugarer.LirToLi
 import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.LirToLirDesugaredLibraryLibRewriter;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.retargeter.LirToLirDesugaredLibraryRetargeter;
 import com.android.tools.r8.ir.desugar.itf.LirToLirInterfaceMethodRewriter;
+import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.CustomLensCodeRewriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -211,6 +212,7 @@ public class R8LibraryDesugaringGraphLens extends DefaultNonIdentityGraphLens {
         IRCode code,
         MethodProcessor methodProcessor,
         RewrittenPrototypeDescription prototypeChanges,
+        AffectedValues affectedValues,
         NonIdentityGraphLens lens) {
       boolean changed = false;
       BasicBlockIterator blocks = code.listIterator();

@@ -689,6 +689,10 @@ public class LirBuilder<V, EV> {
     return addOneValueInstruction(LirOpcodes.ARRAYLENGTH, array);
   }
 
+  public LirBuilder<V, EV> addAssumeNonNull(V value) {
+    return addOneValueInstruction(LirOpcodes.ASSUMENONNULL, value);
+  }
+
   public LirBuilder<V, EV> addCheckCast(DexType type, V value, boolean ignoreCompatRules) {
     int opcode = ignoreCompatRules ? LirOpcodes.CHECKCAST_IGNORE_COMPAT : LirOpcodes.CHECKCAST;
     return addInstructionTemplate(

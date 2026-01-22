@@ -17,8 +17,15 @@ import com.android.tools.r8.ir.optimize.AffectedValues;
 
 public class AssumeRemover extends CodeRewriterPass<AppInfo> {
 
+  private final boolean keepAssumeNonNull;
+
   public AssumeRemover(AppView<?> appView) {
+    this(appView, false);
+  }
+
+  public AssumeRemover(AppView<?> appView, boolean keepAssumeNonNull) {
     super(appView);
+    this.keepAssumeNonNull = keepAssumeNonNull;
   }
 
   @Override
@@ -47,6 +54,16 @@ public class AssumeRemover extends CodeRewriterPass<AppInfo> {
           continue;
         }
 
+        Value src = assumeInstruction.src();
+        Value dest = assumeInstruction.outValue();
+        if (src.getType().isNullable() && assumeInstruction.hasNonNullAssumption()) {
+          if (keepAssumeNonNull) {
+            assumeInstruction.clearDynamicTypeAssumption();
+            continue;
+          }
+          valuesThatRequireWidening.addAll(dest.affectedValues());
+        }
+
         // Delete the Assume instruction and replace uses of the out-value by the in-value:
         //   y <- Assume(x)
         //   ...
@@ -55,11 +72,6 @@ public class AssumeRemover extends CodeRewriterPass<AppInfo> {
         // becomes:
         //
         //   x.foo()
-        Value src = assumeInstruction.src();
-        Value dest = assumeInstruction.outValue();
-        valuesThatRequireWidening.addAll(dest.affectedValues());
-
-        // Replace `dest` by `src`.
         needToCheckTrivialPhis |= dest.numberOfPhiUsers() > 0;
         dest.replaceUsers(src);
         assumeInstruction.remove();

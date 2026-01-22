@@ -830,7 +830,7 @@ public class IRConverter {
 
     if (assumeInserter != null) {
       timing.begin("Remove assume instructions");
-      new AssumeRemover(appView).run(code, methodProcessor, methodProcessingContext, timing);
+      new AssumeRemover(appView, true).run(code, methodProcessor, methodProcessingContext, timing);
       timing.end();
       previous = printMethod(code, "IR after removing assume instructions (SSA)", previous);
 

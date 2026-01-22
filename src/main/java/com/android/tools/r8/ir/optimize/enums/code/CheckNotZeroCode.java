@@ -21,6 +21,7 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.SyntheticPosition;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
+import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.enums.EnumUnboxerImpl;
 import com.android.tools.r8.utils.IteratorUtils;
 import com.android.tools.r8.utils.RetracerForCodePrinting;
@@ -90,15 +91,17 @@ public class CheckNotZeroCode extends Code {
             .build());
 
     // Remove any assume instructions linked to the argument and replace all returns by return-void.
+    AffectedValues affectedValues = new AffectedValues();
     while (instructionIterator.hasNext()) {
       Instruction instruction = instructionIterator.next();
       if (instruction.isAssume()) {
-        instruction.outValue().replaceUsers(instruction.getFirstOperand());
+        instruction.outValue().replaceUsers(instruction.getFirstOperand(), affectedValues);
         instructionIterator.removeOrReplaceByDebugLocalRead();
       } else if (instruction.isReturn() && instruction.asReturn().hasReturnValue()) {
         instructionIterator.replaceCurrentInstruction(new Return());
       }
     }
+    affectedValues.propagate(appView, code);
 
     // Transfer the IR to the given checkNotZero() method.
     return new IRCode(

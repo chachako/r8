@@ -46,6 +46,7 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StaticGet;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.CustomLensCodeRewriter;
 import com.android.tools.r8.ir.optimize.enums.EnumInstanceFieldData.EnumInstanceFieldKnownData;
 import com.android.tools.r8.ir.optimize.enums.classification.CheckNotNullEnumUnboxerMethodClassification;
@@ -153,6 +154,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       IRCode code,
       MethodProcessor methodProcessor,
       RewrittenPrototypeDescription prototypeChanges,
+      AffectedValues affectedValues,
       NonIdentityGraphLens graphLens) {
     // We should not process the enum methods, they will be removed and they may contain invalid
     // rewriting rules.
@@ -201,6 +203,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
               code,
               eventConsumer,
               affectedPhis,
+              affectedValues,
               convertedEnums,
               blocks,
               block,
@@ -216,12 +219,14 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
               convertedEnums,
               iterator,
               affectedPhis,
+              affectedValues,
               eventConsumer);
         } else if (instruction.isStaticGet()) {
           rewriteStaticGet(
               code,
               eventConsumer,
               affectedPhis,
+              affectedValues,
               convertedEnums,
               seenBlocks,
               instructionsToRemove,
@@ -229,7 +234,12 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
               instruction.asStaticGet());
         } else if (instruction.isInstanceGet()) {
           rewriteInstanceGet(
-              code, eventConsumer, convertedEnums, iterator, instruction.asInstanceGet());
+              code,
+              eventConsumer,
+              affectedValues,
+              convertedEnums,
+              iterator,
+              instruction.asInstanceGet());
         } else if (instruction.isArrayAccess()) {
           rewriteArrayAccess(
               code, affectedPhis, convertedEnums, iterator, instruction.asArrayAccess());
@@ -351,6 +361,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
   private void rewriteInstanceGet(
       IRCode code,
       EnumUnboxerMethodProcessorEventConsumer eventConsumer,
+      AffectedValues affectedValues,
       Map<Instruction, DexType> convertedEnums,
       InstructionListIterator iterator,
       InstanceGet instanceGet) {
@@ -369,7 +380,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       }
       InvokeStatic invoke =
           new InvokeStatic(fieldMethod.getReference(), rewrittenOutValue, ImmutableList.of(in));
-      iterator.replaceCurrentInstruction(invoke);
+      iterator.replaceCurrentInstruction(invoke, affectedValues);
       if (unboxedEnumsData.isUnboxedEnum(instanceGet.getField().type)) {
         convertedEnums.put(invoke, instanceGet.getField().type);
       }
@@ -380,6 +391,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       IRCode code,
       EnumUnboxerMethodProcessorEventConsumer eventConsumer,
       Set<Phi> affectedPhis,
+      AffectedValues affectedValues,
       Map<Instruction, DexType> convertedEnums,
       Set<BasicBlock> seenBlocks,
       Set<Instruction> instructionsToRemove,
@@ -409,7 +421,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
               .setFreshOutValue(appView, code)
               .setSingleArgument(sizeValue)
               .build();
-      iterator.replaceCurrentInstruction(invoke);
+      iterator.replaceCurrentInstruction(invoke, affectedValues);
 
       convertedEnums.put(invoke, holder);
 
@@ -417,11 +429,11 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       // clone(). If so, remove it, since SharedUtilityClass.values(size) returns a fresh
       // array. This is needed because the javac generated implementation of MyEnum.values()
       // is implemented as `return $VALUES.clone()`.
-      removeRedundantValuesArrayCloning(invoke, instructionsToRemove, seenBlocks);
+      removeRedundantValuesArrayCloning(invoke, affectedValues, instructionsToRemove, seenBlocks);
     } else if (unboxedEnumsData.hasUnboxedValueFor(field)) {
       // Replace by ordinal + 1 for null check (null is 0).
       ConstNumber intConstant = code.createIntConstant(unboxedEnumsData.getUnboxedValue(field));
-      iterator.replaceCurrentInstruction(intConstant);
+      iterator.replaceCurrentInstruction(intConstant, affectedValues);
       convertedEnums.put(intConstant, holder);
     } else {
       // Nothing to do, handled by lens code rewriting.
@@ -440,6 +452,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       IRCode code,
       EnumUnboxerMethodProcessorEventConsumer eventConsumer,
       Set<Phi> affectedPhis,
+      AffectedValues affectedValues,
       Map<Instruction, DexType> convertedEnums,
       BasicBlockIterator blocks,
       BasicBlock block,
@@ -456,17 +469,20 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           || invokedMethod.match(factory.enumMembers.hashCode)) {
         replaceEnumInvoke(
             iterator,
+            affectedValues,
             invoke,
             getSharedUtilityClass().ensureOrdinalMethod(appView, context, eventConsumer));
       } else if (invokedMethod.match(factory.enumMembers.equals)) {
         replaceEnumInvoke(
             iterator,
+            affectedValues,
             invoke,
             getSharedUtilityClass().ensureEqualsMethod(appView, context, eventConsumer));
       } else if (invokedMethod == factory.enumMembers.compareTo
           || invokedMethod == factory.enumMembers.compareToWithObject) {
         replaceEnumInvoke(
             iterator,
+            affectedValues,
             invoke,
             getSharedUtilityClass().ensureCompareToMethod(appView, context, eventConsumer));
       } else if (invokedMethod == factory.enumMembers.nameMethod) {
@@ -494,10 +510,10 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           DexClassAndMethod dexClassAndMethod = appView.definitionFor(lookupMethod);
           assert dexClassAndMethod != null;
           assert dexClassAndMethod.isProgramMethod();
-          replaceEnumInvoke(iterator, invoke, dexClassAndMethod.asProgramMethod());
+          replaceEnumInvoke(iterator, affectedValues, invoke, dexClassAndMethod.asProgramMethod());
         }
       } else if (invokedMethod == factory.objectMembers.getClass) {
-        rewriteNullCheck(iterator, invoke, context, eventConsumer);
+        rewriteNullCheck(iterator, affectedValues, invoke, context, eventConsumer);
       } else if (invoke.isInvokeVirtual() || invoke.isInvokeInterface()) {
         DexMethod refinedDispatchMethodReference =
             enumUnboxingLens.lookupRefinedDispatchMethod(
@@ -508,12 +524,13 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           assert refinedDispatchMethod != null;
           assert refinedDispatchMethod.isProgramMethod();
           InvokeStatic replacement =
-              replaceEnumInvoke(iterator, invoke, refinedDispatchMethod.asProgramMethod());
+              replaceEnumInvoke(
+                  iterator, affectedValues, invoke, refinedDispatchMethod.asProgramMethod());
           if (replacement.hasOutValue()
               && refinedDispatchMethodReference.getReturnType().isIntType()
               && !invokedMethod.getReturnType().isIntType()) {
             Value rewrittenOutValue = code.createValue(TypeElement.getInt());
-            replacement.outValue().replaceUsers(rewrittenOutValue);
+            replacement.outValue().replaceUsers(rewrittenOutValue, affectedValues);
             replacement.setOutValue(rewrittenOutValue);
             affectedPhis.addAll(rewrittenOutValue.uniquePhiUsers());
             convertedEnums.put(replacement, enumType);
@@ -613,6 +630,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
       Map<Instruction, DexType> convertedEnums,
       InstructionListIterator instructionIterator,
       Set<Phi> affectedPhis,
+      AffectedValues affectedValues,
       EnumUnboxerMethodProcessorEventConsumer eventConsumer) {
     ProgramMethod context = code.context();
     DexClassAndMethod singleTarget = invoke.lookupSingleTarget(appView, context);
@@ -644,7 +662,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
                 valueOfMethod.getReference(),
                 rewrittenOutValue,
                 Collections.singletonList(invoke.inValues().get(1)));
-        instructionIterator.replaceCurrentInstruction(replacement);
+        instructionIterator.replaceCurrentInstruction(replacement, affectedValues);
         convertedEnums.put(replacement, enumType);
       }
       return;
@@ -657,7 +675,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         Value argument = invoke.getFirstArgument();
         DexType enumType = getEnumClassTypeOrNull(argument, convertedEnums);
         if (enumType != null) {
-          rewriteNullCheck(instructionIterator, invoke, context, eventConsumer);
+          rewriteNullCheck(instructionIterator, affectedValues, invoke, context, eventConsumer);
         }
       } else if (invokedMethod == factory.objectsMethods.requireNonNullWithMessage) {
         assert invoke.arguments().size() == 2;
@@ -666,6 +684,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
         if (enumType != null) {
           replaceEnumInvoke(
               instructionIterator,
+              affectedValues,
               invoke,
               getSharedUtilityClass()
                   .ensureCheckNotZeroWithMessageMethod(appView, context, eventConsumer));
@@ -690,6 +709,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
           }
           replaceEnumInvoke(
               instructionIterator,
+              affectedValues,
               invoke,
               getSharedUtilityClass().ensureObjectsEqualsMethod(appView, context, eventConsumer),
               newArguments);
@@ -784,24 +804,29 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
 
   private void rewriteNullCheck(
       InstructionListIterator iterator,
+      AffectedValues affectedValues,
       InvokeMethod invoke,
       ProgramMethod context,
       EnumUnboxerMethodProcessorEventConsumer eventConsumer) {
     assert !invoke.hasOutValue() || !invoke.outValue().hasAnyUsers();
     replaceEnumInvoke(
         iterator,
+        affectedValues,
         invoke,
         getSharedUtilityClass().ensureCheckNotZeroMethod(appView, context, eventConsumer));
   }
 
   private void removeRedundantValuesArrayCloning(
-      InvokeStatic invoke, Set<Instruction> instructionsToRemove, Set<BasicBlock> seenBlocks) {
+      InvokeStatic invoke,
+      AffectedValues affectedValues,
+      Set<Instruction> instructionsToRemove,
+      Set<BasicBlock> seenBlocks) {
     for (Instruction user : invoke.outValue().aliasedUsers()) {
       if (user.isInvokeVirtual()) {
         InvokeVirtual cloneCandidate = user.asInvokeVirtual();
         if (cloneCandidate.getInvokedMethod().match(appView.dexItemFactory().objectMembers.clone)) {
           if (cloneCandidate.hasOutValue()) {
-            cloneCandidate.outValue().replaceUsers(invoke.outValue());
+            cloneCandidate.outValue().replaceUsers(invoke.outValue(), affectedValues);
           }
           BasicBlock cloneBlock = cloneCandidate.getBlock();
           if (cloneBlock == invoke.getBlock() || !seenBlocks.contains(cloneBlock)) {
@@ -867,12 +892,16 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
   }
 
   private InvokeStatic replaceEnumInvoke(
-      InstructionListIterator iterator, InvokeMethod invoke, ProgramMethod method) {
-    return replaceEnumInvoke(iterator, invoke, method, invoke.arguments());
+      InstructionListIterator iterator,
+      AffectedValues affectedValues,
+      InvokeMethod invoke,
+      ProgramMethod method) {
+    return replaceEnumInvoke(iterator, affectedValues, invoke, method, invoke.arguments());
   }
 
   private InvokeStatic replaceEnumInvoke(
       InstructionListIterator iterator,
+      AffectedValues affectedValues,
       InvokeMethod invoke,
       ProgramMethod method,
       List<Value> arguments) {
@@ -883,7 +912,7 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
             arguments);
     assert !replacement.hasOutValue()
         || !replacement.getInvokedMethod().getReturnType().isVoidType();
-    iterator.replaceCurrentInstruction(replacement);
+    iterator.replaceCurrentInstruction(replacement, affectedValues);
     return replacement;
   }
 
@@ -900,9 +929,10 @@ public class EnumUnboxingRewriter implements CustomLensCodeRewriter {
   }
 
   private DexType getEnumClassTypeOrNull(Value receiver, Map<Instruction, DexType> convertedEnums) {
-    TypeElement type = receiver.getType();
+    Value receiverRoot = receiver.getAliasedValue();
+    TypeElement type = receiverRoot.getType();
     if (type.isInt()) {
-      return receiver.isPhi() ? null : convertedEnums.get(receiver.getDefinition());
+      return receiverRoot.isPhi() ? null : convertedEnums.get(receiverRoot.getDefinition());
     }
     return getEnumClassTypeOrNull(type);
   }

@@ -18,6 +18,7 @@ import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
 import com.android.tools.r8.ir.code.NumberConversionType;
 import com.android.tools.r8.ir.code.NumericType;
+import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
@@ -227,6 +228,11 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   }
 
   @Override
+  public void onOutlineMarker(Outline outline, List<EV> arguments) {
+    appendValueArguments(arguments);
+  }
+
+  @Override
   public void onIf(IfType ifKind, int blockIndex, EV valueIndex) {
     appendValueArguments(valueIndex);
     builder.append(fmtInsnIndex(blockIndex));
@@ -377,6 +383,11 @@ public class LirPrinter<EV> extends LirParsedInstructionCallback<EV> {
   @Override
   public void onArrayLength(EV arrayValueIndex) {
     appendOutValue().append(fmtValueIndex(arrayValueIndex));
+  }
+
+  @Override
+  public void onAssumeNonNull(EV value) {
+    appendOutValue().append(fmtValueIndex(value));
   }
 
   @Override

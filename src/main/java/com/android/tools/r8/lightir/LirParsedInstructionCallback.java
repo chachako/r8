@@ -487,6 +487,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onInstruction();
   }
 
+  public void onAssumeNonNull(EV value) {
+    onInstruction();
+  }
+
   public void onCheckCast(DexType type, EV value, boolean ignoreCompatRules) {
     onInstruction();
   }
@@ -1219,6 +1223,11 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
       case LirOpcodes.ARRAYLENGTH:
         {
           onArrayLength(getNextValueOperand(view));
+          return;
+        }
+      case LirOpcodes.ASSUMENONNULL:
+        {
+          onAssumeNonNull(getNextValueOperand(view));
           return;
         }
       case LirOpcodes.CHECKCAST:

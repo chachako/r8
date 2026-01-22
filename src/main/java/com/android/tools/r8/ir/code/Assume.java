@@ -31,6 +31,10 @@ public class Assume extends Instruction {
   private DynamicType dynamicType;
   private final Instruction origin;
 
+  public Assume(DynamicType dynamicType, Value dest, Value src) {
+    this(dynamicType, dest, src, null);
+  }
+
   public Assume(DynamicType dynamicType, Value dest, Value src, Instruction origin) {
     super(dest, src);
     assert dynamicType != null;
@@ -171,7 +175,7 @@ public class Assume extends Instruction {
 
   @Override
   public void buildLir(LirBuilder<Value, ?> builder) {
-    throw new Unreachable(ERROR_MESSAGE);
+    builder.addAssumeNonNull(src());
   }
 
   @Override
@@ -207,8 +211,11 @@ public class Assume extends Instruction {
   @Override
   public TypeElement evaluate(AppView<?> appView) {
     if (hasNonNullAssumption()) {
-      assert src().getType().isReferenceType();
-      return src().getType().asReferenceType().asMeetWithNotNull();
+      if (src().getType().isReferenceType()) {
+        return src().getType().asReferenceType().asMeetWithNotNull();
+      }
+      // During IR building from LIR the src type may be bottom.
+      // During enum unboxing lens rewriting the src() may become a primitive int.
     }
     return src().getType();
   }

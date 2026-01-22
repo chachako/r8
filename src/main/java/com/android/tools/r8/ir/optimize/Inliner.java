@@ -26,6 +26,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.ClassInitializationAnalysis;
 import com.android.tools.r8.ir.analysis.proto.ProtoInliningReasonStrategy;
 import com.android.tools.r8.ir.analysis.type.Nullability;
+import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
@@ -1381,7 +1382,7 @@ public class Inliner {
     return false;
   }
 
-  /** Applies member rebinding to the inlinee and inserts assume instructions. */
+  /** Applies member value propagation to the inlinee and inserts assume instructions. */
   private void postProcessInlineeBlocks(
       IRCode code,
       BasicBlockIterator blockIterator,
@@ -1390,7 +1391,7 @@ public class Inliner {
       Timing timing) {
     BasicBlock state = IteratorUtils.peekNext(blockIterator);
 
-    // Insert assume instructions in the inlinee blocks.
+    // Run member value propagation on the inlinee blocks.
     Set<BasicBlock> inlineeBlocks = Sets.newIdentityHashSet();
     rewindBlockIterator(
         blockIterator,
@@ -1400,6 +1401,10 @@ public class Inliner {
             inlineeBlocks.add(inlineeBlock);
           }
         });
+    applyMemberValuePropagationToInlinee(code, blockIterator, inlineeBlocks);
+
+    // Insert assume instructions in the inlinee blocks.
+    rewindBlockIterator(blockIterator, block);
     insertAssumeInstructions(code, blockIterator, inlineeBlocks, timing);
 
     // Restore the old state of the iterator.
@@ -1414,6 +1419,19 @@ public class Inliner {
     boolean keepRedundantBlocks = true; // since we have a live block iterator
     new AssumeInserter(appView, keepRedundantBlocks)
         .insertAssumeInstructionsInBlocks(code, blockIterator, inlineeBlocks::contains, timing);
+    assert !blockIterator.hasNext();
+  }
+
+  private void applyMemberValuePropagationToInlinee(
+      IRCode code, BasicBlockIterator blockIterator, Set<BasicBlock> inlineeBlocks) {
+    AffectedValues affectedValues = new AffectedValues();
+    new R8MemberValuePropagation(appView)
+        .run(code, blockIterator, affectedValues, inlineeBlocks::contains);
+    if (!affectedValues.isEmpty()) {
+      new TypeAnalysis(appView, code)
+          .setKeepRedundantBlocksAfterAssumeRemoval(true)
+          .narrowingWithAssumeRemoval(affectedValues);
+    }
     assert !blockIterator.hasNext();
   }
 

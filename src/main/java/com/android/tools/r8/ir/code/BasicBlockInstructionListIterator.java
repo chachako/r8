@@ -28,7 +28,6 @@ import com.android.tools.r8.utils.ListUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -843,7 +842,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
     BasicBlock invokePredecessor = invokeBlock.getPredecessors().get(0);
     BasicBlock invokeSuccessor = invokeBlock.getSuccessors().get(0);
 
-    Set<Value> argumentUsers = Sets.newIdentityHashSet();
+    AffectedValues argumentUsers = new AffectedValues();
 
     // Map all argument values. The first one needs special handling if there is a downcast type.
     List<Value> arguments = inlinee.collectArguments();
@@ -886,8 +885,7 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
 
       // Map the argument value that has been cast.
       Value argument = arguments.get(i);
-      argumentUsers.addAll(argument.affectedValues());
-      argument.replaceUsers(castInstruction.outValue);
+      argument.replaceUsers(castInstruction.outValue, argumentUsers);
       removeArgumentInstruction(entryBlockIterator, argument);
       i++;
     } else {
@@ -896,18 +894,29 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
 
     // Map the remaining argument values.
     for (; i < invoke.inValues().size(); i++) {
-      // TODO(zerny): Support inlining in --debug mode.
       assert !arguments.get(i).hasLocalInfo();
       Value argument = arguments.get(i);
-      argumentUsers.addAll(argument.affectedValues());
-      argument.replaceUsers(invoke.inValues().get(i));
+      Value callerArgument = invoke.getArgument(i);
+      // Remove redundant AssumeNonNull instructions.
+      if (callerArgument.getType().isReferenceType()
+          && callerArgument.getType().isDefinitelyNotNull()) {
+        for (Assume calleeAssume : argument.<Assume>uniqueUsers(Instruction::isAssume)) {
+          assert calleeAssume.hasNonNullAssumption();
+          assert !calleeAssume.hasDynamicTypeIgnoringNullability();
+          calleeAssume.outValue().replaceUsers(callerArgument, argumentUsers);
+          calleeAssume.remove();
+        }
+      }
+      argument.replaceUsers(callerArgument, argumentUsers);
       removeArgumentInstruction(entryBlockIterator, argument);
     }
 
     assert entryBlock.getInstructions().stream().noneMatch(Instruction::isArgument);
 
     // Actual arguments are flown to the inlinee.
-    new TypeAnalysis(appView, code).narrowing(argumentUsers);
+    new TypeAnalysis(appView, inlinee)
+        .setKeepRedundantBlocksAfterAssumeRemoval(true)
+        .narrowingWithAssumeRemoval(argumentUsers);
 
     // The inline entry is the first block now the argument instructions are gone.
     BasicBlock inlineEntry = inlinee.entryBlock();
@@ -922,9 +931,9 @@ public class BasicBlockInstructionListIterator implements InstructionListIterato
       // Replace the invoke value with the return value if non-void.
       assert inlineeIterator.peekNext().isReturn();
       if (invoke.outValue() != null) {
-        Set<Value> affectedValues = invoke.outValue().affectedValues();
+        AffectedValues affectedValues = new AffectedValues();
         Return returnInstruction = inlineeIterator.peekNext().asReturn();
-        invoke.outValue().replaceUsers(returnInstruction.returnValue());
+        invoke.outValue().replaceUsers(returnInstruction.returnValue(), affectedValues);
         // The return type is flown to the original context.
         new TypeAnalysis(appView, code)
             .setKeepRedundantBlocksAfterAssumeRemoval(true)

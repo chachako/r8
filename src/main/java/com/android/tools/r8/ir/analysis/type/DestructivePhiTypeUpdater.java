@@ -8,11 +8,14 @@ import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.lens.GraphLens;
+import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.utils.WorkList;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.ListIterator;
@@ -37,25 +40,47 @@ public class DestructivePhiTypeUpdater {
     this.mapping = mapping;
   }
 
-  public void recomputeAndPropagateTypes(IRCode code, Set<Phi> affectedPhis) {
+  public Deque<Phi> unsetPhiTypes(Set<Phi> affectedPhis) {
+    if (affectedPhis.isEmpty()) {
+      return null;
+    }
+
     // We have updated at least one type lattice element which can cause phi's to narrow to a more
     // precise type. Because cycles in phi's can occur, we have to reset all phi's before
     // computing the new values.
-    Deque<Phi> worklist = new ArrayDeque<>(affectedPhis);
-    while (!worklist.isEmpty()) {
-      Phi phi = worklist.poll();
-      phi.setType(TypeElement.getBottom());
-      for (Phi affectedPhi : phi.uniquePhiUsers()) {
-        if (affectedPhis.add(affectedPhi)) {
-          worklist.add(affectedPhi);
+    WorkList<Assume> assumeWorklist = WorkList.newIdentityWorkList();
+    Deque<Phi> phiWorklist = new ArrayDeque<>(affectedPhis);
+    while (assumeWorklist.hasNext() || !phiWorklist.isEmpty()) {
+      assumeWorklist.process(
+          assume -> {
+            Value assumeValue = assume.outValue();
+            assumeValue.setType(TypeElement.getBottom());
+            for (Phi affectedPhi : assumeValue.uniquePhiUsers()) {
+              affectedPhis.add(affectedPhi);
+              phiWorklist.add(affectedPhi);
+            }
+          });
+      while (!phiWorklist.isEmpty()) {
+        Phi phi = phiWorklist.poll();
+        phi.setType(TypeElement.getBottom());
+        assumeWorklist.addIfNotSeen(phi.uniqueUsers(Instruction::isAssume));
+        for (Phi affectedPhi : phi.uniquePhiUsers()) {
+          if (affectedPhis.add(affectedPhi)) {
+            phiWorklist.add(affectedPhi);
+          }
         }
       }
     }
-    assert verifyAllChangedPhisAreScheduled(code, affectedPhis);
-    // Assuming all values have been rewritten correctly above, the non-phi operands to phi's are
-    // replaced with correct types and all other phi operands are BOTTOM.
-    assert verifyAllPhiOperandsAreBottom(affectedPhis);
+    return phiWorklist;
+  }
 
+  public void recomputeAndPropagateTypes(IRCode code, Set<Phi> affectedPhis, Deque<Phi> worklist) {
+    if (affectedPhis.isEmpty()) {
+      assert worklist == null;
+      return;
+    }
+
+    assert verifyAllChangedPhisAreScheduled(code, affectedPhis);
     AffectedValues affectedValues = new AffectedValues();
     worklist.addAll(affectedPhis);
     while (!worklist.isEmpty()) {
@@ -76,26 +101,6 @@ public class DestructivePhiTypeUpdater {
     affectedValues.narrowingWithAssumeRemoval(appView, code);
   }
 
-  @SuppressWarnings("ReferenceEquality")
-  private boolean verifyAllPhiOperandsAreBottom(Set<Phi> affectedPhis) {
-    for (Phi phi : affectedPhis) {
-      for (Value operand : phi.getOperands()) {
-        if (operand.isPhi()) {
-          Phi operandPhi = operand.asPhi();
-          TypeElement operandType = operandPhi.getType();
-          assert !affectedPhis.contains(operandPhi) || operandType.isBottom();
-          assert affectedPhis.contains(operandPhi)
-              || operandType.isPrimitiveType()
-              || operandType.isNullType()
-              || (operandType.isReferenceType()
-                  && operandType.fixupClassTypeReferences(appView, mapping) == operandType);
-        }
-      }
-    }
-    return true;
-  }
-
-  @SuppressWarnings("ReferenceEquality")
   private boolean verifyAllChangedPhisAreScheduled(IRCode code, Set<Phi> affectedPhis) {
     ListIterator<BasicBlock> blocks = code.listIterator();
     while (blocks.hasNext()) {
@@ -103,7 +108,7 @@ public class DestructivePhiTypeUpdater {
       for (Phi phi : block.getPhis()) {
         TypeElement phiType = phi.getType();
         TypeElement substituted = phiType.fixupClassTypeReferences(appView, mapping);
-        assert substituted == phiType || affectedPhis.contains(phi);
+        assert substituted.equals(phiType) || affectedPhis.contains(phi);
       }
     }
     return true;

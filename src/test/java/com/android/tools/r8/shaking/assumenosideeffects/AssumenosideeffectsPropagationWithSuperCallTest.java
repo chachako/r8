@@ -19,8 +19,7 @@ public class AssumenosideeffectsPropagationWithSuperCallTest extends TestBase {
   // With horizontal class merging enabled the method body for debug is cleared, because the
   // forwarded call to the class specific implementation has no side effects. The call to the
   // function from main persists.
-  private static final String EXPECTED_OUTPUT = StringUtils.lines("[Base] message2", "The end");
-  private static final String EXPECTED_OUTPUT_DEX =
+  private static final String EXPECTED_OUTPUT =
       StringUtils.lines("[Base] message1", "[Base] message2", "The end");
 
   enum TestConfig {
@@ -41,16 +40,6 @@ public class AssumenosideeffectsPropagationWithSuperCallTest extends TestBase {
               "  *** debug(...);",
               "}"
           );
-        default:
-          throw new Unreachable();
-      }
-    }
-
-    public String expectedOutput(TestParameters parameters) {
-      switch (this) {
-        case SPECIFIC_RULES:
-        case NON_SPECIFIC_RULES_WITH_EXTENDS:
-          return parameters.isCfRuntime() ? EXPECTED_OUTPUT : EXPECTED_OUTPUT_DEX;
         default:
           throw new Unreachable();
       }
@@ -81,7 +70,7 @@ public class AssumenosideeffectsPropagationWithSuperCallTest extends TestBase {
         .addDontObfuscate()
         .setMinApi(parameters)
         .run(parameters.getRuntime(), MAIN)
-        .assertSuccessWithOutput(config.expectedOutput(parameters));
+        .assertSuccessWithOutput(EXPECTED_OUTPUT);
   }
 
   static class BaseClass {

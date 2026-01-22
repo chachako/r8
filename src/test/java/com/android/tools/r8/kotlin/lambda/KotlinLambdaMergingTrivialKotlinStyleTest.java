@@ -138,10 +138,7 @@ public class KotlinLambdaMergingTrivialKotlinStyleTest extends KotlinTestBase {
       }
     }
     assertEquals(
-        kotlinParameters.getLambdaGeneration().isInvokeDynamic()
-            ? 0
-            : parameters.isDexRuntime() ? 1 : 0,
-        lambdasInOutput.size());
+        kotlinParameters.getLambdaGeneration().isInvokeDynamic() ? 0 : 1, lambdasInOutput.size());
   }
 
   private String getExpectedOutput() {
