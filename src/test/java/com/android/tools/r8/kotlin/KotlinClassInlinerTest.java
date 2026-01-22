@@ -261,7 +261,7 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                 assertThat(
                     inspector.clazz(
                         "class_inliner_lambda_k_style.MainKt$testKotlinSequencesStateless$1"),
-                    isAbsent());
+                    isPresent());
                 assertThat(
                     inspector.clazz(
                         "class_inliner_lambda_k_style.MainKt$testKotlinSequencesStateful$1"),

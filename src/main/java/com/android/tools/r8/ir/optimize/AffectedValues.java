@@ -8,17 +8,13 @@ import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
-import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.IRCode;
-import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.Value;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -55,12 +51,6 @@ public class AffectedValues implements Set<Value> {
     }
   }
 
-  public void propagate(AppView<?> appView, IRCode code) {
-    if (hasNext()) {
-      new TypeAnalysis(appView, code).propagate(this);
-    }
-  }
-
   public void propagateWithAssumeRemoval(
       AppView<?> appView, IRCode code, Consumer<TypeAnalysis> typeAnalysisConsumer) {
     if (hasNext()) {
@@ -74,25 +64,6 @@ public class AffectedValues implements Set<Value> {
   public void widening(AppView<?> appView, IRCode code) {
     if (hasNext()) {
       new TypeAnalysis(appView, code).widening(this);
-    }
-  }
-
-  public void removeAssumeNonNullInstructionsAfterEnumUnboxing() {
-    List<Assume> assumeInstructionsToRemove = new ArrayList<>();
-    removeIf(
-        value -> {
-          if (value.isDefinedByInstructionSatisfying(Instruction::isAssume)) {
-            Assume assume = value.getDefinition().asAssume();
-            if (value.getDefinition().getFirstOperand().getType().isInt()) {
-              assumeInstructionsToRemove.add(assume);
-              return true;
-            }
-          }
-          return false;
-        });
-    for (Assume assume : assumeInstructionsToRemove) {
-      assume.outValue().replaceUsers(assume.src(), this);
-      assume.remove();
     }
   }
 

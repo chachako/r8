@@ -22,7 +22,6 @@ import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Return;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
-import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.CustomLensCodeRewriter;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.google.common.collect.ImmutableList;
@@ -44,7 +43,6 @@ public class NumberUnboxerRewriter implements CustomLensCodeRewriter {
       IRCode code,
       MethodProcessor methodProcessor,
       RewrittenPrototypeDescription prototypeChanges,
-      AffectedValues affectedValues,
       NonIdentityGraphLens graphLens) {
     assert graphLens.isNumberUnboxerLens();
     Set<Phi> affectedPhis = Sets.newIdentityHashSet();

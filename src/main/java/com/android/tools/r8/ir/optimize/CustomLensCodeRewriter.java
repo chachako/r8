@@ -15,12 +15,11 @@ import java.util.Set;
 public interface CustomLensCodeRewriter {
 
   CustomLensCodeRewriter EMPTY =
-      (code, methodProcessor, prototypeChanges, affectedValues, lens) -> Sets.newIdentityHashSet();
+      (code, methodProcessor, prototypeChanges, lens) -> Sets.newIdentityHashSet();
 
   Set<Phi> rewriteCode(
       IRCode code,
       MethodProcessor methodProcessor,
       RewrittenPrototypeDescription prototypeChanges,
-      AffectedValues affectedValues,
       NonIdentityGraphLens lens);
 }
