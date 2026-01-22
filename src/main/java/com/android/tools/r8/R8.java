@@ -541,7 +541,7 @@ public class R8 {
       }
 
       if (options.enableAtomicFieldUpdaterOptimization) {
-        new AtomicFieldUpdaterInstrumentor(appViewWithLiveness).run(executorService, timing);
+        AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
       }
 
       // Collect the already pruned types before creating a new app info without liveness.

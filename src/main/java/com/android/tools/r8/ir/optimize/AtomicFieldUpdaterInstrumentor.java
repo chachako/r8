@@ -117,26 +117,28 @@ public class AtomicFieldUpdaterInstrumentor {
   //                    actual optimizations triggered.
 
   private final AppView<AppInfoWithLiveness> appView;
+  private final ExecutorService service;
 
   private final DexItemFactory itemFactory;
   private final DexMethod objectFieldOffset;
+  private final DebugLogs logs;
   private static final String unsafeFieldName = "unsafe";
   private static final String getUnsafeMethodName = "getUnsafe";
-  private final boolean debugLogEnabled;
-  private final ConcurrentHashMap<DexField, String> debugLogs;
 
-  public AtomicFieldUpdaterInstrumentor(AppView<AppInfoWithLiveness> appView) {
+  public static void run(
+      AppView<AppInfoWithLiveness> appView, ExecutorService service, Timing timing)
+      throws ExecutionException {
+    new AtomicFieldUpdaterInstrumentor(appView, service).runInternal(timing);
+  }
+
+  private AtomicFieldUpdaterInstrumentor(
+      AppView<AppInfoWithLiveness> appView, ExecutorService service) {
     this.appView = appView;
+    this.service = service;
 
     itemFactory = appView.dexItemFactory();
 
-    if (appView.options().getTestingOptions().enableAtomicFieldUpdaterInstrumentorDebugLogs) {
-      debugLogEnabled = true;
-      debugLogs = new ConcurrentHashMap<>();
-    } else {
-      debugLogEnabled = false;
-      debugLogs = null;
-    }
+    logs = new DebugLogs(appView);
 
     objectFieldOffset =
         itemFactory.createMethod(
@@ -149,32 +151,24 @@ public class AtomicFieldUpdaterInstrumentor {
   //                    trigger (fields, clinit writes, and synthetic classes).
   // TODO(b/453628974): Make sure that original AtomicUpdater fields are removed if all uses are
   //                    optimized away (fields and clinit writes).
-  public void run(ExecutorService service, Timing timing) throws ExecutionException {
+  private void runInternal(Timing timing) throws ExecutionException {
     timing.begin("AtomicFieldUpdaterInstrumentor");
 
-    var classesWithAtomics = findClassesWithAtomics(service, timing);
+    var classesWithAtomics = findClassesWithAtomics(timing);
     if (!classesWithAtomics.isEmpty()) {
       var profiling = ProfileCollectionAdditions.create(appView);
       var unsafeClass = synthesizeUnsafeClass(classesWithAtomics.keySet(), profiling);
-      addOffsetFields(classesWithAtomics, unsafeClass, profiling, service, timing);
+      addOffsetFields(classesWithAtomics, unsafeClass, profiling, timing);
       profiling.commit(appView);
     }
 
-    if (debugLogEnabled && !debugLogs.isEmpty()) {
-      var reporter = appView.reporter();
-      var sb = new StringBuilder();
-      debugLogs.forEach(
-          (field, reason) -> {
-            sb.append(reason).append(System.lineSeparator());
-          });
-      reporter.info(sb.toString());
-    }
+    logs.outputLogs();
 
     timing.end();
   }
 
-  private Multimap<DexProgramClass, UpdaterFieldInfo<Void>> findClassesWithAtomics(
-      ExecutorService service, Timing timing) throws ExecutionException {
+  private Multimap<DexProgramClass, UpdaterFieldInfo<Void>> findClassesWithAtomics(Timing timing)
+      throws ExecutionException {
     var updaterClassesConcurrent =
         new ConcurrentHashMap<DexProgramClass, Collection<UpdaterFieldInfo<Void>>>();
     ThreadUtils.processItemsThatMatches(
@@ -191,32 +185,6 @@ public class AtomicFieldUpdaterInstrumentor {
   private static boolean mightHaveUpdaterFields(DexProgramClass clazz) {
     // TODO(b/453628974): Check constant pool?
     return clazz.hasClassInitializer() && clazz.hasStaticFields();
-  }
-
-  private void reportFailureToInstrument(DexField field, String reason) {
-    if (debugLogEnabled) {
-      assert !debugLogs.containsKey(field);
-      debugLogs.put(
-          field,
-          "Cannot instrument "
-              + field.getHolderType().toSourceString()
-              + "."
-              + field.name.toString()
-              + ": "
-              + reason);
-    }
-  }
-
-  private void reportSuccessfulInstrumentation(DexField field) {
-    if (debugLogEnabled) {
-      assert !debugLogs.containsKey(field);
-      debugLogs.put(
-          field,
-          "Can instrument    "
-              + field.getHolderType().toSourceString()
-              + "."
-              + field.name.toString());
-    }
   }
 
   private void findOffsetFields(
@@ -238,7 +206,7 @@ public class AtomicFieldUpdaterInstrumentor {
           if (!appView
               .appInfoWithLiveness()
               .isStaticFieldWrittenOnlyInEnclosingStaticInitializer(f)) {
-            reportFailureToInstrument(field.getReference(), "written outside class initializer");
+            logs.reportFailure(field.getReference(), "written outside class initializer");
           } else {
             initialUpdaterFields.add(field.getReference());
           }
@@ -265,7 +233,7 @@ public class AtomicFieldUpdaterInstrumentor {
         continue;
       }
       if (fieldInfos.containsKey(modifiedField)) {
-        reportFailureToInstrument(modifiedField, "multiple writes");
+        logs.reportFailure(modifiedField, "multiple writes");
         fieldInfos.remove(modifiedField);
         initialUpdaterFields.remove(modifiedField);
         continue;
@@ -277,13 +245,13 @@ public class AtomicFieldUpdaterInstrumentor {
         initialUpdaterFields.remove(modifiedField);
         continue;
       }
-      reportSuccessfulInstrumentation(modifiedField);
+      logs.reportSuccessful(modifiedField);
       fieldInfos.put(modifiedField, updaterInfo);
     }
 
     for (var field : initialUpdaterFields) {
       if (!fieldInfos.containsKey(field)) {
-        reportFailureToInstrument(field, "found no field writes");
+        logs.reportFailure(field, "found no field writes");
       }
     }
 
@@ -311,83 +279,82 @@ public class AtomicFieldUpdaterInstrumentor {
   private UpdaterFieldInfo<Void> resolveNewUpdaterCall(
       DexProgramClass clazz, DexField updaterField, Value updaterCall) {
     if (updaterCall.isPhi()) {
-      reportFailureToInstrument(updaterField, "initialized by phi function");
+      logs.reportFailure(updaterField, "initialized by phi function");
       return null;
     }
     Instruction input = updaterCall.definition;
     if (!input.isInvokeStatic()) {
-      reportFailureToInstrument(updaterField, "not initialized by static call");
+      logs.reportFailure(updaterField, "not initialized by static call");
       return null;
     }
     InvokeStatic invokeStatic = input.asInvokeStatic();
     if (!invokeStatic
         .getInvokedMethod()
         .isIdenticalTo(itemFactory.atomicFieldUpdaterMethods.referenceUpdater)) {
-      reportFailureToInstrument(updaterField, "not initialized by newUpdater call");
+      logs.reportFailure(updaterField, "not initialized by newUpdater call");
       return null;
     }
     assert invokeStatic.arguments().size() == 3;
     var holderValue = invokeStatic.getFirstArgument();
     if (holderValue.isPhi()) {
-      reportFailureToInstrument(updaterField, "newUpdater(HERE, _, _) is defined by phi function");
+      logs.reportFailure(updaterField, "newUpdater(HERE, _, _) is defined by phi function");
       return null;
     }
     var holderIns = holderValue.definition;
     if (!holderIns.isConstClass()) {
-      reportFailureToInstrument(updaterField, "newUpdater(HERE, _, _) is not a constant class");
+      logs.reportFailure(updaterField, "newUpdater(HERE, _, _) is not a constant class");
       return null;
     }
     var holder = holderIns.asConstClass().getType();
     if (!holder.isIdenticalTo(clazz.getType())) {
-      reportFailureToInstrument(updaterField, "newUpdater(HERE, _, _) is not the current class");
+      logs.reportFailure(updaterField, "newUpdater(HERE, _, _) is not the current class");
       return null;
     }
     var fieldTypeValue = invokeStatic.getSecondArgument();
     if (fieldTypeValue.isPhi()) {
-      reportFailureToInstrument(updaterField, "newUpdater(_, HERE, _) is defined by phi function");
+      logs.reportFailure(updaterField, "newUpdater(_, HERE, _) is defined by phi function");
       return null;
     }
     var fieldTypeIns = fieldTypeValue.definition;
     if (!fieldTypeIns.isConstClass()) {
-      reportFailureToInstrument(updaterField, "newUpdater(_, HERE, _) is not a constant class");
+      logs.reportFailure(updaterField, "newUpdater(_, HERE, _) is not a constant class");
       return null;
     }
     var fieldType = fieldTypeIns.asConstClass().getType();
     var fieldNameValue = invokeStatic.getThirdArgument();
     if (fieldNameValue.isPhi()) {
-      reportFailureToInstrument(updaterField, "newUpdater(_, _, HERE) is defined by phi function");
+      logs.reportFailure(updaterField, "newUpdater(_, _, HERE) is defined by phi function");
       return null;
     }
     var fieldNameIns = fieldNameValue.definition;
+    // TODO(b/453628974): Add test with an invalid field name (this is then a const string
+    // instruction).
     if (!fieldNameIns.isDexItemBasedConstString()) {
-      reportFailureToInstrument(
-          updaterField, "newUpdater(_, _, HERE) is not a dex-item-based string");
+      logs.reportFailure(updaterField, "newUpdater(_, _, HERE) is not a dex-item-based string");
       return null;
     }
     var fieldNameReference = fieldNameIns.asDexItemBasedConstString().getItem();
     if (!fieldNameReference.isDexField()) {
-      reportFailureToInstrument(
-          updaterField, "newUpdater(_, _, HERE) is a dex reference to a non-field");
+      logs.reportFailure(updaterField, "newUpdater(_, _, HERE) is a dex reference to a non-field");
       return null;
     }
     var reflectedFieldReference = fieldNameReference.asDexField();
     if (!reflectedFieldReference.getHolderType().isIdenticalTo(clazz.getType())) {
-      reportFailureToInstrument(
+      logs.reportFailure(
           updaterField, "newUpdater(_, _, HERE) is a dex reference to a field of another class.");
       return null;
     }
     if (!reflectedFieldReference.type.isIdenticalTo(fieldType)) {
-      reportFailureToInstrument(
-          updaterField, "newUpdater(_, TYPE, FIELD) FIELD's type and TYPE disagree");
+      logs.reportFailure(updaterField, "newUpdater(_, TYPE, FIELD) FIELD's type and TYPE disagree");
       return null;
     }
     var reflectedField = clazz.lookupProgramField(reflectedFieldReference);
     if (reflectedField == null) {
-      reportFailureToInstrument(updaterField, "newUpdater(..) does not validly refer to a field");
+      logs.reportFailure(updaterField, "newUpdater(..) does not validly refer to a field");
       return null;
     }
     if (!reflectedField.getAccessFlags().isVolatile()) {
-      reportFailureToInstrument(updaterField, "reflected field is not volatile");
+      logs.reportFailure(updaterField, "reflected field is not volatile");
       return null;
     }
     // TODO(b/453628974): Assert that newUpdater has no side effects in this case.
@@ -496,7 +463,6 @@ public class AtomicFieldUpdaterInstrumentor {
       Multimap<DexProgramClass, UpdaterFieldInfo<T>> classesWithAtomics,
       UnsafeClassInfo unsafeClass,
       ProfileCollectionAdditions profiling,
-      ExecutorService service,
       Timing timing)
       throws ExecutionException {
     ConcurrentHashMap<DexField, DexField> offsetFields = new ConcurrentHashMap<>();
@@ -685,6 +651,45 @@ public class AtomicFieldUpdaterInstrumentor {
 
     public <T> UpdaterFieldInfo<T> copyWithOffsetField(T offsetField) {
       return new UpdaterFieldInfo<>(field, holdingClass, fieldName, position, offsetField);
+    }
+  }
+
+  /** Thread-safe log collector. */
+  private static class DebugLogs {
+
+    private final ConcurrentHashMap<DexField, String> logs;
+    private final AppView<?> appView;
+
+    public DebugLogs(AppView<?> appView) {
+      this.appView = appView;
+      if (appView.options().getTestingOptions().enableAtomicFieldUpdaterInstrumentorDebugLogs) {
+        logs = new ConcurrentHashMap<>();
+      } else {
+        logs = null;
+      }
+    }
+
+    public void reportFailure(DexField field, String reason) {
+      if (logs != null) {
+        assert !logs.containsKey(field);
+        logs.put(field, "Cannot instrument " + field + ": " + reason);
+      }
+    }
+
+    public void reportSuccessful(DexField field) {
+      if (logs != null) {
+        assert !logs.containsKey(field);
+        logs.put(field, "Can instrument    " + field);
+      }
+    }
+
+    public void outputLogs() {
+      if (logs != null && !logs.isEmpty()) {
+        var reporter = appView.reporter();
+        var sb = new StringBuilder();
+        logs.forEach((field, reason) -> sb.append(reason).append(System.lineSeparator()));
+        reporter.info(sb.toString());
+      }
     }
   }
 }
