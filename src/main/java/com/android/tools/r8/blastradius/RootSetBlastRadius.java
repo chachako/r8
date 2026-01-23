@@ -18,12 +18,14 @@ import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ListUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -51,8 +53,13 @@ public class RootSetBlastRadius {
     return blastRadius.values();
   }
 
-  public void writeToFile(Path printBlastRadiusFile) {
-    BlastRadiusContainer collection = RootSetBlastRadiusSerialization.serialize(this);
+  public Collection<RootSetBlastRadiusForRule> getBlastRadiusWithDeterministicOrder() {
+    // TODO(b/441055269): Sorting by source is not guaranteed to be deterministic.
+    return ListUtils.sort(getBlastRadius(), Comparator.comparing(x -> x.getRule().getSource()));
+  }
+
+  public void writeToFile(AppView<?> appView, Path printBlastRadiusFile) {
+    BlastRadiusContainer collection = new RootSetBlastRadiusSerializer(appView).serialize(this);
     try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
       collection.writeTo(output);
     } catch (IOException e) {

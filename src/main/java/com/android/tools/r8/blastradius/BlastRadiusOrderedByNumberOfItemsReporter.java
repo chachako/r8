@@ -56,22 +56,18 @@ public class BlastRadiusOrderedByNumberOfItemsReporter implements BlastRadiusRep
       System.out.print("Blast radius (dontshrink): " + blastRadiusForRule.getNumberOfItems());
       System.out.print(" (");
       boolean needsComma = false;
-      if (blastRadiusForRule.getNumberOfClasses() > 0) {
-        System.out.print(blastRadiusForRule.getNumberOfClasses() + " classes");
+      if (!blastRadiusForRule.getMatchedClasses().isEmpty()) {
+        System.out.print(blastRadiusForRule.getMatchedClasses().size() + " classes");
         needsComma = true;
       }
-      if (blastRadiusForRule.getNumberOfMethods() > 0) {
-        if (needsComma) {
-          System.out.print(", ");
-        }
-        System.out.print(blastRadiusForRule.getNumberOfMethods() + " methods");
+      if (!blastRadiusForRule.getMatchedMethods().isEmpty()) {
+        String comma = needsComma ? ", " : "";
+        System.out.print(comma + blastRadiusForRule.getMatchedMethods().size() + " methods");
         needsComma = true;
       }
-      if (blastRadiusForRule.getNumberOfFields() > 0) {
-        if (needsComma) {
-          System.out.print(", ");
-        }
-        System.out.print(blastRadiusForRule.getNumberOfFields() + " fields");
+      if (!blastRadiusForRule.getMatchedFields().isEmpty()) {
+        String comma = needsComma ? ", " : "";
+        System.out.print(comma + blastRadiusForRule.getMatchedFields().size() + " fields");
       }
       System.out.println(")");
       System.out.println();

@@ -4620,7 +4620,7 @@ public class Enqueuer {
     if (blastRadius != null) {
       Path printBlastRadiusFile = options.getProguardConfiguration().getPrintBlastRadiusFile();
       if (printBlastRadiusFile != null) {
-        blastRadius.build().writeToFile(printBlastRadiusFile);
+        blastRadius.build().writeToFile(appView, printBlastRadiusFile);
       } else {
         BlastRadiusReporter.create().report(blastRadius.build().getBlastRadius());
       }

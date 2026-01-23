@@ -7,7 +7,9 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.utils.ListUtils;
 import com.google.common.collect.Sets;
+import java.util.Collection;
 import java.util.Set;
 
 public class RootSetBlastRadiusForRule {
@@ -34,16 +36,28 @@ public class RootSetBlastRadiusForRule {
     matchedMethods.add(method);
   }
 
-  int getNumberOfClasses() {
-    return matchedClasses.size();
+  Set<DexType> getMatchedClasses() {
+    return matchedClasses;
   }
 
-  int getNumberOfFields() {
-    return matchedFields.size();
+  Collection<DexType> getMatchedClassesWithDeterministicOrder() {
+    return ListUtils.sort(matchedClasses, DexType::compareTo);
   }
 
-  int getNumberOfMethods() {
-    return matchedMethods.size();
+  Set<DexField> getMatchedFields() {
+    return matchedFields;
+  }
+
+  Collection<DexField> getMatchedFieldsWithDeterministicOrder() {
+    return ListUtils.sort(matchedFields, DexField::compareTo);
+  }
+
+  Set<DexMethod> getMatchedMethods() {
+    return matchedMethods;
+  }
+
+  Collection<DexMethod> getMatchedMethodsWithDeterministicOrder() {
+    return ListUtils.sort(matchedMethods, DexMethod::compareTo);
   }
 
   int getNumberOfItems() {
@@ -52,5 +66,9 @@ public class RootSetBlastRadiusForRule {
 
   public ProguardKeepRuleBase getRule() {
     return rule;
+  }
+
+  String getSource() {
+    return rule.getSource();
   }
 }
