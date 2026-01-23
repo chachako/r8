@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.blastradius;
 
-import com.android.tools.r8.blastradius.proto.KeepRuleBlastRadiusCollection;
+import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexField;
@@ -52,8 +52,7 @@ public class RootSetBlastRadius {
   }
 
   public void writeToFile(Path printBlastRadiusFile) {
-    // TODO(b/441055269): Unimplemented.
-    KeepRuleBlastRadiusCollection collection = KeepRuleBlastRadiusCollection.newBuilder().build();
+    BlastRadiusContainer collection = RootSetBlastRadiusSerialization.serialize(this);
     try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
       collection.writeTo(output);
     } catch (IOException e) {
