@@ -29,6 +29,7 @@ public class ProguardKeepRuleModifiers {
       setAllowsOptimization(true);
       setAllowsRepackaging(true);
       setAllowsShrinking(true);
+      setAllowsPermittedSubclassesRemoval(true);
       return this;
     }
 

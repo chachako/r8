@@ -111,29 +111,13 @@ public class ProguardKeepRuleBase extends ProguardConfigurationRule {
     return result;
   }
 
-  static void appendNonEmpty(StringBuilder builder, String pre, Object item, String post) {
-    if (item == null) {
-      return;
-    }
-    String text = item.toString();
-    if (!text.isEmpty()) {
-      if (pre != null) {
-        builder.append(pre);
-      }
-      builder.append(text);
-      if (post != null) {
-        builder.append(post);
-      }
-    }
-  }
-
   @Override
   String typeString() {
     return type.toString();
   }
 
   @Override
-  protected String modifierString() {
+  String modifierString() {
     return modifiers.toString();
   }
 }

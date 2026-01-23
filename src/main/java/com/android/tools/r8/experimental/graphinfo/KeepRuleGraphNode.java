@@ -8,15 +8,11 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextPosition;
 import com.android.tools.r8.position.TextRange;
-import com.android.tools.r8.shaking.ProguardKeepRule;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.utils.ObjectUtils;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-// Note: this could potentially be merged with ConditionalKeepRuleGraphNode
-// and an empty precondition set.
 @KeepForApi
 public final class KeepRuleGraphNode extends GraphNode {
 
@@ -25,13 +21,10 @@ public final class KeepRuleGraphNode extends GraphNode {
   private final String content;
   private final Set<GraphNode> preconditions;
 
-  public KeepRuleGraphNode(ProguardKeepRule rule) {
-    this(rule, Collections.emptySet());
-  }
-
   public KeepRuleGraphNode(ProguardKeepRuleBase rule, Set<GraphNode> preconditions) {
     super(false);
     assert rule != null;
+    assert !rule.getModifiers().allowsShrinking;
     assert preconditions != null;
     origin = rule.getOrigin();
     position = rule.getPosition();

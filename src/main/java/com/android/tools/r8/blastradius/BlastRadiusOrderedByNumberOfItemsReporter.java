@@ -50,8 +50,6 @@ public class BlastRadiusOrderedByNumberOfItemsReporter implements BlastRadiusRep
       if (rule.getPosition() == Position.UNKNOWN) {
         throw new RuntimeException(rule.toString());
       }
-      // TODO(b/441055269): Add support for keep rules that allow shrinking.
-      assert !rule.getModifiers().allowsShrinking;
       System.out.println(i + ". " + rule);
       System.out.println("   @ " + rule.getOriginString());
       System.out.println();

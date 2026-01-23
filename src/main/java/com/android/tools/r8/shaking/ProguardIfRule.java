@@ -23,6 +23,12 @@ public class ProguardIfRule extends ProguardKeepRuleBase {
 
   private Map<DexField, DexField> inlinableFieldsInPrecondition = new ConcurrentHashMap<>();
 
+  @Override
+  public ProguardKeepRuleModifiers getModifiers() {
+    assert super.getModifiers().isBottom();
+    return getSubsequentRule().getModifiers();
+  }
+
   public DexClass getPrecondition() {
     assert precondition != null;
     return precondition;
@@ -116,7 +122,7 @@ public class ProguardIfRule extends ProguardKeepRuleBase {
         inheritanceIsExtends,
         memberRules,
         ProguardKeepRuleType.CONDITIONAL,
-        ProguardKeepRuleModifiers.builder().build());
+        ProguardKeepRuleModifiers.builder().setAllowsAll().build());
     this.parent = parent;
     this.precondition = precondition;
     this.subsequentRule = subsequentRule;
@@ -180,6 +186,11 @@ public class ProguardIfRule extends ProguardKeepRuleBase {
     super.append(builder);
     builder.append('\n');
     return subsequentRule.append(builder);
+  }
+
+  @Override
+  String modifierString() {
+    return null;
   }
 
   public ProguardIfRule withPrecondition(DexClass precondition) {

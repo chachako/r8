@@ -139,7 +139,9 @@ public class GraphReporter {
         registerClass(clazz, reason);
       }
       for (ProguardKeepRuleBase rule : rules) {
-        reportKeepClass(precondition, rule, clazz);
+        if (!rule.getModifiers().allowsShrinking) {
+          reportKeepClass(precondition, rule, clazz);
+        }
       }
     }
     return KeepReasonWitness.INSTANCE;
@@ -166,7 +168,9 @@ public class GraphReporter {
         registerMethod(method, reason);
       }
       for (ProguardKeepRuleBase rule : rules) {
-        reportKeepMethod(precondition, rule, method);
+        if (!rule.getModifiers().allowsShrinking) {
+          reportKeepMethod(precondition, rule, method);
+        }
       }
     }
     return KeepReasonWitness.INSTANCE;
@@ -193,7 +197,9 @@ public class GraphReporter {
         registerField(field, reason);
       }
       for (ProguardKeepRuleBase rule : rules) {
-        reportKeepField(precondition, rule, field);
+        if (!rule.getModifiers().allowsShrinking) {
+          reportKeepField(precondition, rule, field);
+        }
       }
     }
     return KeepReasonWitness.INSTANCE;

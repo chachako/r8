@@ -7,11 +7,13 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.shaking.ProguardClassType;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
 import com.android.tools.r8.shaking.ProguardKeepRuleType;
 
 public class ReferencedFromExcludedClassInR8PartialRule extends ProguardKeepRuleBase {
 
-  public ReferencedFromExcludedClassInR8PartialRule(Origin origin, Position position) {
+  public ReferencedFromExcludedClassInR8PartialRule(
+      Origin origin, Position position, ProguardKeepRuleModifiers modifiers) {
     super(
         origin,
         position,
@@ -27,6 +29,6 @@ public class ReferencedFromExcludedClassInR8PartialRule extends ProguardKeepRule
         false,
         null,
         ProguardKeepRuleType.KEEP,
-        null);
+        modifiers);
   }
 }

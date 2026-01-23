@@ -263,8 +263,10 @@ public class RootSetBuilder {
         new R8PartialUseCollector(appView, identifierNameStrings) {
 
           // Map from Reference to canonical ReferencedFromExcludedClassInR8PartialRule.
-          private final Map<Object, ReferencedFromExcludedClassInR8PartialRule> canonicalRules =
-              new ConcurrentHashMap<>();
+          private final Map<
+                  Object,
+                  Map<ProguardKeepRuleModifiers, ReferencedFromExcludedClassInR8PartialRule>>
+              canonicalRules = new ConcurrentHashMap<>();
 
           // Allow D8/R8 boundary obfuscation. We disable repackaging of the R8 part since
           // repackaging uses a graph lens, which would need to be applied to the D8 part before
@@ -284,16 +286,20 @@ public class RootSetBuilder {
           public synchronized void keep(
               Definition definition, DefinitionContext referencedFrom, boolean allowObfuscation) {
             if (definition.isProgramDefinition()) {
-              ReferencedFromExcludedClassInR8PartialRule rule =
-                  canonicalRules.computeIfAbsent(
-                      getReferenceFromDefinitionContext(referencedFrom),
-                      ignoreKey(
-                          () ->
-                              new ReferencedFromExcludedClassInR8PartialRule(
-                                  referencedFrom.getOrigin(),
-                                  getPositionFromDefinitionContext(referencedFrom))));
               ProguardKeepRuleModifiers modifiers =
                   allowObfuscation ? allowObfuscationModifiers : disallowObfuscationModifiers;
+              ReferencedFromExcludedClassInR8PartialRule rule =
+                  canonicalRules
+                      .computeIfAbsent(
+                          getReferenceFromDefinitionContext(referencedFrom),
+                          ignoreKey(ConcurrentHashMap::new))
+                      .computeIfAbsent(
+                          modifiers,
+                          m ->
+                              new ReferencedFromExcludedClassInR8PartialRule(
+                                  referencedFrom.getOrigin(),
+                                  getPositionFromDefinitionContext(referencedFrom),
+                                  m));
               evaluateKeepRule(
                   definition.asProgramDefinition(), null, null, modifiers, Action.empty(), rule);
             } else {
@@ -1970,8 +1976,9 @@ public class RootSetBuilder {
     LazyBox<Joiner<?, ?, ?>> itemJoiner =
         new LazyBox<>(
             () ->
-                dependentMinimumKeepInfo.getOrCreateMinimumKeepInfoFor(
-                    preconditionEvent, item.getReference()));
+                dependentMinimumKeepInfo
+                    .getOrCreateMinimumKeepInfoFor(preconditionEvent, item.getReference())
+                    .addRule(whyAreYouKeepingKeepRule));
 
     if (appView.options().isAccessModificationEnabled() && !modifiers.allowsAccessModification) {
       itemJoiner.computeIfAbsent().disallowAccessModification();
@@ -2032,7 +2039,7 @@ public class RootSetBuilder {
 
     if ((appView.options().isShrinking() || isMainDexRootSetBuilder())
         && !modifiers.allowsShrinking) {
-      itemJoiner.computeIfAbsent().addRule(whyAreYouKeepingKeepRule).disallowShrinking();
+      itemJoiner.computeIfAbsent().disallowShrinking();
       markAsUsed.execute();
     }
 
