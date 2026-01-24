@@ -25,7 +25,8 @@ public class ResourceShrinkerUtils {
             exception -> appView.reporter().fatalError(new ExceptionDiagnostic(exception)),
             shrinkerDebugReporterFromStringConsumer(
                 options.resourceShrinkerConfiguration.getDebugConsumer(), appView.reporter()),
-            options.enableXmlInlining);
+            options.enableXmlInlining,
+            options.enableManifestPruning);
     if (options.isOptimizedResourceShrinking()) {
       try {
         addResources(appView, state, options.androidResourceProvider, FeatureSplit.BASE);

@@ -695,35 +695,50 @@ public class Enqueuer {
     onClickMethodReferences.put(appView.dexItemFactory().createString(method), origin);
   }
 
-  private boolean recordReferenceFromResources(String possibleClass, Origin origin) {
+  private boolean recordReferenceFromResources(
+      String possibleClass, Origin origin, boolean markAsLive) {
     if (!DescriptorUtils.isValidJavaType(possibleClass)) {
       return false;
     }
     DexType dexType =
         appView.dexItemFactory().createType(DescriptorUtils.javaTypeToDescriptor(possibleClass));
     DexProgramClass clazz = appView.definitionForProgramType(dexType);
-    if (clazz != null) {
-      ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
-      ensureClassKeptForResourceLookup(clazz, reason);
-      for (ProgramMethod programInstanceInitializer : clazz.programInstanceInitializers()) {
-        // TODO(b/325884671): Only keep the actually framework targeted constructors.
-        applyMinimumKeepInfoWhenLiveOrTargeted(
-            programInstanceInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+    if (clazz == null) {
+      return false;
+    }
+
+    ReflectiveUseFromXml reason = KeepReason.reflectiveUseFromXml(origin);
+    ensureClassKeptForResourceLookup(clazz, reason, markAsLive);
+
+    for (ProgramMethod programInstanceInitializer : clazz.programInstanceInitializers()) {
+      // TODO(b/325884671): Only keep the actually framework targeted constructors.
+      applyMinimumKeepInfoWhenLiveOrTargeted(
+          programInstanceInitializer, KeepMethodInfo.newEmptyJoiner().disallowOptimization());
+      if (markAsLive) {
         markMethodAsTargeted(programInstanceInitializer, reason);
         markDirectStaticOrConstructorMethodAsLive(programInstanceInitializer, reason);
+      } else {
+        recordDependentMinimumKeepInfo(
+            new LiveClassEnqueuerEvent(clazz),
+            programInstanceInitializer,
+            KeepMethodInfo.newEmptyJoiner().disallowShrinking().addReason(reason));
       }
     }
-    return clazz != null;
+    return true;
   }
 
   private void ensureClassKeptForResourceLookup(
-      DexProgramClass clazz, ReflectiveUseFromXml reason) {
+      DexProgramClass clazz, ReflectiveUseFromXml reason, boolean markAsLive) {
     applyMinimumKeepInfoWhenLive(
         clazz,
         KeepClassInfo.newEmptyJoiner()
             .disallowMinification()
             .disallowRepackaging()
-            .disallowOptimization());
+            .disallowOptimization()
+            .addReason(reason));
+    if (!markAsLive) {
+      return;
+    }
     if (clazz.isAnnotation() || clazz.isInterface()) {
       markTypeAsLive(clazz, reason);
     } else {

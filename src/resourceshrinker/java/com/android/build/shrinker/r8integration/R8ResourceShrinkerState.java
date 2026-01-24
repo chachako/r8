@@ -67,6 +67,7 @@ public class R8ResourceShrinkerState {
   private final Map<FeatureSplit, ResourceTable> resourceTables = new HashMap<>();
   private final ShrinkerDebugReporter shrinkerDebugReporter;
   private final boolean enableXmlInlining;
+  private final boolean enableManifestPruning;
   private ClassReferenceCallback enqueuerCallback;
   private MethodReferenceCallback methodCallback;
   private Map<Integer, Set<String>> resourceIdToXmlFiles;
@@ -75,22 +76,20 @@ public class R8ResourceShrinkerState {
   private final Set<Integer> seenResourceIds = new HashSet<>();
   private final Map<Resource, String> reachabilityMap = new ConcurrentHashMap<>();
 
+  private static final Set<String> SPECIAL_MANIFEST_ELEMENTS_WITH_EXPORT_CONTROL =
+      ImmutableSet.of("provider", "activity", "service", "receiver");
   private static final Set<String> SPECIAL_MANIFEST_ELEMENTS =
-      ImmutableSet.of(
-          "provider",
-          "activity",
-          "service",
-          "receiver",
-          "instrumentation",
-          "process",
-          "application");
+      ImmutableSet.<String>builder()
+          .addAll(SPECIAL_MANIFEST_ELEMENTS_WITH_EXPORT_CONTROL)
+          .add("instrumentation", "process", "application")
+          .build();
 
   private static final Set<String> SPECIAL_APPLICATION_ATTRIBUTES =
       ImmutableSet.of("backupAgent", "appComponentFactory", "zygotePreloadName");
 
   @FunctionalInterface
   public interface ClassReferenceCallback {
-    boolean tryClass(String possibleClass, Origin xmlFileOrigin);
+    boolean tryClass(String possibleClass, Origin xmlFileOrigin, boolean markAsLive);
   }
 
   @FunctionalInterface
@@ -101,11 +100,13 @@ public class R8ResourceShrinkerState {
   public R8ResourceShrinkerState(
       Function<Exception, RuntimeException> errorHandler,
       ShrinkerDebugReporter shrinkerDebugReporter,
-      boolean enableXmlInlining) {
+      boolean enableXmlInlining,
+      boolean enableManifestPruning) {
     r8ResourceShrinkerModel = new R8ResourceShrinkerModel(shrinkerDebugReporter, true);
     this.shrinkerDebugReporter = shrinkerDebugReporter;
     this.errorHandler = errorHandler;
     this.enableXmlInlining = enableXmlInlining;
+    this.enableManifestPruning = enableManifestPruning;
   }
 
   public void trace(int id, String reachableFrom) {
@@ -397,7 +398,7 @@ public class R8ResourceShrinkerState {
     if (seenNoneClassValues.contains(possibleClass)) {
       return;
     }
-    if (!enqueuerCallback.tryClass(possibleClass, new PathOrigin(Paths.get(xmlName)))) {
+    if (!enqueuerCallback.tryClass(possibleClass, new PathOrigin(Paths.get(xmlName)), true)) {
       seenNoneClassValues.add(possibleClass);
     }
   }
@@ -411,6 +412,22 @@ public class R8ResourceShrinkerState {
       if (xmlAttribute.getName().equals("package") && xmlElementName.equals("manifest")) {
         // We are traversing a manifest, record the package name if we see it.
         manifestPackageName = xmlAttribute.getValue();
+      }
+      if (enableManifestPruning
+          && manifestPackageName != null
+          && SPECIAL_MANIFEST_ELEMENTS_WITH_EXPORT_CONTROL.contains(element.getName())) {
+        boolean isNotExported =
+            element.getAttributeList().stream()
+                .anyMatch(
+                    attr -> attr.getName().equals("exported") && attr.getValue().equals("false"));
+        boolean hasFilters =
+            element.getChildList().stream()
+                .anyMatch(child -> child.getElement().getName().equals("intent-filter"));
+        if (isNotExported && !hasFilters) {
+          String fullyQualifiedName = getFullyQualifiedName(manifestPackageName, xmlAttribute);
+          enqueuerCallback.tryClass(fullyQualifiedName, new PathOrigin(Paths.get(xmlName)), false);
+          continue;
+        }
       }
       String value = xmlAttribute.getValue();
       tryEnqueuerOnString(value, xmlName);
@@ -451,7 +468,14 @@ public class R8ResourceShrinkerState {
   }
 
   private static String getFullyQualifiedName(String packageName, XmlAttribute xmlAttribute) {
-    return packageName + "." + xmlAttribute.getValue();
+    String name = xmlAttribute.getValue();
+    if (name.startsWith(".")) {
+      return packageName + name;
+    }
+    if (!name.contains(".")) {
+      return packageName + "." + name;
+    }
+    return name;
   }
 
   public Map<Integer, Set<String>> getResourceIdToXmlFiles() {

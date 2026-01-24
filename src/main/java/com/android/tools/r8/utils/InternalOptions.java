@@ -801,6 +801,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableColorInlining =
       System.getProperty("com.android.tools.r8.enableColorInlining") != null;
 
+  // Enable pruning manifest entries with exported: false if no intent-filters or direct code usage.
+  public boolean enableManifestPruning =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableManifestPruning", false);
+
   // Flag to turn on/offLoad/store optimization in the Cf back-end.
   public boolean enableLoadStoreOptimization = true;
   // Flag to turn on/off desugaring in D8/R8.
