@@ -217,7 +217,7 @@ public class DesugaredLibraryConversionCfProvider {
                 parameterConversions)
             .generateCfCode();
     DexEncodedMethod newMethod = wrapperSynthesizer.newSynthesizedMethod(methodToInstall, cfCode);
-    newMethod.setCode(cfCode, DexEncodedMethod.NO_PARAMETER_INFO);
+    newMethod.setCode(cfCode);
     if (method.getDefinition().isLibraryMethodOverride().isTrue()) {
       newMethod.setLibraryMethodOverride(OptionalBool.TRUE);
     }

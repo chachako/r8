@@ -10,6 +10,7 @@ import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTL
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_1_10;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentIf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -26,6 +27,7 @@ import com.android.tools.r8.naming.MemberNaming.MethodSignature;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.InstructionSubject;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -261,7 +263,11 @@ public class KotlinClassInlinerTest extends AbstractR8KotlinTestBase {
                 assertThat(
                     inspector.clazz(
                         "class_inliner_lambda_k_style.MainKt$testKotlinSequencesStateless$1"),
-                    isPresent());
+                    isPresentIf(
+                        testParameters.isDexRuntime()
+                            && testParameters
+                                .getApiLevel()
+                                .isGreaterThanOrEqualTo(AndroidApiLevel.T)));
                 assertThat(
                     inspector.clazz(
                         "class_inliner_lambda_k_style.MainKt$testKotlinSequencesStateful$1"),

@@ -22,6 +22,7 @@ import com.android.tools.r8.graph.proto.ArgumentInfoCollection;
 import com.android.tools.r8.graph.proto.RemovedArgumentInfo;
 import com.android.tools.r8.graph.proto.RewrittenPrototypeDescription;
 import com.android.tools.r8.graph.proto.RewrittenTypeInfo;
+import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.PrimitiveTypeElement;
 import com.android.tools.r8.ir.analysis.type.TypeAnalysis;
@@ -32,6 +33,7 @@ import com.android.tools.r8.ir.code.Argument;
 import com.android.tools.r8.ir.code.ArrayGet;
 import com.android.tools.r8.ir.code.ArrayLength;
 import com.android.tools.r8.ir.code.ArrayPut;
+import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.CatchHandlers;
 import com.android.tools.r8.ir.code.CheckCast;
@@ -107,6 +109,7 @@ import com.android.tools.r8.ir.code.ValueType;
 import com.android.tools.r8.ir.code.Xor;
 import com.android.tools.r8.ir.conversion.ExtraParameter;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
+import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.outliner.bottomup.Outline;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
@@ -153,6 +156,32 @@ public class Lir2IRConverter {
     IRCode irCode = parser.getIRCode(method, conversionOptions);
     // Some instructions have bottom types (e.g., phis). Compute their actual types by widening.
     new TypeAnalysis(appView, irCode).widening();
+
+    // Remove redundant Assume instructions for non-null phis. This may be needed since during
+    // type narrowing we don't unset the type of phis. When rebuilding the phi types as part of IR
+    // building we may get more precise type information for phis.
+    List<Value> assumeValuesToRemove = new ArrayList<>();
+    for (Assume assume : irCode.<Assume>instructions(Instruction::isAssume)) {
+      TypeElement operandType = assume.src().getType();
+      if (operandType.isDefinitelyNotNull()) {
+        assumeValuesToRemove.add(assume.outValue());
+      }
+    }
+    if (!assumeValuesToRemove.isEmpty()) {
+      new TypeAnalysis(appView, irCode).narrowingWithAssumeRemoval(assumeValuesToRemove);
+    }
+
+    // Remove Assume instructions for where the operand is definitely null.
+    AffectedValues affectedValues = new AffectedValues();
+    for (Assume assume : irCode.<Assume>instructions(Instruction::isAssume)) {
+      if (assume.getFirstOperand().getType().isNullType()) {
+        assume.outValue().replaceUsers(assume.src(), affectedValues);
+        assume.src().uniquePhiUsers().forEach(Phi::removeTrivialPhi);
+        assume.remove();
+      }
+    }
+    affectedValues.propagate(appView, irCode);
+
     return irCode;
   }
 
@@ -886,6 +915,13 @@ public class Lir2IRConverter {
       Value dest = getOutValueForNextInstruction(TypeElement.getInt());
       Value arrayValue = getValue(arrayValueIndex);
       addInstruction(new ArrayLength(dest, arrayValue));
+    }
+
+    @Override
+    public void onAssumeNonNull(EV value) {
+      Value src = getValue(value);
+      Value dest = getOutValueForNextInstruction(TypeElement.getBottom());
+      addInstruction(new Assume(DynamicType.definitelyNotNull(), dest, src));
     }
 
     @Override

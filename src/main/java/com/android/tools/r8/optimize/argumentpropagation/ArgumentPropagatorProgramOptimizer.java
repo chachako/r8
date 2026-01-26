@@ -717,6 +717,13 @@ public class ArgumentPropagatorProgramOptimizer {
         return staticType;
       }
 
+      if (!newStaticFieldType.toTypeElement(appView).strictlyLessThan(staticFieldType, appView)) {
+        // Can happen when the dynamic type is an intersection type with >1 interfaces. In this case
+        // the conversion to DexType resorts to the class type, which may be less precise than the
+        // current static field type.
+        return staticType;
+      }
+
       if (!AccessUtils.isAccessibleInSameContextsAs(newStaticFieldType, staticType, appView)) {
         return staticType;
       }

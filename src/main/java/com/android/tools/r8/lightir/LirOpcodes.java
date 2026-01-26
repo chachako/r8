@@ -217,6 +217,7 @@ public interface LirOpcodes {
   int STORESTOREFENCE = 230;
   int OUTLINEMARKER = 231;
   int STRINGCONCAT = 232;
+  int ASSUMENONNULL = 233;
 
   static String toString(int opcode) {
     switch (opcode) {
@@ -499,7 +500,9 @@ public interface LirOpcodes {
       case IFNONNULL:
         return "IFNONNULL";
 
-        // Non-CF instructions.
+      // Non-CF instructions.
+      case ASSUMENONNULL:
+        return "ASSUMENONNULL";
       case ICONST:
         return "ICONST";
       case LCONST:

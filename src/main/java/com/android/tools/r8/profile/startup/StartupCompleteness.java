@@ -15,7 +15,6 @@ import com.android.tools.r8.profile.startup.profile.StartupProfile;
 import com.android.tools.r8.startup.diagnostic.MissingStartupProfileItemsDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.Sets;
-import it.unimi.dsi.fastutil.ints.Int2ReferenceMaps;
 import java.util.Set;
 
 public class StartupCompleteness {
@@ -69,7 +68,7 @@ public class StartupCompleteness {
   }
 
   private void processNonStartupMethod(ProgramMethod method) {
-    method.getDefinition().setCode(ThrowNullCode.get(), Int2ReferenceMaps.emptyMap());
+    method.getDefinition().setCode(ThrowNullCode.get());
   }
 
   private Set<DexReference> computeStartupItems() {

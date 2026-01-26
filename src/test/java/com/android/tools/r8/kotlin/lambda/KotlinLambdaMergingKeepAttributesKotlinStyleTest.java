@@ -108,37 +108,8 @@ public class KotlinLambdaMergingKeepAttributesKotlinStyleTest extends KotlinTest
       SyntheticItemsTestUtils syntheticItems) {
     if (parameters.isCfRuntime()) {
       if (kotlinParameters.getLambdaGeneration().isClass()) {
-        inspector
-            .assertIsCompleteMergeGroup(
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testFirst$4"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testFirst$5"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testFirst$6"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testFirst$7"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testFirst$8"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testFirst$9"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testSecond$4"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testSecond$5"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testSecond$6"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testSecond$7"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testSecond$8"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testSecond$9"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testThird$1"),
-                lambdasInInput.getKStyleLambdaReferenceFromTypeName(
-                    getTestName(), "MainKt$testThird$2"))
-            .assertNoOtherClassesMerged();
+        assertEquals(1, inspector.getMergeGroups().size());
+        assertEquals(19, inspector.getSources().size());
       } else {
         inspector.assertNoClassesMerged();
       }

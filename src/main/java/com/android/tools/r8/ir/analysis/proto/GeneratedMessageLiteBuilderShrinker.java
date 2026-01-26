@@ -296,6 +296,9 @@ public class GeneratedMessageLiteBuilderShrinker {
     InvokeDirect constructorInvoke =
         instructionIterator.nextUntil(
             instruction -> {
+              if (instruction.isAssume()) {
+                return false;
+              }
               // After constructor inlining we may see a load of the DEFAULT_INSTANCE field. This
               // can either be read directly using a StaticGet or accessed indirectly via a
               // synthetic accessor bridge (e.g., due to a -keep,allowshrinking rule).

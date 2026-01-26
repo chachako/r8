@@ -26,6 +26,7 @@ import com.android.tools.r8.ir.conversion.IRFinalizer;
 import com.android.tools.r8.ir.conversion.LensCodeArgumentRewriter;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
+import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.ConstantCanonicalizer;
 import com.android.tools.r8.ir.optimize.DeadCodeRemover;
 import com.android.tools.r8.lightir.Lir2IRConverter;
@@ -101,10 +102,17 @@ public class OutlineMarkerRewriter {
     }
 
     Set<Phi> affectedPhis = Collections.emptySet();
+    AffectedValues affectedValues = new AffectedValues();
     Set<UnusedArgument> unusedArguments = Collections.emptySet();
     new LensCodeArgumentRewriter(appView)
         .rewriteArguments(
-            code, method.getReference(), outline.getProtoChanges(), affectedPhis, unusedArguments);
+            code,
+            method.getReference(),
+            outline.getProtoChanges(),
+            affectedPhis,
+            affectedValues,
+            unusedArguments);
+    affectedValues.narrowingWithAssumeRemoval(appView, code);
 
     // Run shorten live ranges to push materialized constants to their uses.
     ConstantCanonicalizer constantCanonicalizer = new ConstantCanonicalizer(appView, method, code);

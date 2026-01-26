@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.lens.GraphLens;
 import com.android.tools.r8.ir.analysis.proto.ProtoReferences;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.conversion.passes.AdaptClassStringsRewriter;
+import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
 import com.android.tools.r8.ir.conversion.passes.ConstResourceNumberRemover;
 import com.android.tools.r8.ir.conversion.passes.ConstResourceNumberRewriter;
@@ -203,6 +204,7 @@ public class LirConverter {
     CodeRewriterPassCollection codeRewriterPassCollection =
         CodeRewriterPassCollection.createFromNullable(
             AdaptClassStringsRewriter.create(appView),
+            new AssumeRemover(appView),
             new ConstResourceNumberRemover(appView),
             new StoreStoreFenceToInvokeRewriter(appView),
             new OriginalFieldWitnessRemover(appView),

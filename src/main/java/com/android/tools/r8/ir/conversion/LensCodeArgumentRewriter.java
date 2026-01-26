@@ -51,8 +51,8 @@ public class LensCodeArgumentRewriter {
       DexMethod originalMethodReference,
       RewrittenPrototypeDescription prototypeChanges,
       Set<Phi> affectedPhis,
+      AffectedValues affectedValues,
       Set<UnusedArgument> unusedArguments) {
-    AffectedValues affectedValues = new AffectedValues();
     ArgumentInfoCollection argumentInfoCollection = prototypeChanges.getArgumentInfoCollection();
     List<Instruction> argumentPostlude = new LinkedList<>();
     int oldArgumentIndex = 0;
@@ -92,7 +92,7 @@ public class LensCodeArgumentRewriter {
                   argumentInfo.asRewrittenTypeInfo(),
                   affectedPhis,
                   newArgumentIndex);
-          argument.outValue().replaceUsers(replacement.outValue());
+          argument.outValue().replaceUsers(replacement.outValue(), affectedValues);
         } else if (newArgumentIndex != oldArgumentIndex) {
           replacement =
               Argument.builder()
@@ -136,8 +136,6 @@ public class LensCodeArgumentRewriter {
         instructionIterator.add(instruction);
       }
     }
-
-    affectedValues.narrowingWithAssumeRemoval(appView, code);
   }
 
   private Argument rewriteArgumentType(

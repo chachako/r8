@@ -377,7 +377,7 @@ public class EnqueuerDeferredTracingImpl extends EnqueuerDeferredTracing
     // Run dead code elimination.
     new ThrowCatchOptimizer(appView).run(ir, Timing.empty());
     rewriter.getDeadCodeRemover().run(ir, Timing.empty());
-    new AssumeRemover(appView).run(ir, Timing.empty());
+    new AssumeRemover(appView, true).run(ir, Timing.empty());
 
     // Finalize out of IR.
     IRFinalizer<?> finalizer =

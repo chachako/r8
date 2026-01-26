@@ -49,6 +49,7 @@ import com.android.tools.r8.ir.code.LinearFlowInstructionListIterator;
 import com.android.tools.r8.ir.code.Mul;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.NumericType;
+import com.android.tools.r8.ir.code.Phi;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.Position.OutlineCallerPosition;
 import com.android.tools.r8.ir.code.Position.OutlineCallerPosition.OutlineCallerPositionBuilder;
@@ -64,7 +65,6 @@ import com.android.tools.r8.ir.conversion.MethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.MethodProcessorEventConsumer;
 import com.android.tools.r8.ir.conversion.SourceCode;
-import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
 import com.android.tools.r8.ir.conversion.passes.MoveResultRewriter;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
@@ -1273,24 +1273,31 @@ public class OutlinerImpl extends Outliner {
               // Leave any const instructions.
               continue;
             }
-            int currentPositionIndex = outlinePositionIndex++;
-            if (current.getPosition() != null
-                && current.instructionInstanceCanThrow(appView, method)) {
-              positionBuilder.addOutlinePosition(currentPositionIndex, current.getPosition());
-            }
-
             // Prepare to remove the instruction.
-            List<Value> inValues = orderedInValues(current, returnValue);
-            for (Value value : inValues) {
-              value.removeUser(current);
-              int argumentIndex = outline.argumentMap.get(argumentsMapIndex++);
-              if (argumentIndex >= in.size()) {
-                assert argumentIndex == in.size();
-                in.add(value);
+            if (current.isAssume()) {
+              Value src = current.getFirstOperand();
+              current.outValue().replaceUsers(src, affectedValues);
+              src.removeUser(current);
+              src.uniquePhiUsers().forEach(Phi::removeTrivialPhi);
+              current.clearOutValue();
+            } else {
+              int currentPositionIndex = outlinePositionIndex++;
+              if (current.getPosition() != null
+                  && current.instructionInstanceCanThrow(appView, method)) {
+                positionBuilder.addOutlinePosition(currentPositionIndex, current.getPosition());
               }
-            }
-            if (current.outValue() != null) {
-              returnValue = current.outValue();
+              List<Value> inValues = orderedInValues(current, returnValue);
+              for (Value value : inValues) {
+                value.removeUser(current);
+                int argumentIndex = outline.argumentMap.get(argumentsMapIndex++);
+                if (argumentIndex >= in.size()) {
+                  assert argumentIndex == in.size();
+                  in.add(value);
+                }
+              }
+              if (!outline.returnType.isVoidType() && current.hasOutValue()) {
+                returnValue = current.outValue();
+              }
             }
             // The invoke of the outline method will be placed at the last instruction index,
             // so don't mark that for removal.
@@ -1302,9 +1309,6 @@ public class OutlinerImpl extends Outliner {
         }
         assert lastInstruction != null;
         assert outlineMethod.proto.createShortyString().length() - 1 == in.size();
-        if (returnValue != null && !returnValue.isUsed()) {
-          returnValue = null;
-        }
         Invoke outlineInvoke = new InvokeStatic(outlineMethod, returnValue, in);
         lastInstruction.getBlock();
         outlineInvoke.setPosition(
@@ -1453,7 +1457,6 @@ public class OutlinerImpl extends Outliner {
           // unused out-values.
           new MoveResultRewriter(appView).run(code, Timing.empty());
           converter.deadCodeRemover.run(code, Timing.empty());
-          new AssumeRemover(appView).run(code, Timing.empty());
           consumer.accept(code);
         },
         appView.options().getThreadingModule(),

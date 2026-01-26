@@ -704,6 +704,10 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     compilationState = CompilationState.NOT_PROCESSED;
   }
 
+  public void setCode(Code code) {
+    setCode(code, NO_PARAMETER_INFO);
+  }
+
   public void setCode(Code code, Int2ReferenceMap<DebugLocalInfo> parameterInfo) {
     checkIfObsolete();
     if (code != null && !code.supportsPendingInlineFrame() && hasPendingInlineFrame()) {

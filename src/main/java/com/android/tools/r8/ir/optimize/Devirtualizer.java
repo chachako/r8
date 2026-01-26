@@ -85,7 +85,8 @@ public class Devirtualizer {
         if (current.isAssumeWithNonNullAssumption()) {
           Assume nonNull = current.asAssume();
           Instruction origin = nonNull.origin();
-          if (origin.isInvokeInterface()
+          if (origin != null
+              && origin.isInvokeInterface()
               && !origin.asInvokeInterface().getReceiver().hasLocalInfo()
               && devirtualizedCall.containsKey(origin.asInvokeInterface())
               && origin.asInvokeInterface().getReceiver() == nonNull.getAliasForOutValue()) {

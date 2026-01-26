@@ -53,8 +53,7 @@ public class InlineOutlineWithAssumeTest extends TestBase {
                       DexEncodedMethod otherOutlineCallSiteMethod =
                           mainClass.lookupMethod(
                               m -> m.getName().isEqualTo("otherOutlineCallSite"));
-                      otherOutlineCallSiteMethod.setCode(
-                          ThrowNullCode.get(), otherOutlineCallSiteMethod.getParameterInfo());
+                      otherOutlineCallSiteMethod.setCode(ThrowNullCode.get());
                     }
                   };
             })

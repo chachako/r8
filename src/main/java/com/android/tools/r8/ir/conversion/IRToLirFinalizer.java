@@ -7,6 +7,7 @@ package com.android.tools.r8.ir.conversion;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeMetadataProvider;
 import com.android.tools.r8.ir.code.IRCode;
+import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.lightir.IR2LirConverter;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.lightir.LirStrategy;
@@ -25,6 +26,9 @@ public class IRToLirFinalizer extends IRFinalizer<LirCode<Integer>> {
       Timing timing,
       String previousPrintString) {
     timing.begin("Finalize LIR code");
+    assert code.streamInstructions()
+        .filter(Instruction::isAssume)
+        .allMatch(i -> i.asAssume().hasNonNullAssumption());
     LirCode<Integer> lirCode =
         IR2LirConverter.translate(
             code,
