@@ -39,7 +39,7 @@ public class WhyAreYouKeepingIgnoreAllowShrinkingRulesTest extends TestBase {
         .compile()
         .assertStdoutThatMatches(
             containsString(
-                StringUtils.unixLines(
+                StringUtils.lines(
                     "void com.android.tools.r8.shaking.whyareyoukeeping.WhyAreYouKeepingIgnoreAllowShrinkingRulesTest$Main.m()",
                     "|- is invoked from:",
                     "|  void"
