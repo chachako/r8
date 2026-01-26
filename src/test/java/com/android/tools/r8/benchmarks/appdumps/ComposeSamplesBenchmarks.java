@@ -55,69 +55,58 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .buildR8WithPartialShrinking(),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetLaggedApp")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetlagged"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetLaggedAppPartial")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetlagged"))
             .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+            .buildR8WithPartialShrinking(),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetNewsApp")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetnews"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetNewsAppPartial")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetnews"))
             .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+            .buildR8WithPartialShrinking(),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetCasterApp")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetcaster"))
             .setFromRevision(16457)
             .buildR8(ComposeSamplesBenchmarks::configureJetCasterApp),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetCasterAppPartial")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetcaster"))
             .setFromRevision(16457)
-            .buildR8WithPartialShrinking(ComposeSamplesBenchmarks::configureJetCasterAppPartial),
+            .buildR8WithPartialShrinking(
+                ComposeSamplesBenchmarks::configureJetCasterAppPartial,
+                ComposeSamplesBenchmarks::inspectJetCasterAppPartial),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetChatApp")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetchat"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(ComposeSamplesBenchmarks::configureJetChatApp),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetChatAppPartial")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetchat"))
             .setFromRevision(16457)
             .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial,
+                ComposeSamplesBenchmarks::configureJetChatAppPartial,
                 ComposeSamplesBenchmarks::inspectJetChatAppPartial),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetSnackApp")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetsnack"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(),
         AppDumpBenchmarkBuilder.builder()
             .setName("JetSnackAppPartial")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("jetsnack"))
             .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial),
+            .buildR8WithPartialShrinking(),
         AppDumpBenchmarkBuilder.builder()
             .setName("OwlApp")
             .setDumpDependencyPath(dir.resolve("owl"))
@@ -130,34 +119,14 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             .buildR8WithPartialShrinking(),
         AppDumpBenchmarkBuilder.builder()
             .setName("ReplyApp")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("reply"))
             .setFromRevision(16457)
-            .buildR8(ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppression),
+            .buildR8(),
         AppDumpBenchmarkBuilder.builder()
             .setName("ReplyAppPartial")
-            .setEnableResourceShrinking(true)
             .setDumpDependencyPath(dir.resolve("reply"))
             .setFromRevision(16457)
-            .buildR8WithPartialShrinking(
-                ComposeSamplesBenchmarks::configureWithoutOpenInterfaceSuppressionPartial));
-  }
-
-  private static void configureWithoutOpenInterfaceSuppression(R8FullTestBuilder testBuilder) {
-    testBuilder
-        .allowUnnecessaryDontWarnWildcards()
-        .allowUnusedDontWarnPatterns()
-        .allowUnusedProguardConfigurationRules()
-        .allowDiagnosticMessages();
-  }
-
-  private static void configureWithoutOpenInterfaceSuppressionPartial(
-      R8PartialTestBuilder testBuilder) {
-    testBuilder
-        .allowUnnecessaryDontWarnWildcards()
-        .allowUnusedDontWarnPatterns()
-        .allowUnusedProguardConfigurationRules()
-        .allowDiagnosticMessages();
+            .buildR8WithPartialShrinking());
   }
 
   private static void configureJetCasterApp(R8FullTestBuilder testBuilder) {
@@ -179,6 +148,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
         .addOptionsModification(
             options -> {
               options.getCfCodeAnalysisOptions().setAllowUnreachableCfBlocks(true);
+              options.getOpenClosedInterfacesOptions().suppressAllOpenInterfaces();
             });
   }
 
@@ -192,6 +162,57 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
             options -> options.getOpenClosedInterfacesOptions().disallowOpenInterfaces());
   }
 
+  private static void inspectJetCasterAppPartial(R8PartialTestCompileResult compileResult) {
+    compileResult.inspectDiagnosticMessages(
+        diagnostics ->
+            diagnostics
+                .assertWarningsMatch(
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(
+                            containsString("androidx.compose.animation.tooling.ComposeAnimation"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(containsString("androidx.paging.PositionalDataSource"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(
+                            containsString("java.lang.instrument.ClassFileTransformer"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(
+                            containsString("org.conscrypt.ConscryptHostnameVerifier"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(containsString("org.jaxen.DefaultNavigator"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(containsString("org.jaxen.NamespaceContext"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(containsString("org.jaxen.VariableContext"))),
+                    allOf(
+                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
+                        diagnosticMessage(containsString("sun.misc.SignalHandler"))))
+                .assertNoErrors());
+  }
+
+  private static void configureJetChatApp(R8FullTestBuilder testBuilder) {
+    testBuilder
+        .allowDiagnosticInfoMessages()
+        .allowUnnecessaryDontWarnWildcards()
+        .allowUnusedDontWarnPatterns()
+        .allowUnusedProguardConfigurationRules();
+  }
+
+  private static void configureJetChatAppPartial(R8PartialTestBuilder testBuilder) {
+    testBuilder
+        .allowDiagnosticMessages()
+        .allowUnnecessaryDontWarnWildcards()
+        .allowUnusedDontWarnPatterns()
+        .allowUnusedProguardConfigurationRules();
+  }
+
   private static void inspectJetChatAppPartial(R8PartialTestCompileResult compileResult) {
     compileResult.inspectDiagnosticMessages(
         diagnostics ->
@@ -199,34 +220,8 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
                 .assertWarningsMatch(
                     allOf(
                         diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
-                        diagnosticMessage(containsString("android.view.HardwareCanvas"))),
-                    allOf(
-                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
-                        diagnosticMessage(containsString("androidx.paging.PositionalDataSource"))),
-                    allOf(
-                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
                         diagnosticMessage(
-                            containsString(
-                                "androidx.window.extensions.core.util.function.Function"))),
-                    allOf(
-                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
-                        diagnosticMessage(
-                            containsString(
-                                "androidx.window.extensions.core.util.function.Predicate"))),
-                    allOf(
-                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
-                        diagnosticMessage(
-                            containsString("androidx.window.extensions.core.util.function"))),
-                    allOf(
-                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
-                        diagnosticMessage(
-                            containsString(
-                                "androidx.window.sidecar.SidecarInterface$SidecarCallback"))),
-                    allOf(
-                        diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
-                        diagnosticMessage(
-                            containsString(
-                                "androidx.appcompat.graphics.drawable.DrawableWrapper"))),
+                            containsString("androidx.compose.animation.tooling.ComposeAnimation"))),
                     allOf(
                         diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class),
                         diagnosticMessage(
