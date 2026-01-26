@@ -12,11 +12,13 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.KeepClassInfo;
+import com.android.tools.r8.shaking.KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
 import com.android.tools.r8.shaking.KeepFieldInfo;
 import com.android.tools.r8.shaking.KeepInfo;
 import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
+import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import java.io.IOException;
@@ -124,6 +126,22 @@ public class RootSetBlastRadius {
     }
 
     public RootSetBlastRadius build() {
+      blastRadius
+          .keySet()
+          .removeIf(
+              rule -> {
+                if (rule instanceof KeepAnnotationFakeProguardRule) {
+                  // TODO(b/441055269): Add support for keep annotations.
+                  return true;
+                }
+                if (rule
+                    instanceof
+                    KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule) {
+                  // Intentionally do not report built-in rules.
+                  return true;
+                }
+                return false;
+              });
       return new RootSetBlastRadius(blastRadius);
     }
   }

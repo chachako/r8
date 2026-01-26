@@ -4,9 +4,7 @@
 package com.android.tools.r8.blastradius;
 
 import com.android.tools.r8.position.Position;
-import com.android.tools.r8.shaking.KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
-import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
 import com.android.tools.r8.utils.ListUtils;
 import java.util.Collection;
 import java.util.Comparator;
@@ -39,14 +37,6 @@ public class BlastRadiusOrderedByNumberOfItemsReporter implements BlastRadiusRep
     for (RootSetBlastRadiusForRule blastRadiusForRule : sorted) {
       assert blastRadiusForRule.getNumberOfItems() > 0;
       ProguardKeepRuleBase rule = blastRadiusForRule.getRule();
-      if (rule instanceof KeepAnnotationFakeProguardRule) {
-        // TODO(b/441055269): Add support for keep annotations.
-        continue;
-      }
-      if (rule instanceof KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule) {
-        // Intentionally do not report built-in rules.
-        continue;
-      }
       if (rule.getPosition() == Position.UNKNOWN) {
         throw new RuntimeException(rule.toString());
       }
