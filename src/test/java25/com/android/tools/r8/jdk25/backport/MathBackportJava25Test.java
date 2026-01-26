@@ -78,6 +78,14 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
 
       assertEquals(4096, Math.powExact((long) (256 / 16), 3));
       assertEquals(512, Math.powExact((long) (256 / 32), 3));
+
+      assertEquals(1L << 62, Math.powExact(2L, 62));
+      assertEquals(Long.MIN_VALUE, Math.powExact(-2L, 63));
+      try {
+        Math.powExact(2L, 63);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
     }
 
     static void testPowExactInt() {
@@ -124,6 +132,12 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
 
       assertEquals(1 << -2, Math.powExact(2, Integer.SIZE - 2));
       assertEquals(-1 << -1, Math.powExact(-2, Integer.SIZE - 1));
+
+      try {
+        Math.powExact(2, 31);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
     }
 
     static void testUnsignedPowExactLong() {
@@ -171,6 +185,13 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
 
       assertEquals(4096, Math.unsignedPowExact((long) (256 / 16), 3));
       assertEquals(512, Math.unsignedPowExact((long) (256 / 32), 3));
+
+      assertEquals(Long.MIN_VALUE, Math.unsignedPowExact(2L, 63));
+      try {
+        Math.unsignedPowExact(2L, 64);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
     }
 
     static void testUnsignedPowExactInt() {
@@ -218,6 +239,13 @@ public final class MathBackportJava25Test extends AbstractBackportTest {
 
       assertEquals(4096, Math.unsignedPowExact(256 / 16, 3));
       assertEquals(512, Math.unsignedPowExact(256 / 32, 3));
+
+      assertEquals(Integer.MIN_VALUE, Math.unsignedPowExact(2, 31));
+      try {
+        Math.unsignedPowExact(2, 32);
+        fail();
+      } catch (ArithmeticException ae) {
+      }
     }
 
     static void testUnsignedMultiplyExactLongLong() {
