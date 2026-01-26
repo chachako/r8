@@ -32,10 +32,16 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
+import com.android.tools.r8.utils.ArrayUtils;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -44,6 +50,10 @@ public class RootSetBlastRadiusSerializer {
   private final AppView<?> appView;
 
   private final BlastRadiusContainer.Builder container = BlastRadiusContainer.newBuilder();
+
+  // Ids.
+  private final Reference2IntMap<RootSetBlastRadiusForRule> ruleIds =
+      new Reference2IntOpenHashMap<>();
 
   // Origins.
   private final Map<Origin, FileOrigin> origins = new HashMap<>();
@@ -67,13 +77,19 @@ public class RootSetBlastRadiusSerializer {
   }
 
   public BlastRadiusContainer serialize(RootSetBlastRadius blastRadius) {
-    for (RootSetBlastRadiusForRule blastRadiusForRule :
-        blastRadius.getBlastRadiusWithDeterministicOrder()) {
-      int ruleId = container.getKeepRuleBlastRadiusTableCount();
+    Collection<RootSetBlastRadiusForRule> sortedBlastRadius =
+        blastRadius.getBlastRadiusWithDeterministicOrder();
+    Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> subsumedByInfo =
+        blastRadius.getSubsumedByInfo();
+    for (RootSetBlastRadiusForRule blastRadiusForRule : sortedBlastRadius) {
+      ruleIds.put(blastRadiusForRule, ruleIds.size());
+    }
+    for (RootSetBlastRadiusForRule blastRadiusForRule : sortedBlastRadius) {
+      int ruleId = ruleIds.getInt(blastRadiusForRule);
       KeepRuleBlastRadius.Builder ruleProto =
           KeepRuleBlastRadius.newBuilder()
               .setId(ruleId)
-              .setBlastRadius(serializeBlastRadius(blastRadiusForRule, ruleId))
+              .setBlastRadius(serializeBlastRadius(blastRadiusForRule, ruleId, subsumedByInfo))
               .setConstraintsId(serializeConstraints(blastRadiusForRule).getId())
               .setOrigin(serializeTextFileOrigin(blastRadiusForRule.getRule()))
               .setSource(blastRadiusForRule.getSource());
@@ -88,9 +104,22 @@ public class RootSetBlastRadiusSerializer {
   }
 
   private BlastRadius serializeBlastRadius(
-      RootSetBlastRadiusForRule blastRadiusForRule, int ruleId) {
-    // TODO(b/441055269): Set subsumed by.
+      RootSetBlastRadiusForRule blastRadiusForRule,
+      int ruleId,
+      Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> subsumedByInfo) {
     BlastRadius.Builder blastRadius = BlastRadius.newBuilder();
+    // Populate subsumed by.
+    Collection<RootSetBlastRadiusForRule> dominators = subsumedByInfo.get(blastRadiusForRule);
+    if (dominators != null) {
+      Iterator<RootSetBlastRadiusForRule> iterator = dominators.iterator();
+      int[] dominatorIds =
+          ArrayUtils.initialize(new int[dominators.size()], i -> ruleIds.getInt(iterator.next()));
+      Arrays.sort(dominatorIds);
+      for (int dominatorId : dominatorIds) {
+        blastRadius.addSubsumedBy(dominatorId);
+      }
+    }
+    // Populate blast radius.
     for (DexType matchedClass : blastRadiusForRule.getMatchedClassesWithDeterministicOrder()) {
       KeptClassInfo.Builder keptClassInfo =
           keptClassInfos.computeIfAbsent(
@@ -100,6 +129,7 @@ public class RootSetBlastRadiusSerializer {
                       .setId(keptClassInfos.size())
                       .setClassReferenceId(serializeTypeReference(k).getId())
                       .setFileOriginId(serializeOrigin(k).getId()));
+      blastRadius.addClassBlastRadius(keptClassInfo.getId());
       keptClassInfo.addKeptBy(ruleId);
     }
     for (DexField matchedField : blastRadiusForRule.getMatchedFieldsWithDeterministicOrder()) {
@@ -111,6 +141,7 @@ public class RootSetBlastRadiusSerializer {
                       .setId(keptFieldInfos.size())
                       .setFieldReferenceId(serializeFieldReference(k).getId())
                       .setFileOriginId(serializeOrigin(k).getId()));
+      blastRadius.addFieldBlastRadius(keptFieldInfo.getId());
       keptFieldInfo.addKeptBy(ruleId);
     }
     for (DexMethod matchedMethod : blastRadiusForRule.getMatchedMethodsWithDeterministicOrder()) {
@@ -122,6 +153,7 @@ public class RootSetBlastRadiusSerializer {
                       .setId(keptMethodInfos.size())
                       .setMethodReferenceId(serializeMethodReference(k).getId())
                       .setFileOriginId(serializeOrigin(k).getId()));
+      blastRadius.addMethodBlastRadius(keptMethodInfo.getId());
       keptMethodInfo.addKeptBy(ruleId);
     }
     return blastRadius.build();

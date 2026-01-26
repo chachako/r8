@@ -58,6 +58,10 @@ public class RootSetBlastRadius {
     return ListUtils.sort(getBlastRadius(), Comparator.comparing(x -> x.getRule().getSource()));
   }
 
+  public Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> getSubsumedByInfo() {
+    return new KeepRuleSubsumptionAnalysis(this).run();
+  }
+
   public void writeToFile(AppView<?> appView, Path printBlastRadiusFile) {
     BlastRadiusContainer collection = new RootSetBlastRadiusSerializer(appView).serialize(this);
     try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
