@@ -80,7 +80,7 @@ public class GetMajorAndMinorSdkVersionBackportOutlineInBackportTest extends Tes
 
   @Test
   public void testD8() throws Exception {
-    for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       if (apiLevel.isGreaterThan(AndroidApiLevel.LATEST)) {
         continue;
       }
@@ -97,7 +97,7 @@ public class GetMajorAndMinorSdkVersionBackportOutlineInBackportTest extends Tes
 
   @Test
   public void testR8() throws Exception {
-    for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       // SDK_INT was introduced in D so don't bother testing before.
       if (apiLevel.isLessThanOrEqualTo(AndroidApiLevel.D)
           || apiLevel.isGreaterThan(AndroidApiLevel.LATEST)) {

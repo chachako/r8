@@ -328,7 +328,7 @@ public class ApplicationReader {
         "Dex file with version '"
             + version.getIntValue()
             + "' cannot be used with min sdk level '"
-            + options.getMinApiLevel()
+            + options.getMinApiLevel().getName()
             + "'.");
   }
 

@@ -1265,29 +1265,29 @@ public class ToolHelper {
     return Files.exists(path);
   }
 
+  static final Set<AndroidApiLevel> apiLevelWithoutAndroidJar =
+      ImmutableSet.<AndroidApiLevel>builder()
+          .add(AndroidApiLevel.B_1_1)
+          .add(AndroidApiLevel.C)
+          .add(AndroidApiLevel.D)
+          .add(AndroidApiLevel.E)
+          .add(AndroidApiLevel.E_0_1)
+          .add(AndroidApiLevel.E_MR1)
+          .add(AndroidApiLevel.F)
+          .add(AndroidApiLevel.G)
+          .add(AndroidApiLevel.G_MR1)
+          .add(AndroidApiLevel.H)
+          .add(AndroidApiLevel.H_MR1)
+          .add(AndroidApiLevel.H_MR2)
+          .add(AndroidApiLevel.J)
+          .add(AndroidApiLevel.J_MR1)
+          .add(AndroidApiLevel.J_MR2)
+          .add(AndroidApiLevel.K_WATCH)
+          .add(AndroidApiLevel.EXTENSION)
+          .build();
+
   public static boolean shouldHaveAndroidJar(AndroidApiLevel apiLevel) {
-    switch (apiLevel) {
-      case B_1_1:
-      case C:
-      case D:
-      case E:
-      case E_0_1:
-      case E_MR1:
-      case F:
-      case G:
-      case G_MR1:
-      case H:
-      case H_MR1:
-      case H_MR2:
-      case J:
-      case J_MR1:
-      case J_MR2:
-      case K_WATCH:
-      case EXTENSION:
-        return false;
-      default:
-        return true;
-    }
+    return !apiLevelWithoutAndroidJar.contains(apiLevel);
   }
 
   public static Path getAndroidJar(AndroidApiLevel apiLevel) {
@@ -1457,44 +1457,32 @@ public class ToolHelper {
     }
   }
 
+  static final Map<AndroidApiLevel, DexVm.Version> apiLevelToDexVmVersion =
+      ImmutableMap.<AndroidApiLevel, DexVm.Version>builder()
+          .put(AndroidApiLevel.MAIN, DexVm.Version.MASTER)
+          .put(AndroidApiLevel.BAKLAVA, DexVm.Version.V16_0_0)
+          .put(AndroidApiLevel.V, DexVm.Version.V15_0_0)
+          .put(AndroidApiLevel.U, DexVm.Version.V14_0_0)
+          .put(AndroidApiLevel.T, DexVm.Version.V13_0_0)
+          .put(AndroidApiLevel.Sv2, DexVm.Version.V12_0_0)
+          .put(AndroidApiLevel.S, DexVm.Version.V12_0_0)
+          .put(AndroidApiLevel.Q, DexVm.Version.V10_0_0)
+          .put(AndroidApiLevel.P, DexVm.Version.V9_0_0)
+          .put(AndroidApiLevel.O_MR1, DexVm.Version.V8_1_0)
+          .put(AndroidApiLevel.O, DexVm.Version.V8_1_0)
+          .put(AndroidApiLevel.N, DexVm.Version.V7_0_0)
+          .put(AndroidApiLevel.M, DexVm.Version.V6_0_1)
+          .put(AndroidApiLevel.L_MR1, DexVm.Version.V5_1_1)
+          .put(AndroidApiLevel.K, DexVm.Version.V4_4_4)
+          .put(AndroidApiLevel.I_MR1, DexVm.Version.V4_0_4)
+          .build();
+
   public static DexVm.Version getDexVersionForApiLevel(AndroidApiLevel apiLevel) {
-    switch (apiLevel) {
-      case MAIN:
-        return DexVm.Version.MASTER;
-      case BAKLAVA:
-        return DexVm.Version.V16_0_0;
-      case V:
-        return DexVm.Version.V15_0_0;
-      case U:
-        return DexVm.Version.V14_0_0;
-      case T:
-        return DexVm.Version.V13_0_0;
-      case Sv2:
-      case S:
-        return DexVm.Version.V12_0_0;
-      case R:
-        throw new Unreachable("No Android 11 VM");
-      case Q:
-        return DexVm.Version.V10_0_0;
-      case P:
-        return DexVm.Version.V9_0_0;
-      case O_MR1:
-      case O:
-        // Currently no Android 8 VM, so return 8.1 for both O and O_MR1.
-        return DexVm.Version.V8_1_0;
-      case N:
-        return DexVm.Version.V7_0_0;
-      case M:
-        return DexVm.Version.V6_0_1;
-      case L_MR1:
-        return DexVm.Version.V5_1_1;
-      case K:
-        return DexVm.Version.V4_4_4;
-      case I_MR1:
-        return DexVm.Version.V4_0_4;
-      default:
-        throw new Unreachable("No Android VM for API level " + apiLevel.getLevel());
+    DexVm.Version version = apiLevelToDexVmVersion.get(apiLevel);
+    if (version != null) {
+      return version;
     }
+    throw new Unreachable("No Android VM for API level " + apiLevel.getLevel());
   }
 
   public static DexVersion getDexFileVersionForVm(DexVm vm) {

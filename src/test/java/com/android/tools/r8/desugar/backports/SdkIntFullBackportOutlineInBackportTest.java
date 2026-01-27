@@ -61,7 +61,7 @@ public class SdkIntFullBackportOutlineInBackportTest extends TestBase {
 
   @Test
   public void testD8() throws Exception {
-    for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       if (apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.LATEST)) {
         continue;
       }
@@ -79,7 +79,7 @@ public class SdkIntFullBackportOutlineInBackportTest extends TestBase {
 
   @Test
   public void testR8() throws Exception {
-    for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       // SDK_INT was introduced in D so don't bother testing before.
       if (apiLevel.isLessThanOrEqualTo(AndroidApiLevel.D)
           || apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.LATEST)) {

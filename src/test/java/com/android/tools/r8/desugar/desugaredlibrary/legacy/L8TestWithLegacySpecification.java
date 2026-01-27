@@ -16,7 +16,6 @@ import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -43,8 +42,7 @@ public class L8TestWithLegacySpecification extends TestBase {
   @Parameters(name = "{0}, {1}, {2}")
   public static List<Object[]> data() {
     return buildParameters(
-        Arrays.stream(AndroidApiLevel.values())
-            .sorted()
+        AndroidApiLevel.getAndroidApiLevelsSorted().stream()
             .filter(apiLevel -> apiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.L))
             .filter(apiLevel -> apiLevel.isLessThan(AndroidApiLevel.MAIN))
             .collect(Collectors.toList()),

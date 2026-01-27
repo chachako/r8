@@ -195,7 +195,7 @@ public class LintFilesTest extends DesugaredLibraryTestBase {
         directory.resolve("compile_api_level_" + requiredCompilationApiLevel.getLevel());
 
     assertTrue(Files.exists(compileApiLevelDirectory));
-    for (AndroidApiLevel minApiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel minApiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       String desugaredApisBaseName =
           "desugared_apis_" + requiredCompilationApiLevel.getLevel() + "_" + minApiLevel.getLevel();
       if (minApiLevel == AndroidApiLevel.L || minApiLevel == AndroidApiLevel.B) {

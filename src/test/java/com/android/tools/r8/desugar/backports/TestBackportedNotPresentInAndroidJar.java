@@ -132,7 +132,7 @@ public class TestBackportedNotPresentInAndroidJar extends TestBase {
 
   private static void testBackportedMethodsPerAPILevel(boolean includeAllArraysEquals)
       throws Exception {
-    for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       if (apiLevel == AndroidApiLevel.MAIN) {
         continue;
       }

@@ -44,7 +44,7 @@ public class ReadDexV040Test extends TestBase {
             .compile()
             .writeToZip();
 
-    for (AndroidApiLevel apiLevel : AndroidApiLevel.values()) {
+    for (AndroidApiLevel apiLevel : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       D8TestBuilder builder = testForD8().addProgramFiles(dexV040).setMinApi(apiLevel);
       // This succeeds for 'B', as that is considered "default" even if specified explicitly, and
       // in that case the API level is derived from reading DEX content.
@@ -57,7 +57,7 @@ public class ReadDexV040Test extends TestBase {
                         diagnostics.assertErrorMessageThatMatches(
                             containsString(
                                 "Dex file with version '40' cannot be used with min sdk level '"
-                                    + apiLevel.name()
+                                    + apiLevel.getName()
                                     + "'."))));
       } else {
         Path dex = builder.compile().writeToZip();

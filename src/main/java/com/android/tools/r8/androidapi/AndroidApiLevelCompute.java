@@ -20,7 +20,7 @@ public abstract class AndroidApiLevelCompute {
 
   public AndroidApiLevelCompute() {
     knownApiLevelCache = new KnownApiLevel[AndroidApiLevel.API_DATABASE_LEVEL.getLevel() + 1];
-    for (AndroidApiLevel value : AndroidApiLevel.values()) {
+    for (AndroidApiLevel value : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       if (value != AndroidApiLevel.MAIN && value != AndroidApiLevel.EXTENSION) {
         knownApiLevelCache[value.getLevel()] = new KnownApiLevel(value);
       }

@@ -6,6 +6,8 @@ package com.android.tools.r8.utils;
 import com.android.tools.r8.dex.Constants;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.utils.structural.Ordered;
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import java.util.Optional;
 
 /** Android dex version */
@@ -68,57 +70,40 @@ public enum DexVersion implements Ordered<DexVersion> {
     return getDexVersion(androidApiLevel).dexVersion >= dexVersion;
   }
 
+  static {
+    assert InternalOptions.containerDexApiLevel().isEqualTo(AndroidApiLevel.BAKLAVA);
+  }
+
+  static final Map<AndroidApiLevel, DexVersion> apiLevelToDexVersion =
+      new ImmutableMap.Builder<AndroidApiLevel, DexVersion>()
+          // MAIN is an unknown higher api version we therefore choose the highest known version.
+          .put(AndroidApiLevel.MAIN, DexVersion.V41)
+          .put(AndroidApiLevel.BAKLAVA, DexVersion.V41)
+          .put(AndroidApiLevel.V, DexVersion.V39)
+          .put(AndroidApiLevel.U, DexVersion.V39)
+          .put(AndroidApiLevel.T, DexVersion.V39)
+          .put(AndroidApiLevel.Sv2, DexVersion.V39)
+          .put(AndroidApiLevel.S, DexVersion.V39)
+          .put(AndroidApiLevel.R, DexVersion.V39)
+          // Dex version should have been V40 starting from API level 30, see b/269089718.
+          .put(AndroidApiLevel.Q, DexVersion.V39)
+          .put(AndroidApiLevel.P, DexVersion.V39)
+          .put(AndroidApiLevel.O_MR1, DexVersion.V38)
+          .put(AndroidApiLevel.O, DexVersion.V38)
+          .put(AndroidApiLevel.N_MR1, DexVersion.V37)
+          .put(AndroidApiLevel.N, DexVersion.V37)
+          .put(AndroidApiLevel.M, DexVersion.V37)
+          .build();
+
   public static DexVersion getDexVersion(AndroidApiLevel androidApiLevel) {
-    switch (androidApiLevel) {
-        // MAIN is an unknown higher api version we therefore choose the highest known version.
-      case MAIN:
-      case BAKLAVA:
-        assert InternalOptions.containerDexApiLevel().isEqualTo(AndroidApiLevel.BAKLAVA);
-        return DexVersion.V41;
-      case V:
-      case U:
-      case T:
-      case Sv2:
-      case S:
-      case R:
-        // Dex version should have been V40 starting from API level 30, see b/269089718.
-        // return DexVersion.V40;
-      case Q:
-      case P:
-        return DexVersion.V39;
-      case O_MR1:
-      case O:
-        return DexVersion.V38;
-      case N_MR1:
-      case N:
-        return DexVersion.V37;
-      case B:
-      case B_1_1:
-      case C:
-      case D:
-      case E:
-      case E_0_1:
-      case E_MR1:
-      case F:
-      case G:
-      case G_MR1:
-      case H:
-      case H_MR1:
-      case H_MR2:
-      case I:
-      case I_MR1:
-      case J:
-      case J_MR1:
-      case J_MR2:
-      case K:
-      case K_WATCH:
-      case L:
-      case L_MR1:
-      case M:
-        return DexVersion.V35;
-      default:
-        throw new Unreachable("Unsupported api level " + androidApiLevel);
+    if (androidApiLevel.isLessThan(AndroidApiLevel.N)) {
+      return DexVersion.V35;
     }
+    DexVersion version = apiLevelToDexVersion.get(androidApiLevel);
+    if (version == null) {
+      throw new Unreachable("Unsupported api level " + androidApiLevel);
+    }
+    return version;
   }
 
   public static Optional<DexVersion> getDexVersion(int intValue) {
