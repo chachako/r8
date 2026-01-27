@@ -184,13 +184,17 @@ public class RootSetBlastRadiusSerializer {
   private FieldReference serializeFieldReference(DexField field) {
     return fieldReferences.computeIfAbsent(
         field,
-        k ->
-            FieldReference.newBuilder()
-                .setId(fieldReferences.size())
-                .setClassReferenceId(serializeTypeReference(field.getHolderType()).getId())
-                .setTypeReferenceId(serializeTypeReference(field.getType()).getId())
-                .setName(field.getName().toString())
-                .build());
+        k -> {
+          FieldReference fieldReference =
+              FieldReference.newBuilder()
+                  .setId(fieldReferences.size())
+                  .setClassReferenceId(serializeTypeReference(field.getHolderType()).getId())
+                  .setTypeReferenceId(serializeTypeReference(field.getType()).getId())
+                  .setName(field.getName().toString())
+                  .build();
+          container.addFieldReferenceTable(fieldReference);
+          return fieldReference;
+        });
   }
 
   private MethodReference serializeMethodReference(DexMethod method) {
