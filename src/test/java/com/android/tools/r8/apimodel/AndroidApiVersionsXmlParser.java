@@ -107,10 +107,13 @@ public class AndroidApiVersionsXmlParser {
     }
     Set<String> removedTypeNames = new HashSet<>();
     if (maxApiLevel.isGreaterThanOrEqualTo(AndroidApiLevel.U)) {
-      if (maxApiLevel.isLessThan(AndroidApiLevel.V)) {
+      if (maxApiLevel.isLessThan(AndroidApiLevel.V)
+          || maxApiLevel.equals(AndroidApiLevel.BAKLAVA_1)) {
         removedTypeNames.add("com.android.internal.util.Predicate");
       }
-      removedTypeNames.add("android.adservices.AdServicesVersion");
+      if (maxApiLevel.isLessThan(AndroidApiLevel.BAKLAVA_1)) {
+        removedTypeNames.add("android.adservices.AdServicesVersion");
+      }
     }
     return removedTypeNames;
   }
@@ -186,7 +189,8 @@ public class AndroidApiVersionsXmlParser {
         }
       }
     }
-    assert exemptionList.isEmpty();
+    assert exemptionList.isEmpty()
+        : "Exemption list not empty: " + String.join(", ", exemptionList);
   }
 
   private boolean isMethod(Node node) {
@@ -231,7 +235,7 @@ public class AndroidApiVersionsXmlParser {
   private AndroidApiLevel getSince(Node node, int version) {
     assert hasSince(node);
     Node since = node.getAttributes().getNamedItem("since");
-    assert (version == 4) == since.getNodeValue().contains(".");
+    assert version == 4 || !since.getNodeValue().contains(".");
     return AndroidApiLevel.parseAndroidApiLevel(since.getNodeValue());
   }
 

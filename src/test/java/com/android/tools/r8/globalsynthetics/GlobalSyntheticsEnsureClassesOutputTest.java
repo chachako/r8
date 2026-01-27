@@ -59,7 +59,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
         .setMinApi(AndroidApiLevel.K)
         .compile()
         .inspect(
-            inspector -> assertEquals(backend.isDex() ? 1148 : 5, inspector.allClasses().size()));
+            inspector -> assertEquals(backend.isDex() ? 1157 : 5, inspector.allClasses().size()));
   }
 
   @Test
@@ -68,7 +68,7 @@ public class GlobalSyntheticsEnsureClassesOutputTest extends TestBase {
     GlobalSyntheticsGenerator.run(
         GlobalSyntheticsGeneratorCommand.builder()
             .addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.API_DATABASE_LEVEL))
-            .setMinApiLevel(AndroidApiLevel.LATEST.getLevel())
+            .setMinApiLevel(AndroidApiLevel.LATEST.getLevel(), AndroidApiLevel.LATEST.getMinor())
             .setGlobalSyntheticsConsumer(globalsConsumer)
             .setClassfileDesugaringOnly(backend.isCf())
             .build());

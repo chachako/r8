@@ -151,7 +151,7 @@ public final class GlobalSyntheticsGeneratorCommand {
     InternalOptions internal = new InternalOptions(factory, reporter);
     assert !internal.debug;
     assert !internal.minimalMainDex;
-    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(minMajorApiLevel));
+    internal.setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(minMajorApiLevel, minMinorApiLevel));
     assert internal.retainCompileTimeAnnotations;
     internal.intermediate = true;
     internal.programConsumer =

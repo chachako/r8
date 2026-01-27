@@ -12,6 +12,7 @@ import com.android.tools.r8.dex.CompatByteBuffer;
 import com.android.tools.r8.errors.Unreachable;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.google.common.io.ByteStreams;
@@ -233,7 +234,7 @@ public abstract class AndroidApiDataAccess {
   abstract int payloadContainsConstantPoolValue(
       int offset, int length, byte[] value, BiPredicate<Integer, byte[]> predicate);
 
-  abstract byte readApiLevelForPayloadOffset(int offset, int length, byte[] value);
+  abstract AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value);
 
   public int getConstantPoolSize() {
     if (constantPoolSizeCache == -1) {
@@ -295,11 +296,11 @@ public abstract class AndroidApiDataAccess {
         value);
   }
 
-  public byte getApiLevelForReference(byte[] serialized, DexReference reference) {
+  public AndroidApiLevel getApiLevelForReference(byte[] serialized, DexReference reference) {
     PositionAndLength apiLevelPayloadOffset =
         readPositionAndLength(apiLevelHashMapIndexOffset(apiLevelHash(reference)));
     if (apiLevelPayloadOffset.isEmpty()) {
-      return 0;
+      return null;
     }
     return readApiLevelForPayloadOffset(
         payloadOffset(getConstantPoolSize()) + apiLevelPayloadOffset.getPosition(),
@@ -357,7 +358,7 @@ public abstract class AndroidApiDataAccess {
     }
 
     @Override
-    byte readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
+    AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
       int currentOffset = offset;
       while (currentOffset < offset + length) {
         // Read the length
@@ -370,12 +371,13 @@ public abstract class AndroidApiDataAccess {
         int startPosition = currentOffset + 2;
         if (value.length == lengthOfEntry
             && payloadHasConstantPoolValue(startPosition, lengthOfEntry, value)) {
-          return mappedByteBuffer.get(startPosition + lengthOfEntry);
+          return AndroidApiLevel.deserializeFromByte(
+              mappedByteBuffer.get(startPosition + lengthOfEntry));
         }
         // Advance our current position + length of entry + api level.
         currentOffset = startPosition + lengthOfEntry + 1;
       }
-      return -1;
+      return null;
     }
   }
 
@@ -426,7 +428,7 @@ public abstract class AndroidApiDataAccess {
     }
 
     @Override
-    byte readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
+    AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
       int index = offset;
       while (index < offset + length) {
         // Read size of entry
@@ -434,11 +436,11 @@ public abstract class AndroidApiDataAccess {
         int startIndex = index + 2;
         int endIndex = startIndex + lengthOfEntry;
         if (payloadHasConstantPoolValue(startIndex, lengthOfEntry, value)) {
-          return data[endIndex];
+          return AndroidApiLevel.deserializeFromByte(data[endIndex]);
         }
         index = endIndex + 1;
       }
-      return 0;
+      return null;
     }
   }
 
@@ -466,7 +468,7 @@ public abstract class AndroidApiDataAccess {
     }
 
     @Override
-    byte readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
+    AndroidApiLevel readApiLevelForPayloadOffset(int offset, int length, byte[] value) {
       throw new Unreachable();
     }
 

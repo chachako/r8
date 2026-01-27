@@ -48,6 +48,7 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
   public static final AndroidApiLevel U;
   public static final AndroidApiLevel V;
   public static final AndroidApiLevel BAKLAVA;
+  public static final AndroidApiLevel BAKLAVA_1;
   public static final AndroidApiLevel MAIN;
   // Used for API modeling of Android extension APIs.
   public static final AndroidApiLevel EXTENSION;
@@ -67,58 +68,61 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   static {
     ImmutableList.Builder<AndroidApiLevel> builder = ImmutableList.builder();
-    builder.add(B = new AndroidApiLevel(1, "B"));
-    builder.add(B_1_1 = new AndroidApiLevel(2, "B_1_1"));
-    builder.add(C = new AndroidApiLevel(3, "C"));
-    builder.add(D = new AndroidApiLevel(4, "D"));
-    builder.add(E = new AndroidApiLevel(5, "E"));
-    builder.add(E_0_1 = new AndroidApiLevel(6, "E_0_1"));
-    builder.add(E_MR1 = new AndroidApiLevel(7, "E_MR1"));
-    builder.add(F = new AndroidApiLevel(8, "F"));
-    builder.add(G = new AndroidApiLevel(9, "G"));
-    builder.add(G_MR1 = new AndroidApiLevel(10, "G_MR1"));
-    builder.add(H = new AndroidApiLevel(11, "H"));
-    builder.add(H_MR1 = new AndroidApiLevel(12, "H_MR1"));
-    builder.add(H_MR2 = new AndroidApiLevel(13, "H_MR2"));
-    builder.add(I = new AndroidApiLevel(14, "I"));
-    builder.add(I_MR1 = new AndroidApiLevel(15, "I_MR1"));
-    builder.add(J = new AndroidApiLevel(16, "J"));
-    builder.add(J_MR1 = new AndroidApiLevel(17, "J_MR1"));
-    builder.add(J_MR2 = new AndroidApiLevel(18, "J_MR2"));
-    builder.add(K = new AndroidApiLevel(19, "K"));
-    builder.add(K_WATCH = new AndroidApiLevel(20, "K_WATCH"));
-    builder.add(L = new AndroidApiLevel(21, "L"));
-    builder.add(L_MR1 = new AndroidApiLevel(22, "L_MR1"));
-    builder.add(M = new AndroidApiLevel(23, "M"));
-    builder.add(N = new AndroidApiLevel(24, "N"));
-    builder.add(N_MR1 = new AndroidApiLevel(25, "N_MR1"));
-    builder.add(O = new AndroidApiLevel(26, "O"));
-    builder.add(O_MR1 = new AndroidApiLevel(27, "O_MR1"));
-    builder.add(P = new AndroidApiLevel(28, "P"));
-    builder.add(Q = new AndroidApiLevel(29, "Q"));
-    builder.add(R = new AndroidApiLevel(30, "R"));
-    builder.add(S = new AndroidApiLevel(31, "S"));
-    builder.add(Sv2 = new AndroidApiLevel(32, "Sv2"));
-    builder.add(T = new AndroidApiLevel(33, "T"));
-    builder.add(U = new AndroidApiLevel(34, "U"));
-    builder.add(V = new AndroidApiLevel(35, "V"));
-    builder.add(BAKLAVA = new AndroidApiLevel(36, "BAKLAVA"));
-    builder.add(MAIN = new AndroidApiLevel(37, "MAIN"));
-    builder.add(EXTENSION = new AndroidApiLevel(Integer.MAX_VALUE, "EXTENSION"));
+    builder.add(B = new AndroidApiLevel(1, 0, "B"));
+    builder.add(B_1_1 = new AndroidApiLevel(2, 0, "B_1_1"));
+    builder.add(C = new AndroidApiLevel(3, 0, "C"));
+    builder.add(D = new AndroidApiLevel(4, 0, "D"));
+    builder.add(E = new AndroidApiLevel(5, 0, "E"));
+    builder.add(E_0_1 = new AndroidApiLevel(6, 0, "E_0_1"));
+    builder.add(E_MR1 = new AndroidApiLevel(7, 0, "E_MR1"));
+    builder.add(F = new AndroidApiLevel(8, 0, "F"));
+    builder.add(G = new AndroidApiLevel(9, 0, "G"));
+    builder.add(G_MR1 = new AndroidApiLevel(10, 0, "G_MR1"));
+    builder.add(H = new AndroidApiLevel(11, 0, "H"));
+    builder.add(H_MR1 = new AndroidApiLevel(12, 0, "H_MR1"));
+    builder.add(H_MR2 = new AndroidApiLevel(13, 0, "H_MR2"));
+    builder.add(I = new AndroidApiLevel(14, 0, "I"));
+    builder.add(I_MR1 = new AndroidApiLevel(15, 0, "I_MR1"));
+    builder.add(J = new AndroidApiLevel(16, 0, "J"));
+    builder.add(J_MR1 = new AndroidApiLevel(17, 0, "J_MR1"));
+    builder.add(J_MR2 = new AndroidApiLevel(18, 0, "J_MR2"));
+    builder.add(K = new AndroidApiLevel(19, 0, "K"));
+    builder.add(K_WATCH = new AndroidApiLevel(20, 0, "K_WATCH"));
+    builder.add(L = new AndroidApiLevel(21, 0, "L"));
+    builder.add(L_MR1 = new AndroidApiLevel(22, 0, "L_MR1"));
+    builder.add(M = new AndroidApiLevel(23, 0, "M"));
+    builder.add(N = new AndroidApiLevel(24, 0, "N"));
+    builder.add(N_MR1 = new AndroidApiLevel(25, 0, "N_MR1"));
+    builder.add(O = new AndroidApiLevel(26, 0, "O"));
+    builder.add(O_MR1 = new AndroidApiLevel(27, 0, "O_MR1"));
+    builder.add(P = new AndroidApiLevel(28, 0, "P"));
+    builder.add(Q = new AndroidApiLevel(29, 0, "Q"));
+    builder.add(R = new AndroidApiLevel(30, 0, "R"));
+    builder.add(S = new AndroidApiLevel(31, 0, "S"));
+    builder.add(Sv2 = new AndroidApiLevel(32, 0, "Sv2"));
+    builder.add(T = new AndroidApiLevel(33, 0, "T"));
+    builder.add(U = new AndroidApiLevel(34, 0, "U"));
+    builder.add(V = new AndroidApiLevel(35, 0, "V"));
+    builder.add(BAKLAVA = new AndroidApiLevel(36, 0, "BAKLAVA"));
+    builder.add(BAKLAVA_1 = new AndroidApiLevel(36, 1, "BAKLAVA_1"));
+    builder.add(MAIN = new AndroidApiLevel(37, 0, "MAIN"));
+    builder.add(EXTENSION = new AndroidApiLevel(Integer.MAX_VALUE, 0, "EXTENSION"));
     valuesSorted = builder.build();
-    assert valuesSorted.size() == 38;
+    assert valuesSorted.size() == 39;
     assert checkValuesSorted();
 
-    LATEST = BAKLAVA;
+    LATEST = BAKLAVA_1;
     API_DATABASE_LEVEL = LATEST;
     UNKNOWN = MAIN;
   }
 
   private final int level;
+  private final int minor;
   private final String name;
 
-  private AndroidApiLevel(int level, String name) {
+  private AndroidApiLevel(int level, int minor, String name) {
     this.level = level;
+    this.minor = minor;
     this.name = name;
   }
 
@@ -131,6 +135,10 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
 
   public int getLevel() {
     return level;
+  }
+
+  public int getMinor() {
+    return minor;
   }
 
   public String getName() {
@@ -182,9 +190,19 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
     }
   }
 
+  @Deprecated
+  @SuppressWarnings("InlineMeSuggester")
   public static AndroidApiLevel getAndroidApiLevel(int apiLevel) {
+    return getAndroidApiLevel(apiLevel, 0);
+  }
+
+  public static AndroidApiLevel getAndroidApiLevel(int apiLevel, int minor) {
     assert apiLevel > 0;
-    assert BAKLAVA == LATEST; // This has to be updated when we add new api levels.
+    assert minor >= 0;
+    if ((apiLevel <= 35 && minor != 0) || minor > 1) {
+      throw new IllegalArgumentException();
+    }
+    assert BAKLAVA_1 == LATEST; // This has to be updated when we add new api levels.
     assert UNKNOWN.isGreaterThan(LATEST);
     switch (apiLevel) {
       case 1:
@@ -258,7 +276,8 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
       case 35:
         return V;
       case 36:
-        return BAKLAVA;
+        assert minor <= 1;
+        return minor == 0 ? BAKLAVA : BAKLAVA_1;
       default:
         return MAIN;
     }
@@ -272,13 +291,33 @@ public class AndroidApiLevel implements Ordered<AndroidApiLevel> {
       String majorApiLevel = apiLevel.substring(0, dotPosition);
       String minorApiLevel = apiLevel.substring(dotPosition + 1);
       assert Integer.parseInt(minorApiLevel) >= 0;
-      return AndroidApiLevel.getAndroidApiLevel(Integer.parseInt(majorApiLevel));
+      return AndroidApiLevel.getAndroidApiLevel(
+          Integer.parseInt(majorApiLevel), Integer.parseInt(minorApiLevel));
     }
+  }
+
+  public byte serializeAsByte() {
+    if (this == EXTENSION) {
+      return 0x7f;
+    }
+    assert level < 64;
+    assert minor < 2; // Re-evaluate this when minor can be higher than 1.
+    return (byte) (level << 1 | minor);
+  }
+
+  public static AndroidApiLevel deserializeFromByte(byte b) {
+    if (b == 0x7f) {
+      return EXTENSION;
+    }
+    int i = Byte.toUnsignedInt(b);
+    int major = i >> 1;
+    int minor = i & 0x1;
+    return getAndroidApiLevel(major, minor);
   }
 
   @Override
   public int compareTo(AndroidApiLevel other) {
-    return level - other.level;
+    return level != other.level ? level - other.level : minor - other.minor;
   }
 
   @Override

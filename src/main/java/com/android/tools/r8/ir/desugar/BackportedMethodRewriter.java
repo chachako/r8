@@ -367,8 +367,8 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.BAKLAVA)) {
         initializeAndroidBaklavaMethodProviders(factory);
       }
-      if (typeIsPresent(factory.durationType)) {
-        initializeDurationMethodProviders(factory);
+      if (options.getMinApiLevel().isLessThan(AndroidApiLevel.BAKLAVA_1)) {
+        initializeAndroidBaklava1MethodProviders(factory);
       }
       initializeJava25MethodProviders(factory);
     }
@@ -1840,15 +1840,17 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
       }
     }
 
-    private void initializeDurationMethodProviders(DexItemFactory factory) {
+    private void initializeAndroidBaklava1MethodProviders(DexItemFactory factory) {
       // boolean Duration.isPositive()
       DexType type = factory.durationType;
       DexString name = factory.createString("isPositive");
       DexProto proto = factory.createProto(factory.booleanType);
       DexMethod method = factory.createMethod(type, proto, name);
-      addProvider(
-          new StatifyingMethodGenerator(
-              method, BackportedMethods::DurationMethods_isPositive, "isPositive", type));
+      if (typeIsPresent(type)) {
+        addProvider(
+            new StatifyingMethodGenerator(
+                method, BackportedMethods::DurationMethods_isPositive, "isPositive", type));
+      }
     }
 
     private void initializeAndroidBaklavaMethodProviders(DexItemFactory factory) {

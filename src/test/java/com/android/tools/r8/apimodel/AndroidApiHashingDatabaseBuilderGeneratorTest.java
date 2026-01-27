@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableList;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -61,6 +62,9 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           .resolve("api_database")
           .resolve("resources")
           .resolve("new_api_database.ser");
+
+  // Test flag to get all the not modeled items when adding a new API database.
+  private static List<String> notModelledDump = new ArrayList<>();
 
   // Update the API_LEVEL below to have the database generated for a new api level.
   private static final AndroidApiLevel API_LEVEL = AndroidApiLevel.API_DATABASE_LEVEL;
@@ -126,9 +130,9 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
                   methodReferences.forEach(field -> numberOfMethods.increment())));
         });
     // These numbers will change when updating api-versions.xml
-    assertEquals(6222, parsedApiClasses.size());
-    assertEquals(31431, numberOfFields.get());
-    assertEquals(48028, numberOfMethods.get());
+    assertEquals(6265, parsedApiClasses.size());
+    assertEquals(31660, numberOfFields.get());
+    assertEquals(48415, numberOfMethods.get());
   }
 
   private static String sampleVersion4ApiVersionsXml =
@@ -158,7 +162,15 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           + "\n"
           + "        <!-- This class was introduced in Baklava. It does not exist in any SDK"
           + " extension. -->\n"
-          + "        <class name=\"android/os/PlatformOnly\" since=\"36.0\">\n"
+          + "        <class name=\"android/os/FromBaklava\" since=\"36.0\">\n"
+          + "                <extends name=\"java/lang/Object\"/>\n"
+          + "                <method name=\"foo(I)V\" />\n"
+          + "        </class>\n"
+          + "        <class name=\"android/os/AlsoFromBaklava\" since=\"36\">\n"
+          + "                <extends name=\"java/lang/Object\"/>\n"
+          + "                <method name=\"foo(I)V\" />\n"
+          + "        </class>\n"
+          + "        <class name=\"android/os/FromBaklava1\" since=\"36.1\">\n"
           + "                <extends name=\"java/lang/Object\"/>\n"
           + "                <method name=\"foo(I)V\" />\n"
           + "        </class>\n"
@@ -168,7 +180,7 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
     int AD_SERVICES;
   }
 
-  static class PlatformOnly {}
+  static class TemplateClass {}
 
   private static void mockAndroidJarForSampleVersion4ApiVersionsXml(Path outputPath)
       throws Exception {
@@ -182,9 +194,23 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           ZipEntry.STORED);
       ZipUtils.writeToZipStream(
           out,
-          "android/os/PlatformOnly.class",
-          transformer(PlatformOnly.class)
-              .setClassDescriptor("Landroid/os/PlatformOnly;")
+          "android/os/FromBaklava.class",
+          transformer(TemplateClass.class)
+              .setClassDescriptor("Landroid/os/FromBaklava;")
+              .transform(),
+          ZipEntry.STORED);
+      ZipUtils.writeToZipStream(
+          out,
+          "android/os/AlsoFromBaklava.class",
+          transformer(TemplateClass.class)
+              .setClassDescriptor("Landroid/os/AlsoFromBaklava;")
+              .transform(),
+          ZipEntry.STORED);
+      ZipUtils.writeToZipStream(
+          out,
+          "android/os/FromBaklava1.class",
+          transformer(TemplateClass.class)
+              .setClassDescriptor("Landroid/os/FromBaklava1;")
               .transform(),
           ZipEntry.STORED);
     }
@@ -204,68 +230,67 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
             .setIgnoreExemptionList(true)
             .build()
             .run();
-    assertEquals(2, parsedApiClasses.size());
+    assertEquals(4, parsedApiClasses.size());
+    ParsedApiClass sdkExtension = parsedApiClasses.get(0);
     assertEquals(
-        parsedApiClasses.get(0).getClassReference(),
+        sdkExtension.getClassReference(),
         Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"));
-    assertEquals(parsedApiClasses.get(0).getApiLevel(), AndroidApiLevel.R);
-    parsedApiClasses
-        .get(0)
-        .visitMethodReferences(
-            (apiLevel, methods) -> {
-              if (apiLevel.equals(AndroidApiLevel.R)) {
-                assertEquals(
-                    methods,
-                    ImmutableList.of(
-                        Reference.methodFromDescriptor(
-                            "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I")));
-              } else if (apiLevel.equals(AndroidApiLevel.S)) {
-                assertEquals(
-                    methods,
-                    ImmutableList.of(
-                        Reference.methodFromDescriptor(
-                            "Landroid/os/ext/SdkExtensions;",
-                            "getAllExtensionVersions",
-                            "()Ljava/util/Map;")));
-              } else {
-                fail();
-              }
-            });
-    parsedApiClasses
-        .get(0)
-        .visitFieldReferences(
-            (apiLevel, fields) -> {
-              if (apiLevel.equals(AndroidApiLevel.U)) {
-                assertEquals(
-                    fields,
-                    ImmutableList.of(
-                        Reference.field(
-                            Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"),
-                            "AD_SERVICES",
-                            Reference.typeFromDescriptor("I"))));
-              } else {
-                fail();
-              }
-            });
-    assertEquals(
-        parsedApiClasses.get(1).getClassReference(),
-        Reference.classFromDescriptor("Landroid/os/PlatformOnly;"));
-    assertEquals(parsedApiClasses.get(1).getApiLevel(), AndroidApiLevel.BAKLAVA);
-    parsedApiClasses
-        .get(1)
-        .visitMethodReferences(
-            (apiLevel, methods) -> {
-              if (apiLevel.equals(AndroidApiLevel.BAKLAVA)) {
-                assertEquals(
-                    methods,
-                    ImmutableList.of(
-                        Reference.methodFromDescriptor(
-                            "Landroid/os/PlatformOnly;", "foo", "(I)V")));
-              } else {
-                fail();
-              }
-            });
-    assertEquals(1, parsedApiClasses.get(1).getTotalMemberCount());
+    assertEquals(sdkExtension.getApiLevel(), AndroidApiLevel.R);
+    sdkExtension.visitMethodReferences(
+        (apiLevel, methods) -> {
+          if (apiLevel.equals(AndroidApiLevel.R)) {
+            assertEquals(
+                methods,
+                ImmutableList.of(
+                    Reference.methodFromDescriptor(
+                        "Landroid/os/ext/SdkExtensions;", "getExtensionVersion", "(I)I")));
+          } else if (apiLevel.equals(AndroidApiLevel.S)) {
+            assertEquals(
+                methods,
+                ImmutableList.of(
+                    Reference.methodFromDescriptor(
+                        "Landroid/os/ext/SdkExtensions;",
+                        "getAllExtensionVersions",
+                        "()Ljava/util/Map;")));
+          } else {
+            fail();
+          }
+        });
+    sdkExtension.visitFieldReferences(
+        (apiLevel, fields) -> {
+          if (apiLevel.equals(AndroidApiLevel.U)) {
+            assertEquals(
+                fields,
+                ImmutableList.of(
+                    Reference.field(
+                        Reference.classFromDescriptor("Landroid/os/ext/SdkExtensions;"),
+                        "AD_SERVICES",
+                        Reference.typeFromDescriptor("I"))));
+          } else {
+            fail();
+          }
+        });
+    checkMockClass(parsedApiClasses.get(1), "Landroid/os/FromBaklava;", AndroidApiLevel.BAKLAVA);
+    checkMockClass(
+        parsedApiClasses.get(2), "Landroid/os/AlsoFromBaklava;", AndroidApiLevel.BAKLAVA);
+    checkMockClass(parsedApiClasses.get(3), "Landroid/os/FromBaklava1;", AndroidApiLevel.BAKLAVA_1);
+  }
+
+  private static void checkMockClass(
+      ParsedApiClass apiClass, String descriptor, AndroidApiLevel apiLevel) {
+    assertEquals(apiClass.getClassReference(), Reference.classFromDescriptor(descriptor));
+    assertEquals(apiLevel, apiClass.getApiLevel());
+    apiClass.visitMethodReferences(
+        (level, methods) -> {
+          if (level.equals(apiLevel)) {
+            assertEquals(
+                methods,
+                ImmutableList.of(Reference.methodFromDescriptor(descriptor, "foo", "(I)V")));
+          } else {
+            fail();
+          }
+        });
+    assertEquals(1, apiClass.getTotalMemberCount());
   }
 
   @Test
@@ -295,27 +320,23 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
         notModeledTypes.remove(typeName);
         continue;
       }
-      assertTrue(
-          "Class "
-              + clazz.toSourceString()
-              + " not found in API database. Did you forget to run main method in this"
-              + " class to regenerate it?",
-          apiLevelCompute
-              .computeApiLevelForLibraryReference(clazz.getReference())
-              .isKnownApiLevel());
+      if (!apiLevelCompute
+          .computeApiLevelForLibraryReference(clazz.getReference())
+          .isKnownApiLevel()) {
+        notModelledDump.add("notModeledTypes.add(\"" + clazz.toSourceString() + "\");");
+        continue;
+      }
+
       clazz.forEachClassField(
           field -> {
             if (field.getAccessFlags().isPublic()
                 && !field.toSourceString().contains("this$0")
                 && !notModeledFields.contains(field.toSourceString())) {
-              assertTrue(
-                  "Field "
-                      + field.toSourceString()
-                      + " not found in API database. Did you forget to run main method in this"
-                      + " class to regenerate it?",
-                  apiLevelCompute
-                      .computeApiLevelForLibraryReference(field.getReference())
-                      .isKnownApiLevel());
+              if (!apiLevelCompute
+                  .computeApiLevelForLibraryReference(field.getReference())
+                  .isKnownApiLevel()) {
+                notModelledDump.add("notModeledFields.add(\"" + field.toSourceString() + "\");");
+              }
             }
             notModeledFields.remove(field.toSourceString());
           });
@@ -323,17 +344,20 @@ public class AndroidApiHashingDatabaseBuilderGeneratorTest extends TestBase {
           method -> {
             if (method.getAccessFlags().isPublic()
                 && !notModeledMethods.contains(method.toSourceString())) {
-              assertTrue(
-                  "Method "
-                      + method.toSourceString()
-                      + " not found in API database. Did you forget to run main method in this"
-                      + " class to regenerate it?",
-                  apiLevelCompute
-                      .computeApiLevelForLibraryReference(method.getReference())
-                      .isKnownApiLevel());
+              if (!apiLevelCompute
+                  .computeApiLevelForLibraryReference(method.getReference())
+                  .isKnownApiLevel()) {
+                notModelledDump.add("notModelledMethods.add(\"" + method.toSourceString() + "\");");
+              }
             }
             notModeledMethods.remove(method.toSourceString());
           });
+    }
+    if (!notModelledDump.isEmpty()) {
+      notModelledDump.stream().sorted().forEach(System.out::println);
+      fail(
+          "Some items, not found in API database. Did you forget to run main method in this class"
+              + " to regenerate it?");
     }
 
     assertTrue(

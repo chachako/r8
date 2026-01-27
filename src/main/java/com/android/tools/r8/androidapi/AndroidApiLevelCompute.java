@@ -16,13 +16,14 @@ import com.android.tools.r8.utils.InternalOptions;
 
 public abstract class AndroidApiLevelCompute {
 
+  // Known API levels indexed by AndroidApiLevel.serializeAsByte().
   private final KnownApiLevel[] knownApiLevelCache;
 
   public AndroidApiLevelCompute() {
-    knownApiLevelCache = new KnownApiLevel[AndroidApiLevel.API_DATABASE_LEVEL.getLevel() + 1];
+    knownApiLevelCache = new KnownApiLevel[128];
     for (AndroidApiLevel value : AndroidApiLevel.getAndroidApiLevelsSorted()) {
       if (value != AndroidApiLevel.MAIN && value != AndroidApiLevel.EXTENSION) {
-        knownApiLevelCache[value.getLevel()] = new KnownApiLevel(value);
+        knownApiLevelCache[value.serializeAsByte()] = new KnownApiLevel(value);
       }
     }
   }
@@ -34,7 +35,7 @@ public abstract class AndroidApiLevelCompute {
     if (apiLevel == AndroidApiLevel.EXTENSION) {
       return ComputedApiLevel.extension();
     }
-    return knownApiLevelCache[apiLevel.getLevel()];
+    return knownApiLevelCache[apiLevel.serializeAsByte()];
   }
 
   public abstract ComputedApiLevel computeApiLevelForLibraryReference(

@@ -75,7 +75,7 @@ public class GenerateCovariantReturnTypeMethodsTest extends TestBase {
       Paths.get(ToolHelper.MAIN_SOURCE_DIR)
           .resolve(PACKAGE_NAME.replace('.', '/'))
           .resolve(CLASS_NAME + ".java");
-  private static final AndroidApiLevel GENERATED_FOR_API_LEVEL = AndroidApiLevel.BAKLAVA;
+  private static final AndroidApiLevel GENERATED_FOR_API_LEVEL = AndroidApiLevel.BAKLAVA_1;
 
   @Parameter public TestParameters parameters;
 
