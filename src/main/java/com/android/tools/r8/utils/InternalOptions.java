@@ -2452,7 +2452,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
             "com.android.tools.r8.enableMapIdInSourceFile", true);
     public boolean enableMemberRebindingAnalysis = true;
     public boolean enableMultiANewArrayDesugaringForClassFiles = false;
-    public boolean enableRepackagingByDefault = false;
+    public boolean enableRepackagingByDefault = true;
     public boolean enableRepackagingByDefaultForCf = false;
     public boolean enableStrictFrameVerification = false;
     public boolean enableSyntheticSharing = true;
