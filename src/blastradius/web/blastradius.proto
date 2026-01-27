@@ -1,0 +1,201 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+syntax = "proto3";
+
+package com.android.tools.r8.blastradius.proto;
+
+// Don't put all messages under the outer class.
+option java_multiple_files = true;
+
+// Camel-case the outer class name (default is `Blastradius`).
+option java_outer_classname = "KeepRuleBlastRadiusProtos";
+
+// Java package consistent with R8 convention.
+option java_package = "com.android.tools.r8.blastradius.proto";
+
+// Information about a single keep rule and its immediate blast radius.
+message KeepRuleBlastRadius {
+  uint32 id = 1;
+  // Textual representation of the keep rule.
+  string source = 2;
+  // What this keep rule prohibits (e.g., optimization).
+  // Id into KeepConstraints.
+  uint32 constraints_id = 3;
+  // Where this rule comes from.
+  TextFileOrigin origin = 4;
+  // Blast radius information.
+  BlastRadius blast_radius = 5;
+}
+
+message BlastRadius {
+  // Which rules subsume this rule. Note: This information could in principle
+  // be computed offline using the kept_by info of Kept*Info.
+  // Ids into KeepAnnotationBlastRadius and KeepRuleBlastRadius.
+  repeated uint32 subsumed_by = 1;
+  // The immediate blast radius of this rule.
+  // - Ids into KeptClassInfo.
+  repeated uint32 class_blast_radius = 2;
+  // - Ids into KeptFieldInfo.
+  repeated uint32 field_blast_radius = 3;
+  // - Ids into KeptMethodInfo.
+  repeated uint32 method_blast_radius = 4;
+}
+
+// Information about the constraints of a single keep annotation or rule,
+// i.e., what is prohibited by it.
+//
+// This is encoded as a message to support keep constraints that cannot be
+// encoded as a bit in the future.
+message KeepConstraints {
+  uint32 id = 1;
+  repeated KeepConstraint constraints = 2;
+}
+
+enum KeepConstraint {
+  DONT_OBFUSCATE = 0;
+  DONT_OPTIMIZE = 1;
+  DONT_SHRINK = 2;
+}
+
+// Information about a class in the app/library and which keep rules that
+// keep it.
+message KeptClassInfo {
+  uint32 id = 1;
+  // Id into TypeReference.
+  uint32 class_reference_id = 2;
+  // Id into FileOrigin or ClassFileInJarOrigin.
+  uint32 file_origin_id = 3;
+  // Ids into KeepRuleBlastRadius, telling which rules keep this class.
+  // Allows reasoning about properties such as:
+  // - Which keep rules are fully subsumed by other keep rules?
+  // - Which keep rules keep the most classes/fields/methods
+  //   not kept by rules?
+  repeated uint32 kept_by = 4;
+}
+
+message KeptFieldInfo {
+  uint32 id = 1;
+  // Id into FieldReference.
+  uint32 field_reference_id = 2;
+  // Id into FileOrigin or ClassFileInJarOrigin.
+  uint32 file_origin_id = 3;
+  // Ids into KeepRuleBlastRadius, telling which rules keep this field.
+  repeated uint32 kept_by = 4;
+}
+
+message KeptMethodInfo {
+  uint32 id = 1;
+  // Id into MethodReference.
+  uint32 method_reference_id = 2;
+  // Id into FileOrigin or ClassFileInJarOrigin.
+  uint32 file_origin_id = 3;
+  // Ids into KeepRuleBlastRadius, telling which rules keep this method.
+  repeated uint32 kept_by = 4;
+}
+
+// References:
+
+message FieldReference {
+  uint32 id = 1;
+  // The class on which the field is declared.
+  // Id into TypeReference.
+  uint32 class_reference_id = 2;
+  // The type of the field.
+  // Id into type reference.
+  uint32 type_reference_id = 3;
+  // The name of the field.
+  string name = 4;
+}
+
+message MethodReference {
+  uint32 id = 1;
+  // The class on which the method is declared.
+  // Id into TypeReference.
+  uint32 class_reference_id = 2;
+  // The proto (return type, parameter types) of the method.
+  // Id into ProtoReference.
+  uint32 proto_reference_id = 3;
+  // The name of the method.
+  string name = 4;
+}
+
+message ProtoReference {
+  uint32 id = 1;
+  // Id into TypeReferenceList.
+  uint32 parameters_id = 2;
+  // Id into TypeReference.
+  uint32 return_type_id = 3;
+}
+
+message TypeReference {
+  uint32 id = 1;
+  // The descriptor, e.g.,
+  // - Z
+  // - Ljava/lang/Object;
+  // - [[Ljava/lang/Object;
+  string java_descriptor = 2;
+}
+
+message TypeReferenceList {
+  uint32 id = 1;
+  repeated uint32 type_reference_ids = 2;
+}
+
+// Origins:
+
+message FileOrigin {
+  uint32 id = 1;
+  string filename = 2;
+  MavenCoordinate maven_coordinate = 3;
+}
+
+// The ids of ClassFileInJarOrigin and FileOrigin are non-overlapping
+// by design, so that a single uint32 id can be used to
+// unambiguously reference a ClassFileInJarOrigin or FileOrigin.
+message ClassFileInJarOrigin {
+  uint32 id = 1;
+  uint32 file_origin_id = 2;
+  string entry = 3;
+}
+
+// Intentionally doesn't declare an id since each keep rule has its own
+// TextFileOrigin, i.e., there is no sharing of TextFileOrigin.
+message TextFileOrigin {
+  // Id into FileOrigin
+  uint32 file_origin_id = 1;
+  uint32 line_number = 2;
+  uint32 column_number = 3;
+}
+
+message MavenCoordinate {
+  uint32 id = 1;
+  string group_id = 2;
+  string artifact_id = 3;
+  string version = 4;
+}
+
+// Container.
+
+message BlastRadiusContainer {
+  // Origins.
+  repeated FileOrigin file_origin_table = 1;
+  repeated ClassFileInJarOrigin class_file_in_jar_origin_table = 2;
+  repeated MavenCoordinate maven_coordinate_table = 3;
+
+  // References.
+  repeated FieldReference field_reference_table = 4;
+  repeated MethodReference method_reference_table = 5;
+  repeated ProtoReference proto_reference_table = 6;
+  repeated TypeReference type_reference_table = 7;
+  repeated TypeReferenceList type_reference_list_table = 8;
+
+  // Kept items.
+  repeated KeptClassInfo kept_class_info_table = 9;
+  repeated KeptFieldInfo kept_field_info_table = 10;
+  repeated KeptMethodInfo kept_method_info_table = 11;
+
+  // Keep specifications.
+  repeated KeepConstraints keep_constraints_table = 12;
+  repeated KeepRuleBlastRadius keep_rule_blast_radius_table = 13;
+}
