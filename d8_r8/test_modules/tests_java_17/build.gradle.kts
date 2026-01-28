@@ -23,6 +23,10 @@ java {
   targetCompatibility = JavaVersion.VERSION_17
 }
 
+kotlin {
+  explicitApi()
+}
+
 val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 val mainTurboCompileTask = projectTask("main", "compileTurboJava")

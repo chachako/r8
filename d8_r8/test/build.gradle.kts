@@ -19,6 +19,10 @@ java {
   }
 }
 
+kotlin {
+  explicitApi()
+}
+
 dependencies { }
 
 val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")

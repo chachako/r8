@@ -29,6 +29,10 @@ java {
   }
 }
 
+kotlin {
+  explicitApi()
+}
+
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val keepAnnoJarTask = projectTask("keepanno", "jar")

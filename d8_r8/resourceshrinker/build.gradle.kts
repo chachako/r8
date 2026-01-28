@@ -22,6 +22,10 @@ java {
   withSourcesJar()
 }
 
+kotlin {
+  explicitApi()
+}
+
 fun jarDependencies() : FileCollection {
   return sourceSets
     .main

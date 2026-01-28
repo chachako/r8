@@ -7,6 +7,10 @@ plugins {
   id("dependencies-plugin")
 }
 
+kotlin {
+  explicitApi()
+}
+
 tasks {
 
   val downloadDeps by registering(DownloadAllDependenciesTask::class) {

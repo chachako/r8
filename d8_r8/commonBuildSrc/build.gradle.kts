@@ -13,3 +13,7 @@ gradlePlugin {
     implementationClass = "DependenciesPlugin"
   }
 }
+
+kotlin {
+  explicitApi()
+}

@@ -21,14 +21,14 @@ import org.gradle.api.tasks.testing.TestResult.ResultType
 import org.gradle.kotlin.dsl.register
 
 // Utility to install tracking of test results in status files.
-class TestingState {
-  companion object {
+public class TestingState {
+  public companion object {
 
-    const val MODE_PROPERTY = "testing-state-mode"
-    const val PATH_PROPERTY = "testing-state-path"
+    private const val MODE_PROPERTY = "testing-state-mode"
+    private const val PATH_PROPERTY = "testing-state-path"
 
     // Operating mode for the test state.
-    enum class Mode {
+    private enum class Mode {
       ALL,
       OUTSTANDING,
       FAILING,
@@ -36,13 +36,13 @@ class TestingState {
     }
 
     // These are the files that are allowed for tracking test status.
-    enum class StatusType {
+    private enum class StatusType {
       SUCCESS,
       FAILURE,
       PAST_FAILURE,
     }
 
-    fun getRerunMode(project: Project): Mode? {
+    private fun getRerunMode(project: Project): Mode? {
       val prop = project.findProperty(MODE_PROPERTY) ?: return null
       return when (prop.toString().lowercase()) {
         "all" -> Mode.ALL
@@ -54,7 +54,7 @@ class TestingState {
       }
     }
 
-    fun setUpTestingState(task: Test) {
+    public fun setUpTestingState(task: Test) {
       // Both the path and the mode must be defined for the testing state to be active.
       val testingStatePath = task.project.findProperty(PATH_PROPERTY) ?: return
       val testingStateMode = getRerunMode(task.project) ?: return

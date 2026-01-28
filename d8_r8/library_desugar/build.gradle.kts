@@ -19,5 +19,9 @@ java {
   }
 }
 
+kotlin {
+  explicitApi()
+}
+
 dependencies {
 }

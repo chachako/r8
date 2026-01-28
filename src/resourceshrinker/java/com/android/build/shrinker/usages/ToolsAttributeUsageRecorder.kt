@@ -16,7 +16,6 @@
 
 package com.android.build.shrinker.usages
 
-import com.android.SdkConstants.TOOLS_NS_NAME
 import com.android.SdkConstants.VALUE_STRICT
 import com.android.build.shrinker.ResourceShrinkerModel
 import com.android.utils.XmlUtils
@@ -30,65 +29,65 @@ import javax.xml.stream.XMLInputFactory
 /**
  * Records usages of tools:keep, tools:discard and tools:shrinkMode in resources.
  *
- * <p>This unit requires to analyze resources in raw XML format because as said in
- * <a href="https://developer.android.com/studio/write/tool-attributes>documentation</a> these
+ * <p>This unit requires to analyze resources in raw XML format because as said in <a
+ * href="https://developer.android.com/studio/write/tool-attributes>documentation</a> these
  * attributes may appear in any &lt;resources&gt; element and some files that contain such element
  * are not compiled to proto. For example raw and values resources like res/raw/keep.xml,
  * res/values/values.xml etc.
  *
  * @param rawResourcesPath path to folder with resources in raw format.
  */
-class ToolsAttributeUsageRecorder(val rawResourcesPath: Path) : ResourceUsageRecorder {
+public class ToolsAttributeUsageRecorder(private val rawResourcesPath: Path) :
+  ResourceUsageRecorder {
 
-    override fun recordUsages(model: ResourceShrinkerModel) {
-        Files.walk(rawResourcesPath)
-            .filter { it.fileName.toString().endsWith(".xml", ignoreCase = true) }
-            .forEach { processRawXml(it, model) }
-    }
+  override fun recordUsages(model: ResourceShrinkerModel) {
+    Files.walk(rawResourcesPath)
+      .filter { it.fileName.toString().endsWith(".xml", ignoreCase = true) }
+      .forEach { processRawXml(it, model) }
+  }
 
-    private fun processRawXml(path: Path, model: ResourceShrinkerModel) {
-        processRawXml(XmlUtils.getUtfReader(path.toFile()), model)
-    }
+  private fun processRawXml(path: Path, model: ResourceShrinkerModel) {
+    processRawXml(XmlUtils.getUtfReader(path.toFile()), model)
+  }
 }
 
-fun processRawXml(reader: Reader, model: ResourceShrinkerModel) {
-    processResourceToolsAttributes(reader).forEach { key, value ->
-        when (key) {
-            "keep" -> model.resourceStore.recordKeepToolAttribute(value)
-            "discard" -> model.resourceStore.recordDiscardToolAttribute(value)
-            "shrinkMode" ->
-                if (value == VALUE_STRICT) {
-                    model.resourceStore.safeMode = false
-                }
+public fun processRawXml(reader: Reader, model: ResourceShrinkerModel) {
+  processResourceToolsAttributes(reader).forEach { key, value ->
+    when (key) {
+      "keep" -> model.resourceStore.recordKeepToolAttribute(value)
+      "discard" -> model.resourceStore.recordDiscardToolAttribute(value)
+      "shrinkMode" ->
+        if (value == VALUE_STRICT) {
+          model.resourceStore.safeMode = false
         }
     }
+  }
 }
 
-fun processResourceToolsAttributes(utfReader: Reader?): ImmutableMap<String, String> {
-    val toolsAttributes = mutableMapOf<String, String>()
-    utfReader.use { reader: Reader? ->
-        val factory = XMLInputFactory.newInstance()
-        val xmlStreamReader = factory.createXMLStreamReader(reader)
+private fun processResourceToolsAttributes(utfReader: Reader?): ImmutableMap<String, String> {
+  val toolsAttributes = mutableMapOf<String, String>()
+  utfReader.use { reader: Reader? ->
+    val factory = XMLInputFactory.newInstance()
+    val xmlStreamReader = factory.createXMLStreamReader(reader)
 
-        var rootElementProcessed = false
-        while (!rootElementProcessed && xmlStreamReader.hasNext()) {
-            xmlStreamReader.next()
-            if (xmlStreamReader.isStartElement) {
-                if (xmlStreamReader.localName == "resources") {
-                    for (i in 0 until xmlStreamReader.attributeCount) {
-                        val namespace = "http://schemas.android.com/tools"
-                        if (xmlStreamReader.getAttributeNamespace(i) == namespace) {
-                            toolsAttributes.put(
-                                xmlStreamReader.getAttributeLocalName(i),
-                                xmlStreamReader.getAttributeValue(i)
-                            )
-                        }
-                    }
-                }
-                rootElementProcessed = true
+    var rootElementProcessed = false
+    while (!rootElementProcessed && xmlStreamReader.hasNext()) {
+      xmlStreamReader.next()
+      if (xmlStreamReader.isStartElement) {
+        if (xmlStreamReader.localName == "resources") {
+          for (i in 0 until xmlStreamReader.attributeCount) {
+            val namespace = "http://schemas.android.com/tools"
+            if (xmlStreamReader.getAttributeNamespace(i) == namespace) {
+              toolsAttributes.put(
+                xmlStreamReader.getAttributeLocalName(i),
+                xmlStreamReader.getAttributeValue(i),
+              )
             }
+          }
         }
+        rootElementProcessed = true
+      }
     }
-    return copyOf(toolsAttributes)
+  }
+  return copyOf(toolsAttributes)
 }
-

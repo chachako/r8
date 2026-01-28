@@ -26,7 +26,7 @@ import com.android.tools.r8.references.MethodReference
 import java.nio.file.Path
 import java.util.function.Consumer
 
-fun runResourceShrinkerAnalysis(bytes: ByteArray, file: Path, callback: AnalysisCallback) {
+public fun runResourceShrinkerAnalysis(bytes: ByteArray, file: Path, callback: AnalysisCallback) {
   val resource = ProgramResource.fromBytes(PathOrigin(file), ProgramResource.Kind.DEX, bytes, null)
   val provider =
     object : ProgramResourceProvider {
@@ -43,7 +43,8 @@ fun runResourceShrinkerAnalysis(bytes: ByteArray, file: Path, callback: Analysis
 }
 
 /** An adapter so R8 API classes do not leak into other modules. */
-class AnalysisAdapter(val impl: AnalysisCallback) : ResourceShrinker.ReferenceChecker {
+private class AnalysisAdapter(private val impl: AnalysisCallback) :
+  ResourceShrinker.ReferenceChecker {
   override fun shouldProcess(internalName: String): Boolean = impl.shouldProcess(internalName)
 
   override fun referencedStaticField(internalName: String, fieldName: String) =
@@ -66,21 +67,24 @@ class AnalysisAdapter(val impl: AnalysisCallback) : ResourceShrinker.ReferenceCh
     impl.endMethodVisit(methodReference)
 }
 
-interface AnalysisCallback {
+public interface AnalysisCallback {
 
-  fun shouldProcess(internalName: String): Boolean
+  public fun shouldProcess(internalName: String): Boolean
 
-  fun referencedInt(value: Int)
+  public fun referencedInt(value: Int)
 
-  fun referencedString(value: String)
+  public fun referencedString(value: String)
 
-  fun referencedStaticField(internalName: String, fieldName: String)
+  public fun referencedStaticField(internalName: String, fieldName: String)
 
-  fun referencedMethod(internalName: String, methodName: String, methodDescriptor: String)
+  public fun referencedMethod(internalName: String, methodName: String, methodDescriptor: String)
 
-  fun startMethodVisit(methodReference: MethodReference)
+  public fun startMethodVisit(methodReference: MethodReference)
 
-  fun endMethodVisit(methodReference: MethodReference)
+  public fun endMethodVisit(methodReference: MethodReference)
 }
 
-class MethodVisitingStatus(var isVisiting: Boolean = false, var methodName: String? = null)
+public class MethodVisitingStatus(
+  public var isVisiting: Boolean = false,
+  public var methodName: String? = null,
+)

@@ -20,56 +20,56 @@ import java.io.File
 import java.io.PrintWriter
 import java.util.function.Supplier
 
-interface ShrinkerDebugReporter : AutoCloseable {
-    fun debug(f: Supplier<String>)
-    fun info(f: Supplier<String>)
+public interface ShrinkerDebugReporter : AutoCloseable {
+  public fun debug(f: Supplier<String>)
+
+  public fun info(f: Supplier<String>)
 }
 
-object NoDebugReporter : ShrinkerDebugReporter {
-    override fun debug(f: Supplier<String>) = Unit
+public object NoDebugReporter : ShrinkerDebugReporter {
+  override fun debug(f: Supplier<String>): Unit = Unit
 
-    override fun info(f: Supplier<String>) = Unit
+  override fun info(f: Supplier<String>): Unit = Unit
 
-    override fun close() = Unit
+  override fun close(): Unit = Unit
 }
 
-class FileReporter(
-    reportFile: File
+private class FileReporter(reportFile: File) : ShrinkerDebugReporter {
+  private val writer: PrintWriter = reportFile.let { PrintWriter(it) }
+
+  override fun debug(f: Supplier<String>) {
+    writer.println(f.get())
+  }
+
+  override fun info(f: Supplier<String>) {
+    writer.println(f.get())
+  }
+
+  override fun close() {
+    writer.close()
+  }
+}
+
+private class LoggerAndFileDebugReporter(
+  private val logDebug: (String) -> Unit,
+  private val logInfo: (String) -> Unit,
+  reportFile: File?,
 ) : ShrinkerDebugReporter {
-    private val writer: PrintWriter = reportFile.let { PrintWriter(it) }
-    override fun debug(f: Supplier<String>) {
-        writer.println(f.get())
-    }
+  private val writer: PrintWriter? = reportFile?.let { PrintWriter(it) }
 
-    override fun info(f: Supplier<String>) {
-        writer.println(f.get())
-    }
+  override fun debug(f: Supplier<String>) {
+    val message = f.get()
+    writer?.println(message)
+    logDebug(message)
+  }
 
-    override fun close() {
-        writer.close()
-    }
-}
+  override fun info(f: Supplier<String>) {
+    val message = f.get()
+    writer?.println(message)
+    logInfo(message)
+  }
 
-class LoggerAndFileDebugReporter(
-    private val logDebug: (String) -> Unit,
-    private val logInfo: (String) -> Unit,
-    reportFile: File?
-) : ShrinkerDebugReporter {
-    private val writer: PrintWriter? = reportFile?.let { PrintWriter(it) }
-
-     override fun debug(f: Supplier<String>) {
-        val message = f.get()
-        writer?.println(message)
-        logDebug(message)
-    }
-
-    override fun info(f: Supplier<String>) {
-        val message = f.get()
-        writer?.println(message)
-        logInfo(message)
-    }
-
-    override fun close() {
-        writer?.close()
-    }
+  override fun close() {
+    writer?.close()
+  }
 }

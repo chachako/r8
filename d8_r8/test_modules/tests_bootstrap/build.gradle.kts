@@ -28,6 +28,10 @@ java {
   }
 }
 
+kotlin {
+  explicitApi()
+}
+
 val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 

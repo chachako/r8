@@ -22,23 +22,23 @@ import org.gradle.workers.WorkAction
 import org.gradle.workers.WorkParameters
 import org.gradle.workers.WorkerExecutor
 
-abstract class DownloadAllDependenciesTask : DefaultTask() {
+public abstract class DownloadAllDependenciesTask : DefaultTask() {
 
   private var _root: File? = null
   private var _thirdPartyDeps: List<ThirdPartyDependency>? = null
 
   @InputFiles
-  fun getInputFile(): List<File> {
+  public fun getInputFile(): List<File> {
     return _thirdPartyDeps!!.map { _root!!.resolve(it.sha1File) }
   }
 
   @OutputDirectories
-  fun getOutputDir(): List<File> {
+  public fun getOutputDir(): List<File> {
     return _thirdPartyDeps!!.map { _root!!.resolve(it.path) }
   }
 
   @OutputFiles
-  fun getOutputFiles(): List<File> {
+  public fun getOutputFiles(): List<File> {
     return _thirdPartyDeps!!.map {
       _root!!.resolve(it.sha1File.resolveSibling(it.sha1File.name.replace(".sha1", "")))
     }
@@ -46,13 +46,13 @@ abstract class DownloadAllDependenciesTask : DefaultTask() {
 
   @Inject protected abstract fun getWorkerExecutor(): WorkerExecutor?
 
-  fun setDependencies(root: File, thirdPartyDeps: List<ThirdPartyDependency>) {
+  public fun setDependencies(root: File, thirdPartyDeps: List<ThirdPartyDependency>) {
     this._root = root
     this._thirdPartyDeps = thirdPartyDeps
   }
 
   @TaskAction
-  fun execute() {
+  public fun execute() {
     val noIsolation = getWorkerExecutor()!!.noIsolation()
     _thirdPartyDeps?.forEach {
       val root = _root!!
@@ -75,15 +75,15 @@ abstract class DownloadAllDependenciesTask : DefaultTask() {
     }
   }
 
-  interface RunDownloadParameters : WorkParameters {
-    val type: Property<DependencyType>
-    val sha1File: RegularFileProperty
-    val outputDir: RegularFileProperty
-    val tarGzFile: RegularFileProperty
-    val root: RegularFileProperty
+  private interface RunDownloadParameters : WorkParameters {
+    public val type: Property<DependencyType>
+    public val sha1File: RegularFileProperty
+    public val outputDir: RegularFileProperty
+    public val tarGzFile: RegularFileProperty
+    public val root: RegularFileProperty
   }
 
-  abstract class RunDownload : WorkAction<RunDownloadParameters> {
+  private abstract class RunDownload : WorkAction<RunDownloadParameters> {
     override fun execute() {
       val sha1File = parameters.sha1File.asFile.get()
       val outputDir = parameters.outputDir.asFile.get()
@@ -153,8 +153,8 @@ abstract class DownloadAllDependenciesTask : DefaultTask() {
     }
   }
 
-  companion object {
-    fun shouldExecute(outputDir: File, tarGzFile: File, sha1File: File): Boolean {
+  private companion object {
+    private fun shouldExecute(outputDir: File, tarGzFile: File, sha1File: File): Boolean {
       // First run will write the tar.gz file, causing the second run to still be out-of-date.
       // Check if the modification time of the tar is newer than the sha in which case we are done.
       if (

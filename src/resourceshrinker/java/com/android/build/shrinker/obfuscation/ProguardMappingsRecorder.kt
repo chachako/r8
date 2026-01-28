@@ -26,50 +26,50 @@ import java.nio.file.Path
  *
  * @param mapping file lines or the mapping file path.
  */
-class ProguardMappingsRecorder(private val mappingLines: List<String>) : ObfuscationMappingsRecorder {
+public class ProguardMappingsRecorder(private val mappingLines: List<String>) :
+  ObfuscationMappingsRecorder {
 
-    constructor(mappingsFile: Path)
-      : this(Files.readAllLines(mappingsFile, StandardCharsets.UTF_8));
+  private constructor(
+    mappingsFile: Path
+  ) : this(Files.readAllLines(mappingsFile, StandardCharsets.UTF_8))
 
-    override fun recordObfuscationMappings(model: ResourceShrinkerModel) {
-        model.obfuscatedClasses = extractObfuscatedResourceClasses()
+  override fun recordObfuscationMappings(model: ResourceShrinkerModel) {
+    model.obfuscatedClasses = extractObfuscatedResourceClasses()
+  }
+
+  internal fun extractObfuscatedResourceClasses(): ObfuscatedClasses {
+    // Proguard obfuscation mappings file has the following structure:
+    // # comment1
+    // com.package.MainClass -> a.a:
+    //     int field -> a
+    //     boolean getFlag() -> b
+    // com.package.R -> a.b:
+    // com.package.R$style -> a.b.a:
+    //     int Toolbar_android_gravity -> i1
+    val builder = ObfuscatedClasses.Builder()
+    mappingLines.forEach { line ->
+      when {
+        isMethodMapping(line) -> builder.addMethodMapping(extractMethodMapping(line))
+        isClassMapping(line) -> builder.addClassMapping(extractClassMapping(line))
+      }
     }
+    return builder.build()
+  }
 
-    internal fun extractObfuscatedResourceClasses(): ObfuscatedClasses {
-        // Proguard obfuscation mappings file has the following structure:
-        // # comment1
-        // com.package.MainClass -> a.a:
-        //     int field -> a
-        //     boolean getFlag() -> b
-        // com.package.R -> a.b:
-        // com.package.R$style -> a.b.a:
-        //     int Toolbar_android_gravity -> i1
-        val builder = ObfuscatedClasses.Builder()
-        mappingLines.forEach { line ->
-            when {
-                isMethodMapping(line) -> builder.addMethodMapping(extractMethodMapping(line))
-                isClassMapping(line) -> builder.addClassMapping(extractClassMapping(line))
-            }
-        }
-        return builder.build()
-    }
+  private fun isClassMapping(line: String): Boolean = line.contains("->")
 
-    private fun isClassMapping(line: String): Boolean = line.contains("->")
+  private fun isMethodMapping(line: String): Boolean =
+    (line.startsWith(" ") || line.startsWith("\t")) && line.contains("->")
 
-    private fun isMethodMapping(line: String): Boolean =
-        (line.startsWith(" ") || line.startsWith("\t")) && line.contains("->")
+  private fun extractClassMapping(line: String): Pair<String, String> {
+    val mapping = line.split("->", limit = 2)
+    return Pair(mapping[0].trim(), mapping[1].trim(' ', '\t', ':'))
+  }
 
-    private fun extractClassMapping(line: String): Pair<String, String> {
-        val mapping = line.split("->", limit = 2)
-        return Pair(mapping[0].trim(), mapping[1].trim(' ', '\t', ':'))
-    }
-
-    private fun extractMethodMapping(line: String): Pair<String, String> {
-        val mapping = line.split("->", limit = 2)
-        val originalMethod = mapping[0].trim()
-            .substringBeforeLast('(')
-            .substringAfter(' ')
-        val obfuscatedMethod = mapping[1].trim()
-        return Pair(originalMethod, obfuscatedMethod)
-    }
+  private fun extractMethodMapping(line: String): Pair<String, String> {
+    val mapping = line.split("->", limit = 2)
+    val originalMethod = mapping[0].trim().substringBeforeLast('(').substringAfter(' ')
+    val obfuscatedMethod = mapping[1].trim()
+    return Pair(originalMethod, obfuscatedMethod)
+  }
 }

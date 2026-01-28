@@ -4,12 +4,12 @@
 
 import java.io.File
 
-enum class DependencyType {
+public enum class DependencyType {
   GOOGLE_STORAGE,
   X20,
 }
 
-data class ThirdPartyDependency(
+public data class ThirdPartyDependency(
   val packageName: String,
   val path: File,
   val sha1File: File,

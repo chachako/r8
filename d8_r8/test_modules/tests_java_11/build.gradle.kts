@@ -20,6 +20,10 @@ java {
   targetCompatibility = JavaVersion.VERSION_11
 }
 
+kotlin {
+  explicitApi()
+}
+
 val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 val mainTurboCompileTask = projectTask("main", "compileTurboJava")

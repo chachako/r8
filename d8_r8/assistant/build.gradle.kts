@@ -27,3 +27,7 @@ tasks.withType<Jar> {
   destinationDirectory.set(getRoot().resolveAll("build", "libs"))
   archiveFileName.set("assistant.jar")
 }
+
+kotlin {
+  explicitApi()
+}

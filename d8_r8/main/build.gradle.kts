@@ -226,6 +226,10 @@ java {
   withSourcesJar()
 }
 
+kotlin {
+  explicitApi()
+}
+
 dependencies {
   implementation(":assistant")
   implementation(":blastradius")

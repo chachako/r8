@@ -28,32 +28,34 @@ import java.nio.file.Path
  *
  * @param manifest path to AndroidManifest.xml file.
  */
-class ProtoAndroidManifestUsageRecorder(private val manifest: Path) : ResourceUsageRecorder {
+public class ProtoAndroidManifestUsageRecorder(private val manifest: Path) : ResourceUsageRecorder {
 
-    override fun recordUsages(model: ResourceShrinkerModel) {
-        val root = XmlNode.parseFrom(Files.readAllBytes(manifest))
-        recordUsagesFromNode(root, model)
-    }
-
+  override fun recordUsages(model: ResourceShrinkerModel) {
+    val root = XmlNode.parseFrom(Files.readAllBytes(manifest))
+    recordUsagesFromNode(root, model)
+  }
 }
-fun recordUsagesFromNode(node: XmlNode, model: ResourceShrinkerModel) : Sequence<Resource>{
-    // Records only resources from element attributes that have reference items with resolved
-    // ids or names.
-    if (!node.hasElement()) {
-        return emptySequence()
-    }
-    val reachableResources = node.element.attributeList.asSequence()
-        .filter { it.hasCompiledItem() }
-        .map { it.compiledItem }
-        .filter { it.hasRef() }
-        .map { it.ref }
-        .flatMap {
-            // If resource id is available prefer this id to name.
-            when {
-                it.id != 0 -> listOfNotNull(model.resourceStore.getResource(it.id))
-                else -> model.resourceStore.getResourcesFromUrl("@${it.name}")
-            }.asSequence()
-        }
-    reachableResources.forEach {ResourceUsageModel.markReachable(it)}
-    return reachableResources + node.element.childList.flatMap{ recordUsagesFromNode(it, model) }
+
+public fun recordUsagesFromNode(node: XmlNode, model: ResourceShrinkerModel): Sequence<Resource> {
+  // Records only resources from element attributes that have reference items with resolved
+  // ids or names.
+  if (!node.hasElement()) {
+    return emptySequence()
+  }
+  val reachableResources =
+    node.element.attributeList
+      .asSequence()
+      .filter { it.hasCompiledItem() }
+      .map { it.compiledItem }
+      .filter { it.hasRef() }
+      .map { it.ref }
+      .flatMap {
+        // If resource id is available prefer this id to name.
+        when {
+          it.id != 0 -> listOfNotNull(model.resourceStore.getResource(it.id))
+          else -> model.resourceStore.getResourcesFromUrl("@${it.name}")
+        }.asSequence()
+      }
+  reachableResources.forEach { ResourceUsageModel.markReachable(it) }
+  return reachableResources + node.element.childList.flatMap { recordUsagesFromNode(it, model) }
 }

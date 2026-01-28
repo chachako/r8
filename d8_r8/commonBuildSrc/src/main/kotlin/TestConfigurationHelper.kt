@@ -14,11 +14,16 @@ import org.gradle.api.tasks.testing.TestDescriptor
 import org.gradle.api.tasks.testing.TestListener
 import org.gradle.api.tasks.testing.TestResult
 
-class TestConfigurationHelper {
+public class TestConfigurationHelper {
 
-  companion object {
+  public companion object {
 
-    fun retrace(project: Project, r8jar: File, mappingFile: File, exception: Throwable): String {
+    private fun retrace(
+      project: Project,
+      r8jar: File,
+      mappingFile: File,
+      exception: Throwable,
+    ): String {
       val out = StringBuilder()
       val header = "RETRACED STACKTRACE: " + System.currentTimeMillis()
       out.append("\n--------------------------------------\n")
@@ -56,7 +61,7 @@ class TestConfigurationHelper {
       return out.toString()
     }
 
-    fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
+    public fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
       val project = test.project
       if (project.hasProperty("testfilter")) {
         val testFilter = project.property("testfilter").toString()
