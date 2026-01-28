@@ -125,24 +125,21 @@ public class RootSetBlastRadius {
       }
     }
 
-    public RootSetBlastRadius build() {
-      blastRadius
-          .keySet()
-          .removeIf(
-              rule -> {
-                if (rule instanceof KeepAnnotationFakeProguardRule) {
-                  // TODO(b/441055269): Add support for keep annotations.
-                  return true;
-                }
-                if (rule
-                    instanceof
-                    KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule) {
-                  // Intentionally do not report built-in rules.
-                  return true;
-                }
-                return false;
-              });
+    public RootSetBlastRadius build(AppView<? extends AppInfoWithClassHierarchy> appView) {
+      // Add all rules so that the blast radius result also contains empty rules.
+      for (var rule : appView.options().getProguardConfiguration().getRules()) {
+        if (rule instanceof ProguardKeepRuleBase) {
+          blastRadius.computeIfAbsent((ProguardKeepRuleBase) rule, RootSetBlastRadiusForRule::new);
+        }
+      }
+      // Remove fake rules from output.
+      blastRadius.keySet().removeIf(Builder::isFakeKeepRule);
       return new RootSetBlastRadius(blastRadius);
+    }
+
+    private static boolean isFakeKeepRule(ProguardKeepRuleBase rule) {
+      return rule instanceof KeepAnnotationFakeProguardRule
+          || rule instanceof KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
     }
   }
 }
