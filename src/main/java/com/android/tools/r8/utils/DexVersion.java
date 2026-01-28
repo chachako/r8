@@ -78,6 +78,7 @@ public enum DexVersion implements Ordered<DexVersion> {
       new ImmutableMap.Builder<AndroidApiLevel, DexVersion>()
           // MAIN is an unknown higher api version we therefore choose the highest known version.
           .put(AndroidApiLevel.MAIN, DexVersion.V41)
+          .put(AndroidApiLevel.BAKLAVA_1, DexVersion.V41)
           .put(AndroidApiLevel.BAKLAVA, DexVersion.V41)
           .put(AndroidApiLevel.V, DexVersion.V39)
           .put(AndroidApiLevel.U, DexVersion.V39)
