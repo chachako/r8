@@ -75,7 +75,7 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
     }
   }
 
-  private interface RunDownloadParameters : WorkParameters {
+  public interface RunDownloadParameters : WorkParameters {
     public val type: Property<DependencyType>
     public val sha1File: RegularFileProperty
     public val outputDir: RegularFileProperty
@@ -83,7 +83,7 @@ public abstract class DownloadAllDependenciesTask : DefaultTask() {
     public val root: RegularFileProperty
   }
 
-  private abstract class RunDownload : WorkAction<RunDownloadParameters> {
+  public abstract class RunDownload : WorkAction<RunDownloadParameters> {
     override fun execute() {
       val sha1File = parameters.sha1File.asFile.get()
       val outputDir = parameters.outputDir.asFile.get()
