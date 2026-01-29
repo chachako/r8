@@ -71,4 +71,8 @@ public class RootSetBlastRadiusForRule {
   String getSource() {
     return rule.getSource();
   }
+
+  boolean isEmpty() {
+    return matchedClasses.isEmpty() && matchedFields.isEmpty() && matchedMethods.isEmpty();
+  }
 }

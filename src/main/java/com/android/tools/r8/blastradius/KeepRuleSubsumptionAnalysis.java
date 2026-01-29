@@ -34,8 +34,14 @@ public class KeepRuleSubsumptionAnalysis {
         new ArrayList<>(blastRadius.getBlastRadius());
     for (int i = 0; i < blastRadiusForRules.size(); i++) {
       RootSetBlastRadiusForRule blastRadiusForRule = blastRadiusForRules.get(i);
+      if (blastRadiusForRule.isEmpty()) {
+        continue;
+      }
       for (int j = i + 1; j < blastRadiusForRules.size(); j++) {
         RootSetBlastRadiusForRule blastRadiusForOtherRule = blastRadiusForRules.get(j);
+        if (blastRadiusForOtherRule.isEmpty()) {
+          continue;
+        }
         if (hasSameModifiers(blastRadiusForRule, blastRadiusForOtherRule)) {
           if (isSubsumedBy(blastRadiusForRule, blastRadiusForOtherRule)) {
             addSubsumedBy(blastRadiusForRule, blastRadiusForOtherRule);
