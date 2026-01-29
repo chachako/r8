@@ -300,6 +300,10 @@ public abstract class AbstractValue implements ComputationTreeNode {
     return null;
   }
 
+  public AbstractValue removeNullOrAbstractValue() {
+    return this;
+  }
+
   public boolean isConstantOrNonConstantNumberValue() {
     return false;
   }

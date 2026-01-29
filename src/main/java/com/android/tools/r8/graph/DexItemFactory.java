@@ -355,6 +355,7 @@ public class DexItemFactory {
       createType(referenceFieldUpdaterDescriptor);
 
   public final DexString newUpdaterName = createString("newUpdater");
+  public final DexString compareAndSetName = createString("compareAndSet");
 
   public final DexString constructorMethodName = createString(Constants.INSTANCE_INITIALIZER_NAME);
   public final DexString classConstructorMethodName =
@@ -1166,7 +1167,8 @@ public class DexItemFactory {
               stringMembers.substringWithEndIndex,
               stringMembers.concat,
               stringMembers.formatWithLocale,
-              stringMembers.valueOfObject)
+              stringMembers.valueOfObject,
+              atomicFieldUpdaterMethods.referenceUpdater)
           .addAll(javaUtilArraysMethods.copyOfMethods)
           .addAll(boxedValueOfMethods())
           .addAll(stringBufferMethods.appendMethods)
@@ -2586,6 +2588,7 @@ public class DexItemFactory {
     public final DexMethod intUpdater;
     public final DexMethod longUpdater;
     public final DexMethod referenceUpdater;
+    public final DexMethod referenceCompareAndSet;
     private final Set<DexMethod> updaters;
 
     private AtomicFieldUpdaterMethods() {
@@ -2607,6 +2610,12 @@ public class DexItemFactory {
               newUpdaterName,
               referenceFieldUpdaterDescriptor,
               new DexString[] {classDescriptor, classDescriptor, stringDescriptor});
+      referenceCompareAndSet =
+          createMethod(
+              referenceFieldUpdaterDescriptor,
+              compareAndSetName,
+              booleanDescriptor,
+              new DexString[] {objectDescriptor, objectDescriptor, objectDescriptor});
       updaters = ImmutableSet.of(intUpdater, longUpdater, referenceUpdater);
     }
 

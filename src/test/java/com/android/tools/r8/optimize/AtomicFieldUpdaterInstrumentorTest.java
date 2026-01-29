@@ -12,6 +12,7 @@ import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -32,7 +33,11 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    return TestParameters.builder().withAllRuntimesAndApiLevels().build();
+    return TestParameters.builder()
+        .withDexRuntimesStartingFromIncluding(
+            Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
+        .withAllApiLevels()
+        .build();
   }
 
   @Test
@@ -43,24 +48,13 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
             options -> {
               assertFalse(options.enableAtomicFieldUpdaterOptimization);
               options.enableAtomicFieldUpdaterOptimization = true;
-              options.testing.enableAtomicFieldUpdaterInstrumentorDebugLogs = true;
+              assertFalse(options.testing.enableAtomicFieldUpdaterLogs);
+              options.testing.enableAtomicFieldUpdaterLogs = true;
             })
         .addProgramClasses(testClass)
         .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
         .compile()
-        .inspect(
-            inspector -> {
-              MethodSubject method = inspector.clazz(testClass).mainMethod();
-              assertThat(
-                  method,
-                  CodeMatchers.invokesMethod(
-                      "boolean",
-                      "java.util.concurrent.atomic.AtomicReferenceFieldUpdater",
-                      "compareAndSet",
-                      ImmutableList.of(
-                          "java.lang.Object", "java.lang.Object", "java.lang.Object")));
-            })
         .inspectDiagnosticMessages(
             diagnostics -> {
               assertEquals(1, diagnostics.getInfos().size());
@@ -73,7 +67,21 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
                     message.contains("Can instrument"));
               }
               assertEquals(1, diagnosticLines.size());
-            });
+            })
+        .inspect(
+            inspector -> {
+              MethodSubject method = inspector.clazz(testClass).mainMethod();
+              assertThat(
+                  method,
+                  CodeMatchers.invokesMethod(
+                      "boolean",
+                      "sun.misc.Unsafe",
+                      "compareAndSwapObject",
+                      ImmutableList.of(
+                          "java.lang.Object", "long", "java.lang.Object", "java.lang.Object")));
+            })
+        .run(parameters.getRuntime(), TestClass.class)
+        .assertSuccessWithOutputLines("true");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.

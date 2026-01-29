@@ -88,6 +88,22 @@ public abstract class InvokeMethod extends Invoke {
     return BooleanUtils.intValue(isInvokeMethodWithReceiver());
   }
 
+  public Value getSecondNonReceiverArgument() {
+    return getArgument(getSecondNonReceiverArgumentIndex());
+  }
+
+  public int getSecondNonReceiverArgumentIndex() {
+    return getFirstNonReceiverArgumentIndex() + 1;
+  }
+
+  public Value getThirdNonReceiverArgument() {
+    return getArgument(getThirdNonReceiverArgumentIndex());
+  }
+
+  public int getThirdNonReceiverArgumentIndex() {
+    return getFirstNonReceiverArgumentIndex() + 2;
+  }
+
   public abstract boolean getInterfaceBit();
 
   @Override

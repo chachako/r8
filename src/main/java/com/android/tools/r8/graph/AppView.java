@@ -33,6 +33,7 @@ import com.android.tools.r8.ir.analysis.value.AbstractValueFactory;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueConstantPropagationJoiner;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueFieldJoiner;
 import com.android.tools.r8.ir.analysis.value.AbstractValueJoiner.AbstractValueParameterJoiner;
+import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFieldUpdaterInstrumentorInfo;
 import com.android.tools.r8.ir.optimize.enums.EnumDataMap;
 import com.android.tools.r8.ir.optimize.info.MethodResolutionOptimizationInfoCollection;
 import com.android.tools.r8.ir.optimize.info.field.InstanceFieldInitializationInfoFactory;
@@ -141,6 +142,9 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private BottomUpOutliner bottomUpOutliner;
   private final LibraryMemberOptimizer libraryMemberOptimizer;
   private final ProtoShrinker protoShrinker;
+  // TODO(b/453628974): Clear info after first optimization pass.
+  private final AtomicFieldUpdaterInstrumentorInfo atomicFieldUpdaterInstrumentorInfo =
+      AtomicFieldUpdaterInstrumentorInfo.empty();
 
   // Optimization results.
   private boolean allCodeProcessed = false;
@@ -689,6 +693,10 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
       return fn.apply(protoShrinker.generatedMessageLiteBuilderShrinker);
     }
     return defaultValue;
+  }
+
+  public AtomicFieldUpdaterInstrumentorInfo getAtomicFieldUpdaterInstrumentorInfo() {
+    return atomicFieldUpdaterInstrumentorInfo;
   }
 
   public GraphLens codeLens() {

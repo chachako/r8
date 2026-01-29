@@ -40,6 +40,11 @@ public class NullOrAbstractValue extends AbstractValue {
     return this;
   }
 
+  @Override
+  public AbstractValue removeNullOrAbstractValue() {
+    return value;
+  }
+
   public AbstractValue getNonNullValue() {
     return value;
   }

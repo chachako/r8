@@ -342,7 +342,8 @@ public final class BackportedMethodRewriter implements CfInstructionDesugaring {
         initializeAndroidSMethodProviders(factory);
         initializeAndroidSSetListMapMethodProviders(factory);
       }
-      if (options.getMinApiLevel().isLessThan(AndroidApiLevel.Sv2)) {
+      if (options.getMinApiLevel().isLessThan(AndroidApiLevel.Sv2)
+          && !options.enableAtomicFieldUpdaterOptimization) {
         initializeAndroidSv2MethodProviders(factory);
       }
       if (options.getMinApiLevel().isLessThan(AndroidApiLevel.T)) {
