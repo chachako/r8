@@ -248,15 +248,6 @@ APPS = [
         'revision': '9d8c73746762cd376b718858ec1e8783ca07ba7c',
         'folder': 'minimal-todo',
     }),
-    App({
-        'id': 'net.nurik.roman.muzei',
-        'name': 'muzei',
-        'dump_app': 'dump_app.zip',
-        'apk_app': 'muzei-release.apk',
-        'url': 'https://github.com/romannurik/muzei',
-        'revision': '9eac6e98aebeaf0ae40bdcd85f16dd2886551138',
-        'folder': 'muzei',
-    }),
     # TODO(b/172806281): Monkey runner does not work.
     App({
         'id': 'org.schabi.newpipe',
