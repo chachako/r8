@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class CompilerDump {
 
@@ -37,14 +37,19 @@ public class CompilerDump {
     this.directory = directory;
   }
 
-  public void forEachFeatureArchive(Consumer<? super Path> consumer) {
+  public void forEachFeatureArchive(BiConsumer<? super Path, ? super Path> consumer) {
     int i = 1;
     while (true) {
       Path featureJar = directory.resolve("feature-" + i + ".jar");
       if (!Files.exists(featureJar)) {
         break;
       }
-      consumer.accept(featureJar);
+      Path resources = directory.resolve("feature-" + i + ".ap_");
+      if (Files.exists(resources)) {
+        consumer.accept(featureJar, resources);
+      } else {
+        consumer.accept(featureJar, null);
+      }
       i++;
     }
   }

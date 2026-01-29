@@ -910,14 +910,35 @@ public abstract class R8TestBuilder<
   }
 
   public T addFeatureSplit(Path featureJar) {
-    Path featureOutJar = getState().getNewTempFileUnchecked("feature.zip");
+    return addFeatureSplit(featureJar, null);
+  }
+
+  public T addFeatureSplit(Path featureJar, Path resources) {
+    String featureName = featureJar.getFileName().toString().replace(".jar", "");
+    Path featureOutJar =
+        getState().getNewTempFileUnchecked("programoutput_" + featureName + ".zip");
+    Path featureOutRes =
+        resources == null
+            ? null
+            : getState().getNewTempFileUnchecked("resourceshrinkeroutput_" + featureName + ".zip");
+
     builder.addFeatureSplit(
-        builder ->
-            builder
-                .addProgramResourceProvider(ArchiveResourceProvider.fromArchive(featureJar, true))
-                .setProgramConsumer(new ArchiveConsumer(featureOutJar, true))
-                .build());
+        featureSplitBuilder -> {
+          featureSplitBuilder
+              .addProgramResourceProvider(ArchiveResourceProvider.fromArchive(featureJar, true))
+              .setProgramConsumer(new ArchiveConsumer(featureOutJar, true));
+          if (resources != null) {
+            featureSplitBuilder
+                .setAndroidResourceProvider(new ArchiveProtoAndroidResourceProvider(resources))
+                .setAndroidResourceConsumer(
+                    new ArchiveProtoAndroidResourceConsumer(featureOutRes, resources));
+          }
+          return featureSplitBuilder.build();
+        });
     features.add(featureOutJar);
+    if (featureOutRes != null) {
+      resourceShrinkerOutputForFeatures.put(featureName, featureOutRes);
+    }
     return self();
   }
 
@@ -998,7 +1019,6 @@ public abstract class R8TestBuilder<
   public T addFeatureSplitAndroidResources(AndroidTestResource testResource, String featureName)
       throws IOException {
     Path outputFile = getState().getNewTempFile("resourceshrinkeroutput_" + featureName + ".zip");
-    Path programOut = getState().getNewTempFile("feature_output" + featureName + ".jar");
     resourceShrinkerOutputForFeatures.put(featureName, outputFile);
     getBuilder()
         .addFeatureSplit(
@@ -1086,6 +1106,14 @@ public abstract class R8TestBuilder<
         .setAndroidResourceProvider(
             new ArchiveProtoAndroidResourceProvider(input, new PathOrigin(input)));
     getBuilder().setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(output, input));
+    return self();
+  }
+
+  public T setAndroidResourceKeepFromPath(Path input) {
+    getBuilder()
+        .setAndroidResourceProvider(
+            new ArchiveProtoAndroidResourceProvider(input, new PathOrigin(input)))
+        .setAndroidResourceConsumer(new EmptyAndroidResourceConsumer());
     return self();
   }
 

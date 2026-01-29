@@ -68,6 +68,7 @@ public class AppDumpBenchmarkBuilder {
   private CompilationMode compilationMode;
   private boolean enableLibraryDesugaring = true;
   private boolean enableResourceShrinking = false;
+  private boolean resourcesProvidedInFeature = false;
   private boolean enableContainerDex = false;
   private boolean enableDex2Oat = true;
   private boolean enableDex2OatVerification = true;
@@ -96,6 +97,11 @@ public class AppDumpBenchmarkBuilder {
 
   public AppDumpBenchmarkBuilder setEnableResourceShrinking(boolean enableResourceShrinking) {
     this.enableResourceShrinking = enableResourceShrinking;
+    return this;
+  }
+
+  public AppDumpBenchmarkBuilder setResourcesProvidedInFeature() {
+    this.resourcesProvidedInFeature = true;
     return this;
   }
 
@@ -378,9 +384,14 @@ public class AppDumpBenchmarkBuilder {
                           getKeepComposableAnnotationsConfiguration())
                       .applyIf(
                           builder.enableResourceShrinking,
-                          b ->
-                              b.enableOptimizedShrinking()
-                                  .setAndroidResourcesFromPath(dump.getAndroidResources()))
+                          b -> {
+                            b.enableOptimizedShrinking();
+                            if (builder.resourcesProvidedInFeature) {
+                              b.setAndroidResourceKeepFromPath(dump.getAndroidResources());
+                            } else {
+                              b.setAndroidResourcesFromPath(dump.getAndroidResources());
+                            }
+                          })
                       .applyIf(
                           builder.enableContainerDex,
                           b ->
@@ -468,9 +479,14 @@ public class AppDumpBenchmarkBuilder {
                           getKeepComposableAnnotationsConfiguration())
                       .applyIf(
                           builder.enableResourceShrinking,
-                          b ->
-                              b.enableOptimizedShrinking()
-                                  .setAndroidResourcesFromPath(dump.getAndroidResources()))
+                          b -> {
+                            b.enableOptimizedShrinking();
+                            if (builder.resourcesProvidedInFeature) {
+                              b.setAndroidResourceKeepFromPath(dump.getAndroidResources());
+                            } else {
+                              b.setAndroidResourcesFromPath(dump.getAndroidResources());
+                            }
+                          })
                       .applyIf(
                           builder.enableContainerDex,
                           b ->

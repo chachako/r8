@@ -94,7 +94,11 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
   }
 
   public CR benchmarkResourceSize(BenchmarkResults results) throws IOException {
-    results.addResourceSizeResult(Files.size(resourceShrinkerOutput));
+    long size = resourceShrinkerOutput != null ? Files.size(resourceShrinkerOutput) : 0L;
+    for (Path resOut : resourceShrinkerOutputForFeatures.values()) {
+      size += Files.size(resOut);
+    }
+    results.addResourceSizeResult(size);
     return self();
   }
 
