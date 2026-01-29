@@ -47,6 +47,15 @@ function get() {
       }
     };
   }
+  if (state.hasLegend('Resource size')) {
+    scales.y_resource_size = {
+      position: 'left',
+      title: {
+        display: true,
+        text: 'Resource size (bytes)'
+      }
+    };
+  }
   return scales;
 }
 
@@ -60,6 +69,9 @@ function update(scales) {
   }
   if (scales.y_oat_code_size) {
     scales.y_oat_code_size.display = state.isLegendSelected('Oat size');
+  }
+  if (scales.y_resource_size) {
+    scales.y_resource_size.display = state.isLegendSelected('Resource size');
   }
   if (scales.y_runtime) {
     scales.y_runtime.display =

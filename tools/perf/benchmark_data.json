@@ -12,6 +12,7 @@
           "instruction_code_size": 2,
           "composable_code_size": 3,
           "oat_code_size": 4,
+          "resource_size": 5,
           "runtime": 1
         },
         {
@@ -19,6 +20,7 @@
           "instruction_code_size": 2,
           "composable_code_size": 3,
           "oat_code_size": 4,
+          "resource_size": 5,
           "runtime": 1
         },
         {
@@ -26,6 +28,7 @@
           "instruction_code_size": 2,
           "composable_code_size": 3,
           "oat_code_size": 4,
+          "resource_size": 5,
           "runtime": 1
         }
       ]
@@ -38,6 +41,7 @@
           "instruction_code_size": 2,
           "composable_code_size": 3,
           "oat_code_size": 4,
+          "resource_size": 5,
           "runtime": 1
         },
         {
@@ -47,6 +51,7 @@
           "instruction_code_size": 2,
           "composable_code_size": 3,
           "oat_code_size": 4,
+          "resource_size": 5,
           "runtime": 1
         }
       ]

@@ -64,6 +64,7 @@
       'Instruction size': { default: true },
       'Composable size': { default: true },
       'Oat size': { default: true },
+      'Resource size': { default: false },
       'Nondeterminism': { default: true },
       'Runtime': { default: true },
       'Runtime variance': { default: false },
@@ -102,6 +103,9 @@
           const oatCodeSizeData =
               filteredCommits.map(
                   (c, i) => getSingleResult(selectedBenchmark, filteredCommits[i], "oat_code_size"));
+          const resourceSizeData =
+              filteredCommits.map(
+                  (c, i) => getSingleResult(selectedBenchmark, filteredCommits[i], "resource_size"));
           const codeSizeScatterData = [];
           for (const commit of filteredCommits.values()) {
             if (!(selectedBenchmark in commit.benchmarks)) {
@@ -219,6 +223,28 @@
               },
               tension: 0.1,
               yAxisID: 'y_oat_code_size',
+              segment: {
+                borderColor: ctx =>
+                    skipped(
+                        ctx,
+                        chart.get()
+                            ? chart.get().data.datasets[ctx.datasetIndex].backgroundColor
+                            : undefined),
+                borderDash: ctx => skipped(ctx, [6, 6]),
+              },
+              spanGaps: true
+            },
+            {
+              benchmark: selectedBenchmark,
+              type: 'line',
+              label: 'Resource size',
+              data: resourceSizeData,
+              datalabels: {
+                align: 'start',
+                anchor: 'start'
+              },
+              tension: 0.1,
+              yAxisID: 'y_resource_size',
               segment: {
                 borderColor: ctx =>
                     skipped(
