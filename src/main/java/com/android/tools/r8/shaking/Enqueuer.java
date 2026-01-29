@@ -3988,8 +3988,8 @@ public class Enqueuer {
       return null;
     }
     timing.begin("Create result");
-    reportBlastRadius();
     EnqueuerResult result = createEnqueuerResult(appInfo, timing);
+    reportBlastRadius(result);
     profileCollectionAdditions.commit(appView);
     timing.end();
     return result;
@@ -4616,11 +4616,11 @@ public class Enqueuer {
     return true;
   }
 
-  private void reportBlastRadius() {
+  private void reportBlastRadius(EnqueuerResult result) {
     if (blastRadius != null) {
       Path printBlastRadiusFile = options.getProguardConfiguration().getPrintBlastRadiusFile();
       if (printBlastRadiusFile != null) {
-        blastRadius.build(appView).writeToFile(appView, printBlastRadiusFile);
+        blastRadius.build(appView).writeToFile(appView, result, printBlastRadiusFile);
       } else {
         BlastRadiusReporter.create().report(blastRadius.build(appView).getBlastRadius());
       }

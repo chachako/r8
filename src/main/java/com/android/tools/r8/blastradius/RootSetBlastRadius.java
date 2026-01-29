@@ -11,6 +11,7 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.Enqueuer;
+import com.android.tools.r8.shaking.EnqueuerResult;
 import com.android.tools.r8.shaking.KeepClassInfo;
 import com.android.tools.r8.shaking.KeepClassMembersNoShrinkingOfInitializerOnSubclassesFakeProguardRule;
 import com.android.tools.r8.shaking.KeepFieldInfo;
@@ -64,8 +65,10 @@ public class RootSetBlastRadius {
     return new KeepRuleSubsumptionAnalysis(this).run();
   }
 
-  public void writeToFile(AppView<?> appView, Path printBlastRadiusFile) {
-    BlastRadiusContainer collection = new RootSetBlastRadiusSerializer(appView).serialize(this);
+  public void writeToFile(
+      AppView<?> appView, EnqueuerResult enqueuerResult, Path printBlastRadiusFile) {
+    BlastRadiusContainer collection =
+        new RootSetBlastRadiusSerializer(appView, enqueuerResult).serialize(this);
     try (OutputStream output = Files.newOutputStream(printBlastRadiusFile)) {
       collection.writeTo(output);
     } catch (IOException e) {

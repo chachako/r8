@@ -242,10 +242,42 @@ header {
 }
 
 #stats-overview {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
     margin-bottom: 2rem;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stats-table th, .stats-table td {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.stats-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: #fafafa;
+}
+
+.stats-table tr:last-child td {
+    border-bottom: none;
+}
+
+.stats-table td {
+    font-size: 1.1rem;
+    color: #3f51b5;
+    font-weight: 500;
+}
+
+.stats-table td:first-child {
+    color: #333;
+    font-weight: 400;
 }
 
 .stat-card {

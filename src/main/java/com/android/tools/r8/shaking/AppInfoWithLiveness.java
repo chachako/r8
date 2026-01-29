@@ -590,6 +590,10 @@ public class AppInfoWithLiveness extends AppInfoWithClassHierarchy
     return liveMethods.contains(method);
   }
 
+  public boolean isLiveOrTargetedMethod(DexEncodedMethod method) {
+    return liveMethods.contains(method.getReference()) || isTargetedMethod(method.getReference());
+  }
+
   public boolean isTargetedMethod(DexMethod method) {
     return targetedMethods.contains(method);
   }

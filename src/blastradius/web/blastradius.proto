@@ -175,6 +175,15 @@ message MavenCoordinate {
   string version = 4;
 }
 
+message BuildInfo {
+  uint32 class_count = 1;
+  uint32 field_count = 2;
+  uint32 method_count = 3;
+  uint32 live_class_count = 4;
+  uint32 live_field_count = 5;
+  uint32 live_method_count = 6;
+}
+
 // Container.
 
 message BlastRadiusContainer {
@@ -198,4 +207,7 @@ message BlastRadiusContainer {
   // Keep specifications.
   repeated KeepConstraints keep_constraints_table = 12;
   repeated KeepRuleBlastRadius keep_rule_blast_radius_table = 13;
+
+  // Build info.
+  BuildInfo build_info = 14;
 }

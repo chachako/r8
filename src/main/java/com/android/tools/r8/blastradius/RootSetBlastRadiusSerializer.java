@@ -7,6 +7,7 @@ import static com.android.tools.r8.graph.DexProgramClass.asProgramClassOrNull;
 
 import com.android.tools.r8.blastradius.proto.BlastRadius;
 import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
+import com.android.tools.r8.blastradius.proto.BuildInfo;
 import com.android.tools.r8.blastradius.proto.FieldReference;
 import com.android.tools.r8.blastradius.proto.FileOrigin;
 import com.android.tools.r8.blastradius.proto.KeepConstraint;
@@ -30,11 +31,14 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.TextRange;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
+import com.android.tools.r8.shaking.EnqueuerResult;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Equivalence.Wrapper;
+import com.google.common.collect.Iterables;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import java.util.Arrays;
@@ -48,6 +52,7 @@ import java.util.Map;
 public class RootSetBlastRadiusSerializer {
 
   private final AppView<?> appView;
+  private final AppInfoWithLiveness appInfo;
 
   private final BlastRadiusContainer.Builder container = BlastRadiusContainer.newBuilder();
 
@@ -72,8 +77,9 @@ public class RootSetBlastRadiusSerializer {
 
   private final Map<Wrapper<KeepConstraints>, KeepConstraints> keepConstraints = new HashMap<>();
 
-  RootSetBlastRadiusSerializer(AppView<?> appView) {
+  RootSetBlastRadiusSerializer(AppView<?> appView, EnqueuerResult enqueuerResult) {
     this.appView = appView;
+    this.appInfo = enqueuerResult.getAppInfo();
   }
 
   public BlastRadiusContainer serialize(RootSetBlastRadius blastRadius) {
@@ -98,7 +104,7 @@ public class RootSetBlastRadiusSerializer {
     keptClassInfos.values().forEach(container::addKeptClassInfoTable);
     keptFieldInfos.values().forEach(container::addKeptFieldInfoTable);
     keptMethodInfos.values().forEach(container::addKeptMethodInfoTable);
-    BlastRadiusContainer result = container.build();
+    BlastRadiusContainer result = container.setBuildInfo(serializeBuildInfo()).build();
     assert validate(result);
     return result;
   }
@@ -157,6 +163,29 @@ public class RootSetBlastRadiusSerializer {
       keptMethodInfo.addKeptBy(ruleId);
     }
     return blastRadius.build();
+  }
+
+  private BuildInfo serializeBuildInfo() {
+    int classCount = 0, fieldCount = 0, methodCount = 0;
+    int liveClassCount = 0, liveFieldCount = 0, liveMethodCount = 0;
+    for (DexProgramClass clazz : appView.appInfo().classes()) {
+      classCount++;
+      fieldCount += clazz.getFieldCollection().size();
+      methodCount += clazz.getMethodCollection().size();
+      if (appInfo.isLiveProgramClass(clazz)) {
+        liveClassCount++;
+        liveFieldCount += Iterables.size(clazz.fields(appInfo::isReachableOrReferencedField));
+        liveMethodCount += Iterables.size(clazz.methods(appInfo::isLiveOrTargetedMethod));
+      }
+    }
+    return BuildInfo.newBuilder()
+        .setClassCount(classCount)
+        .setFieldCount(fieldCount)
+        .setMethodCount(methodCount)
+        .setLiveClassCount(liveClassCount)
+        .setLiveFieldCount(liveFieldCount)
+        .setLiveMethodCount(liveMethodCount)
+        .build();
   }
 
   private KeepConstraints serializeConstraints(RootSetBlastRadiusForRule blastRadiusForRule) {

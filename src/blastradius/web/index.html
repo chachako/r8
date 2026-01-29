@@ -38,21 +38,49 @@
 
         <div id="main-content">
             <div id="stats-overview" class="hidden">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-rules">0</div>
-                    <div class="stat-label">Keep Rules</div>
+                <div class="stat-card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="stat-label" style="font-size: 1rem;">Keep Rules</div>
+                    <div class="stat-value" id="stat-rules" style="font-size: 2rem;">0</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-classes">0</div>
-                    <div class="stat-label">Total Kept Classes</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-methods">0</div>
-                    <div class="stat-label">Total Kept Methods</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-fields">0</div>
-                    <div class="stat-label">Total Kept Fields</div>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Item Type</th>
+                                <th style="text-align: right;">No obfuscation</th>
+                                <th style="text-align: right;">No optimization</th>
+                                <th style="text-align: right;">No shrinking</th>
+                                <th style="text-align: right;">Reachable</th>
+                                <th style="text-align: right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Classes</td>
+                                <td id="stat-no-obfuscation-classes" style="text-align: right;">0</td>
+                                <td id="stat-no-optimization-classes" style="text-align: right;">0</td>
+                                <td id="stat-no-shrinking-classes" style="text-align: right;">0</td>
+                                <td id="stat-reachable-classes" style="text-align: right;">0</td>
+                                <td id="stat-total-classes" style="text-align: right;">0</td>
+                            </tr>
+                            <tr>
+                                <td>Methods</td>
+                                <td id="stat-no-obfuscation-methods" style="text-align: right;">0</td>
+                                <td id="stat-no-optimization-methods" style="text-align: right;">0</td>
+                                <td id="stat-no-shrinking-methods" style="text-align: right;">0</td>
+                                <td id="stat-reachable-methods" style="text-align: right;">0</td>
+                                <td id="stat-total-methods" style="text-align: right;">0</td>
+                            </tr>
+                            <tr>
+                                <td>Fields</td>
+                                <td id="stat-no-obfuscation-fields" style="text-align: right;">0</td>
+                                <td id="stat-no-optimization-fields" style="text-align: right;">0</td>
+                                <td id="stat-no-shrinking-fields" style="text-align: right;">0</td>
+                                <td id="stat-reachable-fields" style="text-align: right;">0</td>
+                                <td id="stat-total-fields" style="text-align: right;">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
