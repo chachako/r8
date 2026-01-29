@@ -300,15 +300,30 @@ function filterFiles(query) {
 function renderRuleList() {
     ruleList.innerHTML = '';
     filteredRules.forEach(rule => {
+        const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
+        let sameOriginSubsumption = false;
+        if (isRedundant) {
+            const ruleOriginFile = getFileName(rule.origin);
+            sameOriginSubsumption = rule.blastRadius.subsumedBy.some(id => {
+                const subsumer = tables.rules.get(id);
+                return subsumer && getFileName(subsumer.origin) === ruleOriginFile;
+            });
+        }
+
         const div = document.createElement('div');
         div.className = 'rule-item';
         div.innerHTML = `
-            <span class="rule-name">${escapeHtml(rule.source)}</span>
-            <div class="rule-stats">
-                Blast radius: ${rule.totalRadius}
-                (${rule.blastRadius.classBlastRadius?.length || 0} classes,
-                 ${rule.blastRadius.methodBlastRadius?.length || 0} methods,
-                 ${rule.blastRadius.fieldBlastRadius?.length || 0} fields)
+            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                ${sameOriginSubsumption ? '<span title="Subsumed by rule in same file" style="color: #ff9800; cursor: help;">⚠️</span>' : ''}
+                <div style="flex: 1;">
+                    <span class="rule-name">${escapeHtml(rule.source)}</span>
+                    <div class="rule-stats">
+                        Blast radius: ${rule.totalRadius}
+                        (${rule.blastRadius.classBlastRadius?.length || 0} classes,
+                         ${rule.blastRadius.methodBlastRadius?.length || 0} methods,
+                         ${rule.blastRadius.fieldBlastRadius?.length || 0} fields)
+                    </div>
+                </div>
             </div>
         `;
         div.onclick = () => selectRule(rule, div);
@@ -349,15 +364,18 @@ function selectFile(file, element) {
 
 function renderRuleDetail(rule) {
     const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
+    const ruleOriginFile = getFileName(rule.origin);
+
     let html = `
         <div class="card">
             <h2>Keep Rule Details</h2>
             ${isRedundant ? rule.blastRadius.subsumedBy.map(id => {
                 const r = tables.rules.get(id);
+                const isSameFile = r && getFileName(r.origin) === ruleOriginFile;
                 const originStr = r ? getOriginString(r.origin) : "Unknown origin";
                 return `
                     <div class="banner banner-warning">
-                        <strong>Redundant Rule:</strong> This rule is fully subsumed by:
+                        <strong>Redundant Rule:</strong> This rule is fully subsumed by ${isSameFile ? 'another rule in the same file' : 'a rule in a different file'}:
                         <div style="margin-top: 0.5rem;">
                             <div class="subsumed-by-item">
                                 <div style="font-weight: 500;">${r ? escapeHtml(r.source) : `Rule ID: ${id}`}</div>
