@@ -405,7 +405,7 @@ public class JarClassFileReader<T extends DexClass> {
                 "must extend class java.lang.Object. Found: " + superName),
             origin);
       }
-      checkName(name);
+      checkClassName(name);
       assert superName != null || name.equals(Constants.JAVA_LANG_OBJECT_NAME);
       superType = superName == null ? null : application.getTypeFromName(superName);
       this.interfaces = application.getTypeListFromNames(interfaces);
@@ -437,7 +437,7 @@ public class JarClassFileReader<T extends DexClass> {
           return null;
         }
       }
-      checkName(name);
+      checkFieldName(name);
       return new CreateFieldVisitor(this, access, name, desc, signature, value);
     }
 
@@ -450,7 +450,7 @@ public class JarClassFileReader<T extends DexClass> {
           return null;
         }
       }
-      checkName(name);
+      checkMethodName(name);
       return new CreateMethodVisitor(access, name, desc, signature, exceptions, this);
     }
 
@@ -589,12 +589,39 @@ public class JarClassFileReader<T extends DexClass> {
       return DexProgramClass::invalidChecksumRequest;
     }
 
-    private void checkName(String name) {
-      if (!application.options.canUseSpacesInSimpleName()
-          && !DexString.isValidSimpleName(application.options.getMinApiLevel(), name)) {
-        throw new CompilationError("Space characters in SimpleName '"
-          + name + "' are not allowed prior to DEX version 040");
+    private boolean validName(String name) {
+      return application.options.canUseSpacesInSimpleName()
+          || DexString.isValidSimpleName(application.options.getMinApiLevel(), name);
+    }
+
+    private void checkClassName(String name) {
+      if (validName(name)) {
+        return;
       }
+      throw throwInvalidName(name, "class name `" + name + "`");
+    }
+
+    private void checkMethodName(String name) {
+      if (validName(name)) {
+        return;
+      }
+      throw throwInvalidName(name, "method name `" + name + "` on class " + type.toSourceString());
+    }
+
+    private void checkFieldName(String name) {
+      if (validName(name)) {
+        return;
+      }
+      throw throwInvalidName(name, "field name `" + name + "` on class " + type.toSourceString());
+    }
+
+    private CompilationError throwInvalidName(String name, String location) {
+      throw new CompilationError(
+          "Space characters in SimpleName '"
+              + name
+              + "' are not allowed prior to DEX version 040 ("
+              + location
+              + ")");
     }
 
     private void addDefaultAnnotation(String name, DexValue value) {
