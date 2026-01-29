@@ -230,15 +230,15 @@ public class TestParametersBuilder {
   }
 
   public TestParametersBuilder withApiLevelsStartingAtIncluding(AndroidApiLevel startInclusive) {
-    return withApiFilter((api, runtime) -> startInclusive.getLevel() <= api.getLevel());
+    return withApiFilter((api, runtime) -> startInclusive.isLessThanOrEqualTo(api));
   }
 
   public TestParametersBuilder withApiLevelsEndingAtIncluding(AndroidApiLevel endInclusive) {
-    return withApiFilter((api, runtime) -> api.getLevel() <= endInclusive.getLevel());
+    return withApiFilter((api, runtime) -> api.isLessThanOrEqualTo(endInclusive));
   }
 
   public TestParametersBuilder withApiLevelsEndingAtExcluding(AndroidApiLevel endExclusive) {
-    return withApiFilter((api, runtime) -> api.getLevel() < endExclusive.getLevel());
+    return withApiFilter((api, runtime) -> api.isLessThan(endExclusive));
   }
 
   public TestParametersBuilder apiLevelWithDefaultMethodsSupport() {
@@ -302,19 +302,19 @@ public class TestParametersBuilder {
       return Stream.of();
     }
     AndroidApiLevel lowestApplicable = sortedApiLevels.get(0);
-    if (vmLevel.getLevel() < lowestApplicable.getLevel()) {
+    if (vmLevel.isLessThan(lowestApplicable)) {
       return Stream.of();
     }
     if (sortedApiLevels.size() > 1) {
       for (int i = sortedApiLevels.size() - 1; i >= 0; i--) {
         AndroidApiLevel highestApplicable = sortedApiLevels.get(i);
-        if (highestApplicable.getLevel() <= vmLevel.getLevel()
+        if (highestApplicable.isLessThanOrEqualTo(vmLevel)
             && lowestApplicable != highestApplicable) {
           Set<AndroidApiLevel> set = new TreeSet<>();
           set.add(lowestApplicable);
           set.add(highestApplicable);
           for (AndroidApiLevel explicitApiLevel : explicitApiLevels) {
-            if (explicitApiLevel.getLevel() <= vmLevel.getLevel()) {
+            if (explicitApiLevel.isLessThanOrEqualTo(vmLevel)) {
               set.add(explicitApiLevel);
             }
           }
