@@ -1397,6 +1397,10 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     }
 
     public Builder setMethod(DexMethod method) {
+      // Patch up parameter annotations if the target method has had parameters added.
+      if (!parameterAnnotations.isEmpty() && method.getArity() > this.method.getArity()) {
+        parameterAnnotations = parameterAnnotations.withParameterCount(method.getArity());
+      }
       this.method = method;
       return this;
     }
