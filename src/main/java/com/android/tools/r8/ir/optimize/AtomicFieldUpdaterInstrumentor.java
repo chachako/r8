@@ -414,6 +414,9 @@ public class AtomicFieldUpdaterInstrumentor {
             .setField(unsafeField)
             .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
             .setApiLevel(appView.computedMinApiLevel())
+            // Avoid superfluous assert on API in the build call when API modeling is disabled.
+            .disableAndroidApiLevelCheckIf(
+                !appView.options().apiModelingOptions().isApiModelingEnabled())
             .build();
     builder.setStaticFields(ImmutableList.of(field));
     var accessBuilder = FieldAccessInfoCollectionModifier.builder();
@@ -522,6 +525,9 @@ public class AtomicFieldUpdaterInstrumentor {
         .setField(offsetField)
         .setAccessFlags(FieldAccessFlags.createPublicStaticFinalSynthetic())
         .setApiLevel(appView.computedMinApiLevel())
+        // Avoid superfluous API assert in build when API modeling is disabled.
+        .disableAndroidApiLevelCheckIf(
+            !appView.options().apiModelingOptions().isApiModelingEnabled())
         .build();
   }
 
