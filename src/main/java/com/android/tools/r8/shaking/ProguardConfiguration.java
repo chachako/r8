@@ -761,7 +761,9 @@ public class ProguardConfiguration {
   public boolean isPrintBlastRadius() {
     return printBlastRadius
         || SystemPropertyUtils.isSystemPropertySet(
-            "com.android.tools.r8.dumpblastradiustodirectory");
+        "com.android.tools.r8.dumpblastradiustodirectory")
+        || SystemPropertyUtils.isSystemPropertySet(
+            "com.android.tools.r8.dumpblastradiustofile");
   }
 
   public Path getPrintBlastRadiusFile() {
@@ -769,8 +771,14 @@ public class ProguardConfiguration {
     if (printBlastRadius) {
       return printBlastRadiusFile;
     }
-    return Paths.get(System.getProperty("com.android.tools.r8.dumpblastradiustodirectory"))
-        .resolve("blastradius" + System.nanoTime() + ".pb");
+    if (SystemPropertyUtils.isSystemPropertySet(
+        "com.android.tools.r8.dumpblastradiustodirectory")) {
+      return Paths.get(System.getProperty("com.android.tools.r8.dumpblastradiustodirectory"))
+          .resolve("blastradius" + System.nanoTime() + ".pb");
+    }
+    assert SystemPropertyUtils.isSystemPropertySet(
+        "com.android.tools.r8.dumpblastradiustofile");
+    return Paths.get(System.getProperty("com.android.tools.r8.dumpblastradiustofile"));
   }
 
   public boolean isPrintConfiguration() {
