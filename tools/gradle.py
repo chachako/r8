@@ -100,7 +100,7 @@ def EnsureDeps():
 def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
     EnsureDeps()
     cmd = [gradleCmd]
-    args.extend(['--offline', '-Dorg.gradle.configuration-cache=false'])
+    args.extend(['--offline'])
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
         utils.PrintCmd(cmd)
