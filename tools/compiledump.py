@@ -454,8 +454,8 @@ def determine_optimized_resource_shrinking(args, build_properties):
 
 
 def determine_enable_missing_library_api_modeling(args, build_properties):
-    if 'enable_missing_library_api_modeling' in args:
-        return args.enable_missing_library_api_modeling
+    if args.enable_missing_library_api_modeling:
+        return True
     return build_properties.get('enable-missing-library-api-modeling') == 'true'
 
 
