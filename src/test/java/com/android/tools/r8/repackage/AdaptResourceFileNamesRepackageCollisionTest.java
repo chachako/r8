@@ -3,11 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.repackage;
 
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
-import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
@@ -18,7 +14,6 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -48,27 +43,20 @@ public class AdaptResourceFileNamesRepackageCollisionTest extends TestBase {
             DataEntryResource.fromString("pkg2/build.properties", Origin.unknown(), ""))
         .addKeepMainRule(Main.class)
         .addKeepRules("-adaptresourcefilenames */build.properties")
-        .allowDiagnosticWarningMessages()
         .enableInliningAnnotations()
         .enableNoHorizontalClassMergingAnnotations()
-        .compileWithExpectedDiagnostics(
-            diagnostics ->
-                diagnostics
-                    .assertOnlyWarnings()
-                    .assertWarningsMatch(
-                        allOf(
-                            diagnosticType(StringDiagnostic.class),
-                            diagnosticMessage(containsString("already exists.")))))
+        .compile()
         .inspect(
             inspector -> {
-              // Verify that A and B are repackaging to the default package.
+              // TODO(b/480068080): Enable repackaging by default when -adaptresourcefilenames is
+              //  enabled. Account for resource collisions in repackaging.
               ClassSubject aClass = inspector.clazz("pkg1.A");
               assertThat(aClass, isPresent());
-              assertEquals("", aClass.getDexProgramClass().getType().getPackageName());
+              assertEquals("a", aClass.getDexProgramClass().getType().getPackageName());
 
               ClassSubject bClass = inspector.clazz("pkg2.B");
               assertThat(bClass, isPresent());
-              assertEquals("", bClass.getDexProgramClass().getType().getPackageName());
+              assertEquals("b", bClass.getDexProgramClass().getType().getPackageName());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello, world!");

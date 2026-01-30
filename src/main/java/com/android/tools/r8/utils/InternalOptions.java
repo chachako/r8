@@ -917,6 +917,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
       if (isGeneratingClassFiles() && !getTestingOptions().enableRepackagingByDefaultForCf) {
         return getPackageObfuscationModeForNone();
       }
+      // TODO(b/480068080): Also enable by default when -adaptresourcefilenames is enabled.
+      if (proguardConfiguration.getAdaptResourceFilenames().isEnabled()) {
+        return getPackageObfuscationModeForNone();
+      }
       return PackageObfuscationMode.REPACKAGE;
     }
     assert packageObfuscationMode.isFlattenPackageHierarchy()
