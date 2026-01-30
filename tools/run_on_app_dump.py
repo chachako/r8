@@ -368,15 +368,6 @@ APPS = [
         'url': 'https://github.com/tuskyapp/Tusky',
         'revision': '814a9b8f9bacf8d26f712b06a0313a3534a2be95',
         'folder': 'tusky',
-    }),
-    App({
-        'id': 'org.wikipedia',
-        'name': 'Wikipedia',
-        'dump_app': 'dump_app.zip',
-        'apk_app': 'app-prod-release.apk',
-        'url': 'https://github.com/wikimedia/apps-android-wikipedia',
-        'revision': '0fa7cad843c66313be8e25790ef084cf1a1fa67e',
-        'folder': 'wikipedia',
     })
 ]
 
