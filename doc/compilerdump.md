@@ -18,8 +18,8 @@ main-dex lists or rules, and more. For R8 the dump also contains the full
 concatenation of all keep rules.
 
 The dump is a zip file containing the above. You should unzip it and review
-the content locally. The program, classpath, library and resource content will be in
-nested zip files. The remaining content is in plain text files.
+the content locally. The program, classpath, library and resource content will
+be in nested zip files. The remaining content is in plain text files.
 
 
 ## Generating a dump
@@ -31,9 +31,8 @@ To generate a dump file, run the compiler with the
 java -cp r8.jar -Dcom.android.tools.r8.dumpinputtofile=mydump.zip com.android.tools.r8.D8 <other-compiler-args>
 ```
 
-This will generate a dump file `mydump.zip` and exit the compiler with a
-non-zero exit value printing an error message about the location of the dump
-file that was written.
+This will generate a dump file `mydump.zip` during compilation and print a
+message about the location of the dump file that was written to stdout.
 
 For some builds, there may be many compilations taking place which cannot be
 easily isolated as individual compilation steps. If so, the system property
@@ -63,16 +62,17 @@ hopefully be the last dump):
 ./gradlew assembleDebug -Dorg.gradle.caching=false -Dcom.android.tools.r8.dumpinputtodirectory=mydumps/ --no-daemon
 ```
 
-### Generating a dump in AOSP
-For R8 compilations you can generate dumps with the R8_DUMP_DIRECTORY environment variable.
-This will put dumps for all R8 compilations leading up to the target that you are building.
-For a specific target you can do:
+### Generating a dump in Android Platform
+For R8 compilations you can generate dumps with the `R8_DUMP_INPUT` environment
+variable. This will put dumps for all R8 compilations leading up to the target
+that you are building. For a specific target you can do:
 
 ```
-mkdir /tmp/dumps
-R8_DUMP_DIRECTORY=/tmp/dumps m -j77 SystemUI
+R8_DUMP_INPUT=true m SystemUI
 ```
-The actual dump file for SystemUI will be the last dump in /tmp/dumps.
+
+The dump file for SystemUI will be next to the other output artifacts, such as
+`proguard_dictionary`, in the `out/soong/.intermediates` folder.
 
 
 ## Reproducing using a dump
@@ -92,4 +92,3 @@ options.
 
 The flags can also be used to override the setting specified in the dump.
 Doing so allows compiling with other compiler versions, or other settings.
-

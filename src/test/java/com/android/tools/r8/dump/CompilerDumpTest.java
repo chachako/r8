@@ -6,9 +6,7 @@ package com.android.tools.r8.dump;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.R8PartialTestCompileResult;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -43,16 +41,12 @@ public class CompilerDumpTest extends CompilationTestBase {
     // Create a D8 dump.
     parameters.assumeDexRuntime();
     Path dumpFile = temp.newFile("dump.zip").toPath();
-    try {
-      testForD8(parameters.getBackend())
-          .addInnerClasses(getClass())
-          .setMinApi(parameters)
-          .addOptionsModification(
-              options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dumpFile)))
-          .compile();
-      fail("Expected to fail compilation when creating a duump");
-    } catch (CompilationFailedException ignored) {
-    }
+    testForD8(parameters.getBackend())
+        .addInnerClasses(getClass())
+        .setMinApi(parameters)
+        .addOptionsModification(
+            options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dumpFile)))
+        .compile();
 
     // Compile the dump.
     CompilerDump dump = CompilerDump.fromArchive(dumpFile, temp.newFolder().toPath());
@@ -66,17 +60,14 @@ public class CompilerDumpTest extends CompilationTestBase {
   public void testR8() throws Exception {
     // Create an R8 dump.
     Path dumpFile = temp.newFile("dump.zip").toPath();
-    try {
-      testForR8(parameters.getBackend())
-          .addInnerClasses(getClass())
-          .addKeepMainRule(TestClass.class)
-          .setMinApi(parameters)
-          .addOptionsModification(
-              options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dumpFile)))
-          .compile();
-      fail("Expected to fail compilation when creating a duump");
-    } catch (CompilationFailedException ignored) {
-    }
+    testForR8(parameters.getBackend())
+        .addInnerClasses(getClass())
+        .addKeepMainRule(TestClass.class)
+        .allowDiagnosticInfoMessages()
+        .setMinApi(parameters)
+        .addOptionsModification(
+            options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dumpFile)))
+        .compile();
 
     // Compile the dump.
     CompilerDump dump = CompilerDump.fromArchive(dumpFile, temp.newFolder().toPath());

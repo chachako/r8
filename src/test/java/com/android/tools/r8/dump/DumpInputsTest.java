@@ -7,9 +7,7 @@ import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -28,55 +26,44 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class DumpInputsTest extends TestBase {
 
-  private final TestParameters parameters;
+  @Parameter(0)
+  public TestParameters parameters;
 
-  @Parameterized.Parameters(name = "{0}")
+  @Parameters(name = "{0}")
   public static TestParametersCollection data() {
     return getTestParameters().withSystemRuntime().build();
-  }
-
-  public DumpInputsTest(TestParameters parameters) {
-    this.parameters = parameters;
   }
 
   @Test
   public void testDumpToFileOptionsModification() throws Exception {
     Path dump = temp.newFolder().toPath().resolve("dump.zip");
-    try {
-      testForR8(parameters.getBackend())
-          .addProgramClasses(TestClass.class)
-          .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
-          .addKeepMainRule(TestClass.class)
-          .addOptionsModification(
-              options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
-          .allowDiagnosticErrorMessages()
-          .compileWithExpectedDiagnostics(
-              diagnostics ->
-                  diagnostics.assertErrorsMatch(
-                      diagnosticMessage(containsString("Dumped compilation inputs to:"))));
-      fail("Expected compilation to fail");
-    } catch (CompilationFailedException e) {
-      // Expected.
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(TestClass.class)
+        .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
+        .addKeepMainRule(TestClass.class)
+        .addOptionsModification(
+            options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
+        .allowDiagnosticInfoMessages()
+        .compileWithExpectedDiagnostics(
+            diagnostics ->
+                diagnostics.assertInfosMatch(
+                    diagnosticMessage(containsString("Dumped compilation inputs to:"))));
     verifyDump(dump, false, true);
   }
 
   @Test
   public void testDumpToFileSystemProperty() throws Exception {
     Path dump = temp.newFolder().toPath().resolve("dump.zip");
-    try {
-      testForExternalR8(parameters.getBackend(), parameters.getRuntime())
-          .addJvmFlag("-Dcom.android.tools.r8.dumpinputtofile=" + dump)
-          .addProgramClasses(TestClass.class)
-          .compile();
-      fail("Expected external compilation to exit");
-    } catch (AssertionError e) {
-      // Expected.
-    }
+    testForExternalR8(parameters.getBackend(), parameters.getRuntime())
+        .addJvmFlag("-Dcom.android.tools.r8.dumpinputtofile=" + dump)
+        .addProgramClasses(TestClass.class)
+        .compile();
     verifyDump(dump, false, true);
   }
 
@@ -84,18 +71,12 @@ public class DumpInputsTest extends TestBase {
   public void testDumpToFileSystemPropertyWhenMinifying() throws Exception {
     for (boolean minification : BooleanUtils.values()) {
       Path dump = temp.newFolder().toPath().resolve("dump.zip");
-      try {
-        testForExternalR8(parameters.getBackend(), parameters.getRuntime())
-            .addJvmFlag("-Dcom.android.tools.r8.dumpinputtofile=" + dump)
-            .addJvmFlag("-Dcom.android.tools.r8.dump.filter.buildproperty.minification=^true$")
-            .addProgramClasses(TestClass.class)
-            .applyIf(!minification, builder -> builder.addKeepRules("-dontobfuscate"))
-            .compile();
-        // Without minification there should be no dump, and thus compilation should succeed.
-        assertFalse(minification);
-      } catch (AssertionError e) {
-        assertTrue(minification);
-      }
+      testForExternalR8(parameters.getBackend(), parameters.getRuntime())
+          .addJvmFlag("-Dcom.android.tools.r8.dumpinputtofile=" + dump)
+          .addJvmFlag("-Dcom.android.tools.r8.dump.filter.buildproperty.minification=^true$")
+          .addProgramClasses(TestClass.class)
+          .applyIf(!minification, builder -> builder.addKeepRules("-dontobfuscate"))
+          .compile();
       if (minification) {
         verifyDump(dump, false, true);
       } else {
@@ -107,16 +88,11 @@ public class DumpInputsTest extends TestBase {
   @Test
   public void testDumpToFileCLI() throws Exception {
     Path dump = temp.newFolder().toPath().resolve("dump.zip");
-    try {
-      testForExternalR8(parameters.getBackend(), parameters.getRuntime())
-          .dumpInputToFile(dump.toString())
-          .addProgramClasses(TestClass.class)
-          .compile();
-    } catch (AssertionError e) {
-      verifyDump(dump, false, true);
-      return;
-    }
-    fail("Expected external compilation to exit");
+    testForExternalR8(parameters.getBackend(), parameters.getRuntime())
+        .dumpInputToFile(dump.toString())
+        .addProgramClasses(TestClass.class)
+        .compile();
+    verifyDump(dump, false, true);
   }
 
   @Test

@@ -20,22 +20,16 @@ public abstract class DumpInputFlags {
 
   public static DumpInputFlags getDefault() {
     String dumpInputToFile = System.getProperty(DUMP_INPUT_TO_FILE_PROPERTY);
-    if (dumpInputToFile == null) {
-      dumpInputToFile = System.getenv("COM_ANDROID_TOOLS_R8_DUMPINPUTTOFILE");
-    }
     if (dumpInputToFile != null) {
       return dumpToFile(Paths.get(dumpInputToFile));
     }
     String dumpInputToDirectory = System.getProperty(DUMP_INPUT_TO_DIRECTORY_PROPERTY);
-    if (dumpInputToDirectory == null) {
-      dumpInputToDirectory = System.getenv("COM_ANDROID_TOOLS_R8_DUMPINPUTTODIRECTORY");
-    }
     if (dumpInputToDirectory != null) {
       if (!Files.exists(Paths.get(dumpInputToDirectory))) {
         throw new RuntimeException(
             "Dump directory "
                 + dumpInputToDirectory
-                + " not found. Dumping compiler input to a directory requires that the directoty"
+                + " not found. Dumping compiler input to a directory requires that the directory"
                 + " already exists.");
       }
       return dumpToDirectory(Paths.get(dumpInputToDirectory));
@@ -75,11 +69,6 @@ public abstract class DumpInputFlags {
       public Path getDumpPath() {
         return file;
       }
-
-      @Override
-      public boolean shouldFailCompilation() {
-        return true;
-      }
     };
   }
 
@@ -89,11 +78,6 @@ public abstract class DumpInputFlags {
       @Override
       public Path getDumpPath() {
         return directory.resolve("dump" + System.nanoTime() + ".zip");
-      }
-
-      @Override
-      public boolean shouldFailCompilation() {
-        return false;
       }
     };
   }
@@ -119,6 +103,11 @@ public abstract class DumpInputFlags {
         }
       }
       return true;
+    }
+
+    @Override
+    public boolean shouldFailCompilation() {
+      return false;
     }
 
     @Override
