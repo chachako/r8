@@ -57,7 +57,7 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
         .compile()
         .inspectDiagnosticMessages(
             diagnostics -> {
-              assertEquals(1, diagnostics.getInfos().size());
+              assertEquals(2, diagnostics.getInfos().size());
               Diagnostic diagnostic = diagnostics.getInfos().get(0);
               List<String> diagnosticLines =
                   StringUtils.splitLines(diagnostic.getDiagnosticMessage());
@@ -65,6 +65,14 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
                 assertTrue(
                     "Does not contain 'Can instrument': " + message,
                     message.contains("Can instrument"));
+              }
+              assertEquals(1, diagnosticLines.size());
+              diagnostic = diagnostics.getInfos().get(1);
+              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
+              for (String message : diagnosticLines) {
+                assertTrue(
+                    "Does not contain 'Can optimize': " + message,
+                    message.contains("Can optimize"));
               }
               assertEquals(1, diagnosticLines.size());
             })

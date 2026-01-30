@@ -713,14 +713,16 @@ public class AtomicFieldUpdaterInstrumentor {
     public void reportFailure(DexField field, String reason) {
       if (logs != null) {
         assert !logs.containsKey(field);
-        logs.put(field, "Cannot instrument " + field + ": " + reason);
+        logs.put(field, "Cannot instrument " + field.qualifiedName() + ": " + reason);
       }
     }
 
     public void reportSuccessful(DexField field) {
       if (logs != null) {
         assert !logs.containsKey(field);
-        logs.put(field, "Can instrument    " + field);
+        logs.put(
+            field,
+            "Can instrument    " + field.qualifiedName() + "." + field.name.toSourceString());
       }
     }
 

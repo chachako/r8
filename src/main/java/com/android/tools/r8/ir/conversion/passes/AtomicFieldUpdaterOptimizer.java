@@ -163,6 +163,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         continue;
       }
 
+      reportSuccess(next.getPosition(), updaterMightBeNull);
       rewriteToOptimizedCall(
           code,
           it,
@@ -269,7 +270,22 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
             "Cannot optimize AtomicFieldUpdater use: "
                 + reason
                 + " ("
-                + position.getMethod().toString()
+                + position.getMethod().toSourceString()
+                + ")");
+  }
+
+  private void reportSuccess(Position position, boolean mightBeNull) {
+    if (!appView.testing().enableAtomicFieldUpdaterLogs) {
+      return;
+    }
+    appView
+        .reporter()
+        .info(
+            "Can optimize AtomicFieldUpdater use:    "
+                + (mightBeNull ? "with   " : "without")
+                + " null-check"
+                + " ("
+                + position.getMethod().toSourceString()
                 + ")");
   }
 
