@@ -36,7 +36,11 @@ public class MethodWithInlinePositionsStackSampleRetraceTest extends StackSample
   public void test() throws Exception {
     runTest(
         testBuilder ->
-            testBuilder.addProgramClassFileData(programClassFileData).enableInliningAnnotations());
+            testBuilder
+                .addProgramClassFileData(programClassFileData)
+                // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
+                .addKeepRules("-repackageclasses")
+                .enableInliningAnnotations());
   }
 
   @Override

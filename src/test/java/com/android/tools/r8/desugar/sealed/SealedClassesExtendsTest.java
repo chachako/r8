@@ -120,7 +120,8 @@ public class SealedClassesExtendsTest extends TestBase {
         // Keep the sealed class to ensure the PermittedSubclasses attribute stays live.
         .addKeepPermittedSubclasses(Super.class, Sub1.class, Sub2.class)
         .addKeepMainRule(TestClass.class)
-        .applyIf(!repackage, b -> b.addKeepRules("-dontrepackage"))
+        // TODO(b/480068080): Only add -dontrepackage.
+        .addKeepRules(repackage ? "-repackageclasses" : "-dontrepackage")
         .compile()
         .inspectIf(!parameters.isRandomPartialCompilation(), this::inspect)
         .run(parameters.getRuntime(), TestClass.class)

@@ -52,6 +52,8 @@ public class MissingReferenceNamingClashTest extends TestBase {
         .addKeepMainRule(Main.class)
         .addKeepClassAndMembersRules(Anno.class)
         .addKeepClassRulesWithAllowObfuscation(A.class)
+        // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
+        .addKeepRules("-repackageclasses")
         .addKeepRuntimeVisibleAnnotations()
         .addDontWarn(descriptorToJavaType(newDescriptor))
         .compile()

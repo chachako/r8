@@ -65,6 +65,8 @@ public class MethodWithOverloadStackSampleRetraceTest extends StackSampleRetrace
         testBuilder ->
             testBuilder
                 .addProgramClassFileData(programClassFileData)
+                // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
+                .addKeepRules("-repackageclasses")
                 .addDontOptimize()
                 .applyIf(
                     keep,

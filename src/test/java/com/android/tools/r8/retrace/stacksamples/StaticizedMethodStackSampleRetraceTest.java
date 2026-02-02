@@ -42,6 +42,8 @@ public class StaticizedMethodStackSampleRetraceTest extends StackSampleRetraceTe
         testBuilder ->
             testBuilder
                 .addProgramClassFileData(programClassFileData)
+                // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
+                .addKeepRules("-repackageclasses")
                 .enableInliningAnnotations()
                 .enableNeverClassInliningAnnotations());
   }

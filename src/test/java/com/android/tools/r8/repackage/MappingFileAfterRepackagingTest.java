@@ -39,6 +39,8 @@ public class MappingFileAfterRepackagingTest extends TestBase {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
+        // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
+        .addKeepRules("-repackageclasses")
         .addKeepAttributeLineNumberTable()
         .addKeepAttributeSourceFile()
         .addHorizontallyMergedClassesInspector(

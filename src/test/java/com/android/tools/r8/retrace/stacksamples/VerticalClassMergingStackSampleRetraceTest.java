@@ -57,6 +57,8 @@ public class VerticalClassMergingStackSampleRetraceTest extends StackSampleRetra
                 .addVerticallyMergedClassesInspector(
                     inspector ->
                         inspector.assertMergedIntoSubtype(A.class).assertNoOtherClassesMerged())
+                // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
+                .addKeepRules("-repackageclasses")
                 .enableInliningAnnotations()
                 .enableNeverClassInliningAnnotations()
                 .enableNoMethodStaticizingAnnotations());
