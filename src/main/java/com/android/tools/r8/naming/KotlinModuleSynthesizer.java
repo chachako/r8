@@ -43,7 +43,7 @@ public class KotlinModuleSynthesizer {
     this.appView = appView;
   }
 
-  public boolean isKotlinModuleFile(DataEntryResource file) {
+  public static boolean isKotlinModuleFile(DataEntryResource file) {
     return FileUtils.isKotlinModuleFile(file.getName());
   }
 

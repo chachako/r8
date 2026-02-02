@@ -48,15 +48,17 @@ public class AdaptResourceFileNamesRepackageCollisionTest extends TestBase {
         .compile()
         .inspect(
             inspector -> {
-              // TODO(b/480068080): Enable repackaging by default when -adaptresourcefilenames is
-              //  enabled. Account for resource collisions in repackaging.
+              // Class A should be repackaged to the default package "".
               ClassSubject aClass = inspector.clazz("pkg1.A");
               assertThat(aClass, isPresent());
-              assertEquals("a", aClass.getDexProgramClass().getType().getPackageName());
+              assertEquals("", aClass.getDexProgramClass().getType().getPackageName());
 
+              // Due to the collision between pkg1/build.properties and pkg2/build.properties,
+              // class B should not be repackaged to the default package "".
+              // We fallback to -flattenpackagehierarchy and move it to package "a".
               ClassSubject bClass = inspector.clazz("pkg2.B");
               assertThat(bClass, isPresent());
-              assertEquals("b", bClass.getDexProgramClass().getType().getPackageName());
+              assertEquals("a", bClass.getDexProgramClass().getType().getPackageName());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello, world!");

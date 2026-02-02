@@ -44,6 +44,10 @@ public class ProgramPackageCollection implements Iterable<ProgramPackage> {
     return packages.get(clazz.getType().getPackageDescriptor());
   }
 
+  public ProgramPackage getPackage(String packageDescriptor) {
+    return packages.get(packageDescriptor);
+  }
+
   public boolean isEmpty() {
     return packages.isEmpty();
   }

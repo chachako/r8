@@ -57,8 +57,6 @@ public class HorizontalClassMergingStackSampleRetraceTest extends StackSampleRet
         testBuilder ->
             testBuilder
                 .addProgramClassFileData(programClassFileData)
-                // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
-                .addKeepRules("-repackageclasses")
                 .addOptionsModification(
                     options -> options.inlinerOptions().enableConstructorInlining = false)
                 .enableInliningAnnotations()

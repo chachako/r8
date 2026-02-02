@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.dex;
 
+import static com.android.tools.r8.graph.lens.GraphLens.getIdentityLens;
+
 import com.android.tools.r8.DataDirectoryResource;
 import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.ResourceException;
@@ -46,12 +48,15 @@ public class ResourceAdapter {
     this.options = appView.options();
   }
 
+  public String adaptFileNameIfNeeded(DataEntryResource file) {
+    return shouldAdapt(file, options, ProguardConfiguration::getAdaptResourceFilenames)
+        ? adaptFileName(file)
+        : file.getName();
+  }
+
   public DataEntryResource adaptIfNeeded(DataEntryResource file) {
     // Adapt name, if needed.
-    String name =
-        shouldAdapt(file, options, ProguardConfiguration::getAdaptResourceFilenames)
-            ? adaptFileName(file)
-            : file.getName();
+    String name = adaptFileNameIfNeeded(file);
     assert name != null;
     // Adapt contents, if needed.
     byte[] contents =
@@ -74,14 +79,6 @@ public class ResourceAdapter {
   }
 
   public DataDirectoryResource adaptIfNeeded(DataDirectoryResource directory) {
-    // First check if this directory should even be in the output.
-    if (options.getProguardConfiguration() == null) {
-      assert options.testing.enableD8MetaInfServicesPassThrough;
-      return null;
-    }
-    if (!options.getProguardConfiguration().getKeepDirectories().matches(directory.getName())) {
-      return null;
-    }
     return DataDirectoryResource.fromName(adaptDirectoryName(directory), directory.getOrigin());
   }
 
@@ -111,12 +108,21 @@ public class ResourceAdapter {
     return file.getName();
   }
 
-  private String adaptDirectoryName(DataDirectoryResource file) {
-    DirectoryNameAdapter adapter = new DirectoryNameAdapter(file.getName());
+  public String adaptDirectoryName(DataDirectoryResource directory) {
+    DirectoryNameAdapter adapter = new DirectoryNameAdapter(directory.getName());
     if (adapter.run()) {
       return adapter.getResult();
     }
-    return file.getName();
+    return directory.getName();
+  }
+
+  protected String adaptPackage(String javaPackage) {
+    String packageName = appView.graphLens().lookupPackageName(javaPackage);
+    return namingLens.lookupPackageName(packageName);
+  }
+
+  private DexString adaptType(DexType type) {
+    return namingLens.lookupDescriptor(graphLens.lookupType(type, getIdentityLens()));
   }
 
   // According to the Proguard documentation, the resource files should be parsed and written using
@@ -271,7 +277,7 @@ public class ResourceAdapter {
               DescriptorUtils.javaTypeToDescriptorIgnorePrimitives(javaType));
       DexType dexType = descriptor != null ? dexItemFactory.lookupType(descriptor) : null;
       if (dexType != null) {
-        DexString renamedDescriptor = namingLens.lookupDescriptor(graphLens.lookupType(dexType));
+        DexString renamedDescriptor = adaptType(dexType);
         if (!descriptor.equals(renamedDescriptor)) {
           String renamedJavaType =
               DescriptorUtils.descriptorToJavaType(renamedDescriptor.toSourceString());
@@ -296,8 +302,7 @@ public class ResourceAdapter {
       if (getClassNameSeparator() != '/') {
         javaPackage = javaPackage.replace(getClassNameSeparator(), '/');
       }
-      String packageName = appView.graphLens().lookupPackageName(javaPackage);
-      String minifiedJavaPackage = namingLens.lookupPackageName(packageName);
+      String minifiedJavaPackage = adaptPackage(javaPackage);
       if (!javaPackage.equals(minifiedJavaPackage)) {
         outputRangeFromInput(outputFrom, from);
         outputJavaType(

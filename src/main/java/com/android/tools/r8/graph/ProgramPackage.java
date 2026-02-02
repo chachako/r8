@@ -5,7 +5,6 @@
 package com.android.tools.r8.graph;
 
 import com.android.tools.r8.utils.DescriptorUtils;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Iterator;
 import java.util.Set;
@@ -65,7 +64,11 @@ public class ProgramPackage implements Iterable<DexProgramClass> {
   }
 
   public Set<DexProgramClass> classesInPackage() {
-    return ImmutableSet.copyOf(classes);
+    return classes;
+  }
+
+  public int size() {
+    return classes.size();
   }
 
   @Override

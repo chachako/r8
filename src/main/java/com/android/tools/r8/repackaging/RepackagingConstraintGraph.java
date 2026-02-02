@@ -265,7 +265,8 @@ public class RepackagingConstraintGraph {
       } else if (classesToRepackageInResolvedPackage.contains(resolvedProgramHolder)) {
         // Disallow repackaging of the current class.
         pinnedNodes.add(getNode(method.getDefinition()));
-      } else if (repackagingConfiguration.isPackageInTargetLocation(resolvedPackage)) {
+      } else if (repackagingConfiguration.isPackageInTargetLocation(
+          resolvedPackage, packageObfuscationMode)) {
         assert false : "Expected resolvedPackage to be null, but was: " + resolvedPackage;
         // Disallow repackaging of the current class.
         pinnedNodes.add(getNode(method.getDefinition()));

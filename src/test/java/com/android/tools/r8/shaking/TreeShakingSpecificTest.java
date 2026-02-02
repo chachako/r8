@@ -124,8 +124,6 @@ public class TreeShakingSpecificTest extends TestBase {
     testForR8(backend)
         .addProgramFiles(getProgramFiles(test))
         .addKeepRuleFiles(Paths.get(EXAMPLES_DIR, test, "keep-rules.txt"))
-        // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
-        .addKeepRules("-repackageclasses")
         .addOptionsModification(options -> options.inlinerOptions().enableInlining = false)
         .setMinApi(minApi)
         .compile()

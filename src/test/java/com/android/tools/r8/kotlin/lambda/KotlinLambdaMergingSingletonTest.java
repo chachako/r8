@@ -78,8 +78,6 @@ public class KotlinLambdaMergingSingletonTest extends KotlinTestBase {
     testForR8(parameters.getBackend())
         .addProgramFiles(getProgramFiles())
         .addKeepMainRule(getMainClassName())
-        // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
-        .addKeepRules("-repackageclasses")
         .addHorizontallyMergedClassesInspector(inspector -> inspect(inspector, lambdasInInput))
         .allowAccessModification(allowAccessModification)
         .noClassInlining()

@@ -97,8 +97,6 @@ import com.android.tools.r8.profile.startup.StartupOptions;
 import com.android.tools.r8.profile.startup.instrumentation.InstrumentationOptions;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
-import com.android.tools.r8.repackaging.Repackaging.DefaultRepackagingConfiguration;
-import com.android.tools.r8.repackaging.Repackaging.RepackagingConfiguration;
 import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.Enqueuer;
@@ -915,10 +913,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         return getPackageObfuscationModeForNone();
       }
       if (isGeneratingClassFiles() && !getTestingOptions().enableRepackagingByDefaultForCf) {
-        return getPackageObfuscationModeForNone();
-      }
-      // TODO(b/480068080): Also enable by default when -adaptresourcefilenames is enabled.
-      if (proguardConfiguration.getAdaptResourceFilenames().isEnabled()) {
         return getPackageObfuscationModeForNone();
       }
       return PackageObfuscationMode.REPACKAGE;
@@ -2374,9 +2368,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public BiConsumer<AppInfoWithLiveness, Enqueuer.Mode> enqueuerInspector = null;
 
     public Consumer<String> processingContextsConsumer = null;
-
-    public Function<AppView<AppInfoWithLiveness>, RepackagingConfiguration>
-        repackagingConfigurationFactory = DefaultRepackagingConfiguration::new;
 
     public BiConsumer<AppView<?>, HorizontallyMergedClasses> horizontallyMergedClassesConsumer =
         ConsumerUtils.emptyBiConsumer();

@@ -44,8 +44,6 @@ public class InvokeSuperToEmptyDefaultInterfaceMethodInLibraryTest extends TestB
         .addLibraryClasses(Build.class, I.class)
         .addDefaultRuntimeLibrary(parameters)
         .addKeepMainRule(Main.class)
-        // TODO(b/480068080): Should not need to explicitly add -repackageclasses.
-        .addKeepRules("-repackageclasses")
         .allowDiagnosticWarningMessages(shouldReportDiagnostic())
         .enableInliningAnnotations()
         .setMinApi(parameters)

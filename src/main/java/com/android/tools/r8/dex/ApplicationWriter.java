@@ -8,16 +8,12 @@ import static com.android.tools.r8.utils.positions.LineNumberOptimizer.runAndWri
 import com.android.tools.r8.ByteBufferProvider;
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.D8.ConvertedCfFiles;
-import com.android.tools.r8.DataDirectoryResource;
-import com.android.tools.r8.DataEntryResource;
 import com.android.tools.r8.DataResourceConsumer;
 import com.android.tools.r8.DataResourceProvider;
-import com.android.tools.r8.DataResourceProvider.Visitor;
 import com.android.tools.r8.DexFilePerClassFileConsumer;
 import com.android.tools.r8.DexIndexedConsumer;
 import com.android.tools.r8.FeatureSplit;
 import com.android.tools.r8.ProgramConsumer;
-import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.debuginfo.DebugRepresentation.DebugRepresentationPredicate;
@@ -27,9 +23,7 @@ import com.android.tools.r8.dex.distribution.FilePerInputClassDistributor;
 import com.android.tools.r8.dex.distribution.FillFilesDistributor;
 import com.android.tools.r8.dex.distribution.MonoDexDistributor;
 import com.android.tools.r8.dex.jumbostrings.JumboStringRewriter;
-import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.features.FeatureSplitConfiguration.DataResourceProvidersAndConsumer;
-import com.android.tools.r8.graph.AppServices;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexAnnotation;
 import com.android.tools.r8.graph.DexAnnotationSet;
@@ -69,7 +63,6 @@ import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
 import com.android.tools.r8.utils.PredicateUtils;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.SupplierUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
@@ -591,12 +584,8 @@ public class ApplicationWriter {
     if (dataResourceConsumer != null) {
       ImmutableList<DataResourceProvider> dataResourceProviders =
           appView.app().dataResourceProviders;
-      adaptAndPassDataResources(
-          options,
-          dataResourceConsumer,
-          dataResourceProviders,
-          resourceAdapter,
-          kotlinModuleSynthesizer);
+      DataResourceWriter.adaptAndPassDataResources(
+          options, dataResourceConsumer, dataResourceProviders, resourceAdapter);
 
       appView.appServices().write(appView, FeatureSplit.BASE, dataResourceConsumer);
       // Rewrite/synthesize kotlin_module files
@@ -608,8 +597,8 @@ public class ApplicationWriter {
     if (options.hasFeatureSplitConfiguration()) {
       for (DataResourceProvidersAndConsumer entry :
           options.getFeatureSplitConfiguration().getDataResourceProvidersAndConsumers()) {
-        adaptAndPassDataResources(
-            options, entry.consumer, entry.providers, resourceAdapter, kotlinModuleSynthesizer);
+        DataResourceWriter.adaptAndPassDataResources(
+            options, entry.consumer, entry.providers, resourceAdapter);
         appView.appServices().write(appView, entry.featureSplit, entry.consumer);
       }
     }
@@ -626,61 +615,6 @@ public class ApplicationWriter {
           BuildMetadataFactory.create(appView.withClassHierarchy(), virtualFiles));
     } else if (appView.hasClassHierarchy()) {
       assert R8StatsMetadataImpl.Counters.create(appView.withClassHierarchy()).validate();
-    }
-  }
-
-  private static void adaptAndPassDataResources(
-      InternalOptions options,
-      DataResourceConsumer dataResourceConsumer,
-      Collection<DataResourceProvider> dataResourceProviders,
-      ResourceAdapter resourceAdapter,
-      KotlinModuleSynthesizer kotlinModuleSynthesizer) {
-    Set<String> generatedResourceNames = new HashSet<>();
-
-    for (DataResourceProvider dataResourceProvider : dataResourceProviders) {
-      try {
-        dataResourceProvider.accept(
-            new Visitor() {
-              @Override
-              public void visit(DataDirectoryResource directory) {
-                DataDirectoryResource adapted = resourceAdapter.adaptIfNeeded(directory);
-                if (adapted != null) {
-                  dataResourceConsumer.accept(adapted, options.reporter);
-                  options.reporter.failIfPendingErrors();
-                }
-              }
-
-              @Override
-              public void visit(DataEntryResource file) {
-                if ("META-INF/MANIFEST.MF".equals(file.getName())) {
-                  // Many android library input .jar files contain a MANIFEST.MF. It does not make
-                  // sense to propagate them since they are manifests of the input libraries.
-                  if (options.isGeneratingDex()
-                      || options.getTestingOptions().forcePruneMetaInfManifestMf) {
-                    return;
-                  }
-                }
-                if (file.getName().startsWith(AppServices.SERVICE_DIRECTORY_NAME)) {
-                  // META-INF/services resources are handled separately.
-                  return;
-                }
-                if (kotlinModuleSynthesizer.isKotlinModuleFile(file)) {
-                  // .kotlin_module files are synthesized.
-                  return;
-                }
-                DataEntryResource adapted = resourceAdapter.adaptIfNeeded(file);
-                if (generatedResourceNames.add(adapted.getName())) {
-                  dataResourceConsumer.accept(adapted, options.reporter);
-                } else {
-                  options.reporter.warning(
-                      new StringDiagnostic("Resource '" + file.getName() + "' already exists."));
-                }
-                options.reporter.failIfPendingErrors();
-              }
-            });
-      } catch (ResourceException e) {
-        throw new CompilationError(e.getMessage(), e);
-      }
     }
   }
 

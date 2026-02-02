@@ -69,8 +69,7 @@ public class Repackaging {
   public Repackaging(AppView<AppInfoWithLiveness> appView) {
     this.appView = appView;
     this.packageObfuscationMode = appView.options().getPackageObfuscationMode();
-    this.repackagingConfiguration =
-        appView.options().testing.repackagingConfigurationFactory.apply(appView);
+    this.repackagingConfiguration = new DefaultRepackagingConfiguration(appView);
   }
 
   public void run(ExecutorService executorService, Timing timing) throws ExecutionException {
@@ -132,17 +131,22 @@ public class Repackaging {
   private RepackagingLens repackageClasses(
       DirectMappedDexApplication.Builder appBuilder, ExecutorService executorService)
       throws ExecutionException {
-    if (packageObfuscationMode.isNone()) {
-      return null;
-    }
     BiMap<DexType, DexType> mappings = HashBiMap.create();
     Map<String, String> packageMappings = new HashMap<>();
     Set<String> seenPackageDescriptors = new HashSet<>();
     SortedProgramPackageCollection packages =
         SortedProgramPackageCollection.createWithAllProgramClasses(appView);
-    processPackagesInDesiredLocation(packages, mappings, packageMappings, seenPackageDescriptors);
+    RepackagingResourceCollisionResolver resourceCollisionDetector =
+        RepackagingResourceCollisionResolver.create(appView, packages, packageObfuscationMode);
+    processPackagesInDesiredLocation(
+        packages, mappings, packageMappings, resourceCollisionDetector, seenPackageDescriptors);
     processRemainingPackages(
-        packages, mappings, packageMappings, seenPackageDescriptors, executorService);
+        packages,
+        mappings,
+        packageMappings,
+        resourceCollisionDetector,
+        seenPackageDescriptors,
+        executorService);
     mappings.entrySet().removeIf(entry -> entry.getKey().isIdenticalTo(entry.getValue()));
     if (mappings.isEmpty()) {
       return null;
@@ -203,13 +207,15 @@ public class Repackaging {
       SortedProgramPackageCollection packages,
       BiMap<DexType, DexType> mappings,
       Map<String, String> packageMappings,
+      RepackagingResourceCollisionResolver resourceCollisionDetector,
       Set<String> seenPackageDescriptors) {
     // For each package that is already in the desired location, record all the classes from the
     // package in the mapping for collision detection.
     Iterator<ProgramPackage> iterator = packages.iterator();
     while (iterator.hasNext()) {
       ProgramPackage pkg = iterator.next();
-      if (repackagingConfiguration.isPackageInTargetLocation(pkg)) {
+      if (repackagingConfiguration.isPackageInTargetLocation(pkg, packageObfuscationMode)) {
+        assert !resourceCollisionDetector.isBlocked(pkg);
         for (DexProgramClass alreadyRepackagedClass : pkg) {
           if (!appView.appInfo().isRepackagingAllowed(alreadyRepackagedClass, appView)) {
             mappings.put(alreadyRepackagedClass.getType(), alreadyRepackagedClass.getType());
@@ -219,6 +225,7 @@ public class Repackaging {
           processClass(alreadyRepackagedClass, pkg, pkg.getPackageDescriptor(), mappings);
         }
         packageMappings.put(pkg.getPackageDescriptor(), pkg.getPackageDescriptor());
+        resourceCollisionDetector.acceptRepackagedPackage(pkg);
         seenPackageDescriptors.add(pkg.getPackageDescriptor());
         iterator.remove();
       }
@@ -229,6 +236,7 @@ public class Repackaging {
       SortedProgramPackageCollection packages,
       BiMap<DexType, DexType> mappings,
       Map<String, String> packageMappings,
+      RepackagingResourceCollisionResolver resourceCollisionDetector,
       Set<String> seenPackageDescriptors,
       ExecutorService executorService)
       throws ExecutionException {
@@ -242,7 +250,7 @@ public class Repackaging {
           computeClassesToRepackage(pkg, packages, packagesWithClassesToRepackage, executorService);
       packagesWithClassesToRepackage.put(pkg, classesToRepackage);
       // Reserve the package name to ensure that we are not renaming to a package we cannot move.
-      if (classesToRepackage.size() != pkg.classesInPackage().size()) {
+      if (classesToRepackage.size() != pkg.size()) {
         seenPackageDescriptors.add(pkg.getPackageDescriptor());
       }
     }
@@ -252,19 +260,31 @@ public class Repackaging {
         continue;
       }
       // Already processed packages should have been removed.
-      assert !repackagingConfiguration.isPackageInTargetLocation(pkg);
-      String newPackageDescriptor =
-          repackagingConfiguration.getNewPackageDescriptor(pkg, seenPackageDescriptors);
+      assert !repackagingConfiguration.isPackageInTargetLocation(pkg, packageObfuscationMode);
+      String newPackageDescriptor;
+      if (resourceCollisionDetector.isBlocked(pkg)) {
+        assert packageObfuscationMode.isRepackageClasses();
+        newPackageDescriptor =
+            repackagingConfiguration.getNewPackageDescriptor(
+                pkg, PackageObfuscationMode.FLATTEN, seenPackageDescriptors);
+      } else {
+        newPackageDescriptor =
+            repackagingConfiguration.getNewPackageDescriptor(
+                pkg, packageObfuscationMode, seenPackageDescriptors);
+      }
       for (DexProgramClass classToRepackage : classesToRepackage) {
         processClass(classToRepackage, pkg, newPackageDescriptor, mappings);
       }
       seenPackageDescriptors.add(newPackageDescriptor);
+      if (classesToRepackage.size() == pkg.size()) {
+        resourceCollisionDetector.acceptRepackagedPackage(pkg);
+      }
       // Package remapping is used for adapting resources. If we cannot repackage all classes in
       // a package then we put in the original descriptor to ensure that resources are not
       // rewritten.
       packageMappings.put(
           pkg.getPackageDescriptor(),
-          classesToRepackage.size() == pkg.classesInPackage().size()
+          classesToRepackage.size() == pkg.size()
               ? newPackageDescriptor
               : pkg.getPackageDescriptor());
     }
@@ -330,9 +350,13 @@ public class Repackaging {
 
   public interface RepackagingConfiguration {
 
-    String getNewPackageDescriptor(ProgramPackage pkg, Set<String> seenPackageDescriptors);
+    String getNewPackageDescriptor(
+        ProgramPackage pkg,
+        PackageObfuscationMode packageObfuscationMode,
+        Set<String> seenPackageDescriptors);
 
-    boolean isPackageInTargetLocation(ProgramPackage pkg);
+    boolean isPackageInTargetLocation(
+        ProgramPackage pkg, PackageObfuscationMode packageObfuscationMode);
 
     DexType getRepackagedType(
         DexProgramClass clazz,
@@ -346,7 +370,6 @@ public class Repackaging {
     private final AppView<AppInfoWithLiveness> appView;
     private final DexItemFactory dexItemFactory;
     private final InternalOptions options;
-    private final PackageObfuscationMode packageObfuscationMode;
     private final ProguardConfiguration proguardConfiguration;
     private final MinificationPackageNamingStrategy packageMinificationStrategy;
 
@@ -354,13 +377,15 @@ public class Repackaging {
       this.appView = appView;
       this.dexItemFactory = appView.dexItemFactory();
       this.options = appView.options();
-      this.packageObfuscationMode = options.getPackageObfuscationMode();
       this.proguardConfiguration = options.getProguardConfiguration();
       this.packageMinificationStrategy = new MinificationPackageNamingStrategy(appView);
     }
 
     @Override
-    public String getNewPackageDescriptor(ProgramPackage pkg, Set<String> seenPackageDescriptors) {
+    public String getNewPackageDescriptor(
+        ProgramPackage pkg,
+        PackageObfuscationMode packageObfuscationMode,
+        Set<String> seenPackageDescriptors) {
       String newPackageDescriptor =
           DescriptorUtils.getBinaryNameFromJavaType(proguardConfiguration.getPackagePrefix());
       if (!appView.options().isMinifying()) {
@@ -392,7 +417,8 @@ public class Repackaging {
     }
 
     @Override
-    public boolean isPackageInTargetLocation(ProgramPackage pkg) {
+    public boolean isPackageInTargetLocation(
+        ProgramPackage pkg, PackageObfuscationMode packageObfuscationMode) {
       String newPackageDescriptor =
           DescriptorUtils.getBinaryNameFromJavaType(proguardConfiguration.getPackagePrefix());
       if (packageObfuscationMode.isRepackageClasses()) {
