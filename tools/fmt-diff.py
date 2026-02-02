@@ -12,10 +12,12 @@ import utils
 
 from subprocess import Popen, PIPE
 
-GOOGLE_JAVA_FORMAT_DIFF = os.path.join(utils.THIRD_PARTY, 'google',
-                                       'google-java-format', '1.24.0',
-                                       'google-java-format-1.24.0', 'scripts',
+GOOGLE_JAVA_FORMAT_DIFF = os.path.join(utils.TOOLS_DIR,
                                        'google-java-format-diff.py')
+
+GOOGLE_JAVA_FORMAT_JAR = os.path.join(utils.THIRD_PARTY, 'google',
+                                      'google-java-format', '1.24.0',
+                                      'google-java-format-1.24.0-all-deps.jar')
 
 GOOGLE_KOTLIN_FORMAT_DIFF = os.path.join(
     utils.THIRD_PARTY, 'google', 'google-kotlin-format', '0.54',
@@ -45,7 +47,10 @@ def ParseOptions():
 
 def FormatJava(upstream):
     git_diff_process = Popen(['git', 'diff', '-U0', upstream], stdout=PIPE)
-    fmt_process = Popen([sys.executable, GOOGLE_JAVA_FORMAT_DIFF, '-p1', '-i'],
+    fmt_process = Popen([
+        sys.executable, GOOGLE_JAVA_FORMAT_DIFF, '--google-java-format-jar',
+        GOOGLE_JAVA_FORMAT_JAR, '-p1', '-i'
+    ],
                         stdin=git_diff_process.stdout)
     git_diff_process.stdout.close()
     fmt_process.communicate()
