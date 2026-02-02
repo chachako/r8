@@ -189,15 +189,21 @@ public class ConcreteCfFrameState extends CfFrameState {
         (state, frameType) -> {
           if (frameType.isUninitialized()) {
             if (frameType.isUninitializedThis()) {
-              if (constructor.getHolderType() == config.getCurrentContext().getHolderType()
-                  || config.isImmediateSuperClassOfCurrentContext(constructor.getHolderType())) {
-                return state.markInitialized(
-                    frameType.asUninitializedThis(), config.getCurrentContext().getHolderType());
+              DexType source = config.getCurrentContext().getHolderType();
+              DexType target = constructor.getHolderType();
+              if (source.isIdenticalTo(target)
+                  || config.isImmediateSuperClassOfCurrentContext(target)
+                  || (appView.testing().allowConstructorMismatchInClassFiles
+                      && config.getAssignability().isAssignable(source, target))) {
+                return state.markInitialized(frameType.asUninitializedThis(), source);
               }
             } else if (frameType.isUninitializedNew()) {
-              DexType uninitializedNewType = frameType.getUninitializedNewType();
-              if (constructor.getHolderType() == uninitializedNewType) {
-                return state.markInitialized(frameType.asUninitializedNew(), uninitializedNewType);
+              DexType source = frameType.getUninitializedNewType();
+              DexType target = constructor.getHolderType();
+              if (source.isIdenticalTo(target)
+                  || (appView.testing().allowConstructorMismatchInClassFiles
+                      && config.getAssignability().isAssignable(source, target))) {
+                return state.markInitialized(frameType.asUninitializedNew(), source);
               }
             }
             return popAndInitializeConstructorMismatchError(frameType, constructor, config);

@@ -6,6 +6,7 @@ package com.android.tools.r8.graph;
 
 import com.android.tools.r8.cf.code.CfInstruction;
 import com.android.tools.r8.cf.code.CfTryCatch;
+import com.android.tools.r8.errors.CfCodeDiagnostics;
 import com.android.tools.r8.utils.StringUtils;
 
 public class CfCodeStackMapValidatingException {
