@@ -148,6 +148,9 @@ public class RelocatorCommand {
             // Set debug to ensure that we are writing all information to the application writer.
             CompilationMode.DEBUG,
             ProguardConfiguration.builder(factory, getReporter())
+                .disableShrinking()
+                .disableObfuscation()
+                .disableOptimization()
                 .addKeepAttributePatterns(ImmutableList.of("*"))
                 .applyAdaptResourceFilenamesBuilder(
                     b -> b.addPattern(ProguardPathList.builder().addFileName("**").build()))
