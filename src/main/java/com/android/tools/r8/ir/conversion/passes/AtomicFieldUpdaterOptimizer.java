@@ -21,6 +21,7 @@ import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFieldUpdaterInstrumentorInfo;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * This pass uses the information and instrumentation of {@code AtomicFieldUpdaterInstrumentor} to
@@ -104,81 +105,101 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       }
       var invoke = next.asInvokeVirtual();
       assert invoke != null;
+      DexMethod invokedMethod = invoke.getInvokedMethod();
+      if (!invokedMethod.holder.isIdenticalTo(
+          factory.javaUtilConcurrentAtomicAtomicReferenceFieldUpdater)) {
+        continue;
+      }
 
       // Check for updater.compareAndSet(holder, expect, update) call.
-      if (!invoke
-          .getInvokedMethod()
-          .isIdenticalTo(factory.atomicFieldUpdaterMethods.referenceCompareAndSet)) {
-        continue;
-      }
-
-      // Resolve updater.
-      var updaterValue = invoke.getReceiver();
-      var updaterMightBeNull = updaterValue.getType().isNullable();
-      DexField updaterField;
-      var updaterAbstractValue =
-          updaterValue.getAbstractValue(appView, code.context()).removeNullOrAbstractValue();
-      if (updaterAbstractValue.isSingleFieldValue()) {
-        updaterField = updaterAbstractValue.asSingleFieldValue().getField();
+      if (invokedMethod.isIdenticalTo(factory.atomicFieldUpdaterMethods.referenceCompareAndSet)) {
+        if (rewriteCompareAndSet(
+            code,
+            it,
+            next.getPosition(),
+            invoke,
+            atomicUpdaterFields,
+            info.getUnsafeInstanceField(),
+            next.outValue())) {
+          changed = true;
+        }
       } else {
         reportFailure(
-            next.getPosition(),
-            "HERE.compareAndSet(..) is statically unclear or unhelpful: " + updaterAbstractValue);
-        continue;
+            next.getPosition(), "not implemented: " + invokedMethod.name.toSourceString());
       }
-      var updaterInfo = atomicUpdaterFields.get(updaterField);
-      if (updaterInfo == null) {
-        reportFailure(
-            next.getPosition(),
-            "HERE.compareAndSet(..) refers to an un-instrumented updater field");
-        continue;
-      }
-
-      // Resolve holder.
-      var holderValue = invoke.getFirstNonReceiverArgument();
-      var expectedHolder = updaterInfo.holder;
-      if (!holderValue
-          .getType()
-          .lessThanOrEqual(expectedHolder.toNonNullTypeElement(appView), appView)) {
-        if (appView.testing().enableAtomicFieldUpdaterLogs) {
-          if (holderValue
-              .getType()
-              .lessThanOrEqual(expectedHolder.toTypeElement(appView), appView)) {
-            reportFailure(next.getPosition(), "_.compareAndSet(HERE, _, _) is nullable");
-          } else {
-            reportFailure(next.getPosition(), "_.compareAndSet(HERE, _, _) is of unexpected type");
-          }
-        }
-        continue;
-      }
-
-      // Resolve expect.
-      var expectValue = invoke.getSecondNonReceiverArgument();
-
-      // Resolve update.
-      var updateValue = invoke.getThirdNonReceiverArgument();
-      var expectedType = updaterInfo.reflectedFieldType;
-      if (!updateValue.getType().lessThanOrEqual(expectedType.toTypeElement(appView), appView)) {
-        reportFailure(next.getPosition(), "_.compareAndSet(_, _, HERE) is of unexpected type");
-        continue;
-      }
-
-      reportSuccess(next.getPosition(), updaterMightBeNull);
-      rewriteToOptimizedCall(
-          code,
-          it,
-          next.getPosition(),
-          updaterMightBeNull,
-          info.getUnsafeInstanceField(),
-          updaterValue,
-          holderValue,
-          updaterInfo.offsetField,
-          expectValue,
-          updateValue,
-          next.outValue());
-      changed = true;
     }
     return CodeRewriterResult.hasChanged(changed);
+  }
+
+  private boolean rewriteCompareAndSet(
+      IRCode code,
+      IRCodeInstructionListIterator it,
+      Position position,
+      InvokeVirtual invoke,
+      Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
+      DexField unsafeInstanceField,
+      Value outValue) {
+    // Resolve updater.
+    var updaterValue = invoke.getReceiver();
+    var updaterMightBeNull = updaterValue.getType().isNullable();
+    DexField updaterField;
+    var updaterAbstractValue =
+        updaterValue.getAbstractValue(appView, code.context()).removeNullOrAbstractValue();
+    if (updaterAbstractValue.isSingleFieldValue()) {
+      updaterField = updaterAbstractValue.asSingleFieldValue().getField();
+    } else {
+      reportFailure(
+          position,
+          "HERE.compareAndSet(..) is statically unclear or unhelpful: " + updaterAbstractValue);
+      return false;
+    }
+    var updaterInfo = atomicUpdaterFields.get(updaterField);
+    if (updaterInfo == null) {
+      reportFailure(position, "HERE.compareAndSet(..) refers to an un-instrumented updater field");
+      return false;
+    }
+
+    // Resolve holder.
+    var holderValue = invoke.getFirstNonReceiverArgument();
+    var expectedHolder = updaterInfo.holder;
+    if (!holderValue
+        .getType()
+        .lessThanOrEqual(expectedHolder.toNonNullTypeElement(appView), appView)) {
+      if (appView.testing().enableAtomicFieldUpdaterLogs) {
+        if (holderValue.getType().lessThanOrEqual(expectedHolder.toTypeElement(appView), appView)) {
+          reportFailure(position, "_.compareAndSet(HERE, _, _) is nullable");
+        } else {
+          reportFailure(position, "_.compareAndSet(HERE, _, _) is of unexpected type");
+        }
+      }
+      return false;
+    }
+
+    // Resolve expect.
+    var expectValue = invoke.getSecondNonReceiverArgument();
+
+    // Resolve update.
+    var updateValue = invoke.getThirdNonReceiverArgument();
+    var expectedType = updaterInfo.reflectedFieldType;
+    if (!updateValue.getType().lessThanOrEqual(expectedType.toTypeElement(appView), appView)) {
+      reportFailure(position, "_.compareAndSet(_, _, HERE) is of unexpected type");
+      return false;
+    }
+
+    reportSuccess(position, updaterMightBeNull);
+    rewriteToOptimizedCall(
+        code,
+        it,
+        position,
+        updaterMightBeNull,
+        unsafeInstanceField,
+        updaterValue,
+        holderValue,
+        updaterInfo.offsetField,
+        expectValue,
+        updateValue,
+        outValue);
+    return true;
   }
 
   /**
