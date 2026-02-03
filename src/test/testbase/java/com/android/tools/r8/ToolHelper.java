@@ -1708,15 +1708,8 @@ public class ToolHelper {
   public static ProguardConfiguration loadProguardConfiguration(
       DexItemFactory factory, List<Path> configPaths) {
     Reporter reporter = new Reporter();
+    assert !configPaths.isEmpty();
     ProguardConfiguration.Builder builder = ProguardConfiguration.builder(factory, reporter);
-    if (configPaths.isEmpty()) {
-      return builder
-          .disableShrinking()
-          .disableObfuscation()
-          .disableOptimization()
-          .addKeepAttributePatterns(ImmutableList.of("*"))
-          .build();
-    }
     ProguardConfigurationParser parser =
         new ProguardConfigurationParser(factory, reporter, builder);
     for (Path configPath : configPaths) {

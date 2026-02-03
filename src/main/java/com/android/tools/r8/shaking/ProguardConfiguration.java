@@ -60,9 +60,10 @@ public class ProguardConfiguration {
     private final Reporter reporter;
     private boolean allowAccessModification;
     private boolean ignoreWarnings;
-    private boolean optimizing = true;
-    private boolean obfuscating = true;
-    private boolean shrinking = true;
+    private final List<DontObfuscateRule> dontObfuscateRules = new ArrayList<>();
+    private final List<DontOptimizeRule> dontOptimizeRules = new ArrayList<>();
+    private final List<DontRepackageRule> dontRepackageRules = new ArrayList<>();
+    private final List<DontShrinkRule> dontShrinkRules = new ArrayList<>();
     private boolean printBlastRadius;
     private Path printBlastRadiusFile;
     private boolean printConfiguration;
@@ -186,49 +187,53 @@ public class ProguardConfiguration {
 
     @Override
     public void disableOptimization(ProguardConfigurationSourceParser parser, Position position) {
-      this.optimizing = false;
+      dontOptimizeRules.add(new DontOptimizeRule(parser.getOrigin(), position));
     }
 
     @Override
     public void disableObfuscation(ProguardConfigurationSourceParser parser, Position position) {
-      this.obfuscating = false;
+      dontObfuscateRules.add(new DontObfuscateRule(parser.getOrigin(), position));
     }
 
     @Override
     public void disableRepackaging(ProguardConfigurationSourceParser parser, Position position) {
+      dontRepackageRules.add(new DontRepackageRule(parser.getOrigin(), position));
       packageObfuscationMode = PackageObfuscationMode.NONE;
     }
 
     @Override
     public void disableShrinking(ProguardConfigurationSourceParser parser, Position position) {
-      this.shrinking = false;
-    }
-
-    public Builder disableOptimization() {
-      this.optimizing = false;
-      return this;
+      dontShrinkRules.add(new DontShrinkRule(parser.getOrigin(), position));
     }
 
     public Builder disableObfuscation() {
-      this.obfuscating = false;
+      // TODO(b/479221963): Improve origin for this case.
+      dontObfuscateRules.add(new DontObfuscateRule(Origin.unknown(), Position.UNKNOWN));
+      return this;
+    }
+
+    public Builder disableOptimization() {
+      // TODO(b/479221963): Improve origin for this case.
+      dontOptimizeRules.add(new DontOptimizeRule(Origin.unknown(), Position.UNKNOWN));
+      return this;
+    }
+
+    public Builder disableShrinking() {
+      // TODO(b/479221963): Improve origin for this case.
+      dontShrinkRules.add(new DontShrinkRule(Origin.unknown(), Position.UNKNOWN));
       return this;
     }
 
     boolean isObfuscating() {
-      return obfuscating;
+      return dontObfuscateRules.isEmpty();
     }
 
     public boolean isOptimizing() {
-      return optimizing;
+      return dontOptimizeRules.isEmpty();
     }
 
     public boolean isShrinking() {
-      return shrinking;
-    }
-
-    public Builder disableShrinking() {
-      shrinking = false;
-      return this;
+      return dontShrinkRules.isEmpty();
     }
 
     @Override
@@ -521,9 +526,10 @@ public class ProguardConfiguration {
               packagePrefix,
               allowAccessModification,
               ignoreWarnings,
-              optimizing,
-              obfuscating,
-              shrinking,
+              dontObfuscateRules,
+              dontOptimizeRules,
+              dontRepackageRules,
+              dontShrinkRules,
               printBlastRadius,
               printBlastRadiusFile,
               printConfiguration,
@@ -571,9 +577,10 @@ public class ProguardConfiguration {
   private final String packagePrefix;
   private final boolean allowAccessModification;
   private final boolean ignoreWarnings;
-  private final boolean optimizing;
-  private final boolean obfuscating;
-  private final boolean shrinking;
+  private final List<DontObfuscateRule> dontObfuscateRules;
+  private final List<DontOptimizeRule> dontOptimizeRules;
+  private final List<DontRepackageRule> dontRepackageRules;
+  private final List<DontShrinkRule> dontShrinkRules;
   private final boolean printBlastRadius;
   private final Path printBlastRadiusFile;
   private final boolean printConfiguration;
@@ -614,9 +621,10 @@ public class ProguardConfiguration {
       String packagePrefix,
       boolean allowAccessModification,
       boolean ignoreWarnings,
-      boolean optimizing,
-      boolean obfuscating,
-      boolean shrinking,
+      List<DontObfuscateRule> dontObfuscateRules,
+      List<DontOptimizeRule> dontOptimizeRules,
+      List<DontRepackageRule> dontRepackageRules,
+      List<DontShrinkRule> dontShrinkRules,
       boolean printBlastRadius,
       Path printBlastRadiusFile,
       boolean printConfiguration,
@@ -653,9 +661,10 @@ public class ProguardConfiguration {
     this.packagePrefix = packagePrefix;
     this.allowAccessModification = allowAccessModification;
     this.ignoreWarnings = ignoreWarnings;
-    this.optimizing = optimizing;
-    this.obfuscating = obfuscating;
-    this.shrinking = shrinking;
+    this.dontObfuscateRules = dontObfuscateRules;
+    this.dontOptimizeRules = dontOptimizeRules;
+    this.dontRepackageRules = dontRepackageRules;
+    this.dontShrinkRules = dontShrinkRules;
     this.printBlastRadius = printBlastRadius;
     this.printBlastRadiusFile = printBlastRadiusFile;
     this.printConfiguration = printConfiguration;
@@ -747,15 +756,15 @@ public class ProguardConfiguration {
   }
 
   public boolean isOptimizing() {
-    return optimizing;
+    return dontOptimizeRules.isEmpty();
   }
 
   public boolean isObfuscating() {
-    return obfuscating;
+    return dontObfuscateRules.isEmpty();
   }
 
   public boolean isShrinking() {
-    return shrinking;
+    return dontShrinkRules.isEmpty();
   }
 
   public boolean isPrintBlastRadius() {
