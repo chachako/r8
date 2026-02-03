@@ -11,8 +11,9 @@ import static org.junit.Assert.assertTrue;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
+import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
+import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
@@ -31,13 +32,18 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return TestParameters.builder()
-        .withDexRuntimesStartingFromIncluding(
-            Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
-        .withAllApiLevels()
-        .build();
+  @Parameter(1)
+  public boolean dontObfuscate;
+
+  @Parameters(name = "{0}, dontObfuscate:{1}")
+  public static List<Object[]> data() {
+    return buildParameters(
+        TestParameters.builder()
+            .withDexRuntimesStartingFromIncluding(
+                Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
+            .withAllApiLevels()
+            .build(),
+        BooleanUtils.values());
   }
 
   @Test
@@ -54,6 +60,7 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
         .addProgramClasses(testClass)
         .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
+        .applyIf(dontObfuscate, TestShrinkerBuilder::addDontObfuscate)
         .compile()
         .inspectDiagnosticMessages(
             diagnostics -> {

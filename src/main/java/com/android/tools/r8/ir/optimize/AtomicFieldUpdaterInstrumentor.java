@@ -330,30 +330,37 @@ public class AtomicFieldUpdaterInstrumentor {
       return null;
     }
     var fieldNameIns = fieldNameValue.definition;
-    // TODO(b/453628974): Add test with an invalid field name (this is then a const string
-    // instruction).
-    if (!fieldNameIns.isDexItemBasedConstString()) {
-      logs.reportFailure(updaterField, "newUpdater(_, _, HERE) is not a dex-item-based string");
+    ProgramField reflectedField;
+    if (fieldNameIns.isDexItemBasedConstString()) {
+      var fieldNameReference = fieldNameIns.asDexItemBasedConstString().getItem();
+      if (!fieldNameReference.isDexField()) {
+        logs.reportFailure(
+            updaterField, "newUpdater(_, _, HERE) is a dex reference to a non-field");
+        return null;
+      }
+      var reflectedFieldReference = fieldNameReference.asDexField();
+      if (!reflectedFieldReference.getHolderType().isIdenticalTo(clazz.getType())) {
+        logs.reportFailure(
+            updaterField, "newUpdater(_, _, HERE) is a dex reference to a field of another class.");
+        return null;
+      }
+      if (!reflectedFieldReference.type.isIdenticalTo(fieldType)) {
+        logs.reportFailure(
+            updaterField, "newUpdater(_, TYPE, FIELD) FIELD's type and TYPE disagree");
+        return null;
+      }
+      reflectedField = clazz.lookupProgramField(reflectedFieldReference);
+    } else if (fieldNameIns.isConstString()) {
+      var fieldNameString = fieldNameIns.asConstString().getValue();
+      reflectedField =
+          clazz.lookupProgramField(
+              itemFactory.createField(clazz.getType(), fieldType, fieldNameString));
+    } else {
+      logs.reportFailure(updaterField, "newUpdater(_, _, HERE) is not a string constant");
       return null;
     }
-    var fieldNameReference = fieldNameIns.asDexItemBasedConstString().getItem();
-    if (!fieldNameReference.isDexField()) {
-      logs.reportFailure(updaterField, "newUpdater(_, _, HERE) is a dex reference to a non-field");
-      return null;
-    }
-    var reflectedFieldReference = fieldNameReference.asDexField();
-    if (!reflectedFieldReference.getHolderType().isIdenticalTo(clazz.getType())) {
-      logs.reportFailure(
-          updaterField, "newUpdater(_, _, HERE) is a dex reference to a field of another class.");
-      return null;
-    }
-    if (!reflectedFieldReference.type.isIdenticalTo(fieldType)) {
-      logs.reportFailure(updaterField, "newUpdater(_, TYPE, FIELD) FIELD's type and TYPE disagree");
-      return null;
-    }
-    var reflectedField = clazz.lookupProgramField(reflectedFieldReference);
     if (reflectedField == null) {
-      logs.reportFailure(updaterField, "newUpdater(..) does not validly refer to a field");
+      logs.reportFailure(updaterField, "newUpdater(..) does not refer to a field");
       return null;
     }
     if (!reflectedField.getAccessFlags().isVolatile()) {
