@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
+public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -95,7 +95,7 @@ public class AtomicFieldUpdaterInstrumentorTest extends TestBase {
                       ImmutableList.of(
                           "java.lang.Object", "long", "java.lang.Object", "java.lang.Object")));
             })
-        .run(parameters.getRuntime(), TestClass.class)
+        .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("true");
   }
 
