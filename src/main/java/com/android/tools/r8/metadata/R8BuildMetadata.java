@@ -12,6 +12,7 @@ import com.android.tools.r8.metadata.impl.R8BuildMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8DexFileMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8FeatureSplitMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8FeatureSplitsMetadataImpl;
+import com.android.tools.r8.metadata.impl.R8KeepAnnotationsMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8KeepAttributesMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8LibraryDesugaringMetadataImpl;
 import com.android.tools.r8.metadata.impl.R8OptionsMetadataImpl;
@@ -45,6 +46,8 @@ public interface R8BuildMetadata {
                 R8FeatureSplitMetadata.class, deserializeTo(R8FeatureSplitMetadataImpl.class))
             .registerTypeAdapter(
                 R8FeatureSplitsMetadata.class, deserializeTo(R8FeatureSplitsMetadataImpl.class))
+            .registerTypeAdapter(
+                R8KeepAnnotationsMetadata.class, deserializeTo(R8KeepAnnotationsMetadataImpl.class))
             .registerTypeAdapter(
                 R8KeepAttributesMetadata.class, deserializeTo(R8KeepAttributesMetadataImpl.class))
             .registerTypeAdapter(

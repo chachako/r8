@@ -16,6 +16,7 @@ import com.android.tools.r8.KotlinCompilerTool;
 import com.android.tools.r8.LibraryDesugaringTestConfiguration;
 import com.android.tools.r8.NeverInline;
 import com.android.tools.r8.R8TestBuilder;
+import com.android.tools.r8.R8TestBuilder.KeepAnnotationLibrary;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -24,6 +25,9 @@ import com.android.tools.r8.Version;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResource;
 import com.android.tools.r8.androidresources.AndroidResourceTestingUtils.AndroidTestResourceBuilder;
 import com.android.tools.r8.desugar.desugaredlibrary.test.LibraryDesugaringSpecification;
+import com.android.tools.r8.keepanno.annotations.KeepEdge;
+import com.android.tools.r8.keepanno.annotations.KeepItemKind;
+import com.android.tools.r8.keepanno.annotations.KeepTarget;
 import com.android.tools.r8.profile.art.model.ExternalArtProfile;
 import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.Reference;
@@ -65,7 +69,6 @@ public class R8BuildMetadataTest extends TestBase {
   public void testR8() throws Exception {
     R8BuildMetadata buildMetadata =
         testForR8(parameters)
-            .addKeepMainRule(Main.class)
             .apply(this::configure)
             .addOptionsModification(this::configureVersion)
             .applyIf(
@@ -135,6 +138,7 @@ public class R8BuildMetadataTest extends TestBase {
                             LibraryDesugaringSpecification.JDK11.getSpecification()))
                     .enableIsolatedSplits(true)
                     .enableOptimizedShrinking())
+        .enableExperimentalKeepAnnotations(KeepAnnotationLibrary.LEGACY)
         .collectBuildMetadata();
   }
 
@@ -186,6 +190,13 @@ public class R8BuildMetadataTest extends TestBase {
     }
     // Options metadata.
     assertNotNull(buildMetadata.getOptionsMetadata());
+    assertNotNull(buildMetadata.getOptionsMetadata().getKeepAnnotationsMetadata());
+    assertEquals(
+        1,
+        buildMetadata
+            .getOptionsMetadata()
+            .getKeepAnnotationsMetadata()
+            .getNumberOfKeepAnnotations());
     assertNotNull(buildMetadata.getOptionsMetadata().getKeepAttributesMetadata());
     assertEquals(
         parameters.isCfRuntime() ? null : Integer.toString(parameters.getApiLevel().getLevel()),
@@ -247,6 +258,12 @@ public class R8BuildMetadataTest extends TestBase {
     assertEquals(versionString, buildMetadata.getVersion());
   }
 
+  @KeepEdge(
+      consequences =
+          @KeepTarget(
+              kind = KeepItemKind.CLASS_AND_METHODS,
+              classConstant = Main.class,
+              methodName = "main"))
   static class Main {
 
     public static void main(String[] args) {

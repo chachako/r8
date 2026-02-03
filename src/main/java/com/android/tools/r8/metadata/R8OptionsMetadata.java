@@ -14,6 +14,12 @@ public interface R8OptionsMetadata {
   R8ApiModelingMetadata getApiModelingMetadata();
 
   /**
+   * @return null if the underlying metadata is generated with a version of R8 that does not emit
+   *     {@link R8KeepAnnotationsMetadata}. This was added in R8 9.1.26-dev.
+   */
+  R8KeepAnnotationsMetadata getKeepAnnotationsMetadata();
+
+  /**
    * @return null if no ProGuard configuration is provided.
    */
   R8KeepAttributesMetadata getKeepAttributesMetadata();

@@ -287,15 +287,14 @@ public class R8 {
     timing.end();
     try {
       AppView<AppInfoWithClassHierarchy> appView;
-      List<KeepDeclaration> keepDeclarations;
       {
         timing.begin("Read app");
         ApplicationReader applicationReader = new ApplicationReader(inputApp, options, timing);
         DirectMappedDexApplication application = applicationReader.readDirect(executorService);
-        keepDeclarations =
-            options.partialSubCompilationConfiguration != null
-                ? options.partialSubCompilationConfiguration.asR8().getAndClearKeepDeclarations()
-                : application.getKeepDeclarations();
+        if (options.partialSubCompilationConfiguration != null) {
+          application.setKeepDeclarations(
+              options.partialSubCompilationConfiguration.asR8().getAndClearKeepDeclarations());
+        }
         timing.end();
         options
             .getLibraryDesugaringOptions()
@@ -316,6 +315,7 @@ public class R8 {
       timing.begin("Register references and more setup");
       assert ArtProfileCompletenessChecker.verify(appView);
 
+      List<KeepDeclaration> keepDeclarations = appView.app().asDirect().getKeepDeclarations();
       readKeepSpecifications(appView, keepDeclarations);
 
       // Check for potentially having pass-through of Cf-code for kotlin libraries.

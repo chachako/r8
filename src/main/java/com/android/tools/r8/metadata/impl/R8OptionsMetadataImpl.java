@@ -3,12 +3,15 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.metadata.impl;
 
+import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
+import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.keepanno.annotations.AnnotationPattern;
 import com.android.tools.r8.keepanno.annotations.FieldAccessFlags;
 import com.android.tools.r8.keepanno.annotations.KeepConstraint;
 import com.android.tools.r8.keepanno.annotations.KeepItemKind;
 import com.android.tools.r8.keepanno.annotations.UsedByReflection;
 import com.android.tools.r8.metadata.R8ApiModelingMetadata;
+import com.android.tools.r8.metadata.R8KeepAnnotationsMetadata;
 import com.android.tools.r8.metadata.R8KeepAttributesMetadata;
 import com.android.tools.r8.metadata.R8LibraryDesugaringMetadata;
 import com.android.tools.r8.metadata.R8OptionsMetadata;
@@ -39,6 +42,10 @@ public class R8OptionsMetadataImpl
   @Expose
   @SerializedName("hasPackageObfuscationDictionary")
   private final boolean hasPackageObfuscationDictionary;
+
+  @Expose
+  @SerializedName("keepAnnotations")
+  private final R8KeepAnnotationsMetadata keepAnnotationsMetadata;
 
   @Expose
   @SerializedName("keepAttributes")
@@ -76,7 +83,8 @@ public class R8OptionsMetadataImpl
   @SerializedName("isShrinkingEnabled")
   private final boolean isShrinkingEnabled;
 
-  public R8OptionsMetadataImpl(InternalOptions options) {
+  public R8OptionsMetadataImpl(
+      AppView<? extends AppInfoWithClassHierarchy> appView, InternalOptions options) {
     super(
         R8ApiModelingMetadataImpl.create(options),
         R8LibraryDesugaringMetadataImpl.create(options),
@@ -89,6 +97,7 @@ public class R8OptionsMetadataImpl
         hasConfiguration && !configuration.getClassObfuscationDictionary().isEmpty();
     this.hasPackageObfuscationDictionary =
         hasConfiguration && !configuration.getPackageObfuscationDictionary().isEmpty();
+    this.keepAnnotationsMetadata = new R8KeepAnnotationsMetadataImpl(appView);
     this.keepAttributesMetadata =
         hasConfiguration
             ? new R8KeepAttributesMetadataImpl(configuration.getKeepAttributes())
@@ -102,6 +111,11 @@ public class R8OptionsMetadataImpl
     this.isProtoLiteOptimizationEnabled = options.protoShrinking().isProtoShrinkingEnabled();
     this.isRepackageClassesEnabled = options.getPackageObfuscationMode().isRepackageClasses();
     this.isShrinkingEnabled = options.isShrinking();
+  }
+
+  @Override
+  public R8KeepAnnotationsMetadata getKeepAnnotationsMetadata() {
+    return keepAnnotationsMetadata;
   }
 
   @Override

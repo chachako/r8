@@ -90,6 +90,10 @@ public class DirectMappedDexApplication extends DexApplication {
     return keepDeclarations;
   }
 
+  public void setKeepDeclarations(List<KeepDeclaration> keepDeclarations) {
+    this.keepDeclarations = keepDeclarations;
+  }
+
   public Collection<DexLibraryClass> libraryClasses() {
     return libraryClasses.values();
   }
@@ -239,6 +243,7 @@ public class DirectMappedDexApplication extends DexApplication {
       super(application);
       classpathClasses = application.classpathClasses;
       libraryClasses = application.libraryClasses;
+      keepDeclarations = application.keepDeclarations;
     }
 
     private Builder(InternalOptions options, Timing timing) {

@@ -45,7 +45,7 @@ public class BuildMetadataFactory {
         virtualFilesForFeatureSplit.getOrDefault(FeatureSplit.BASE, Collections.emptyList());
     InternalOptions options = appView.options();
     return R8BuildMetadataImpl.builder()
-        .setOptions(new R8OptionsMetadataImpl(options))
+        .setOptions(new R8OptionsMetadataImpl(appView, options))
         .setBaselineProfileRewritingOptions(R8BaselineProfileRewritingMetadataImpl.create(options))
         .applyIf(
             options.isGeneratingDex(), builder -> builder.setDexFilesMetadata(baseVirtualFiles))
