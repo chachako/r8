@@ -10,6 +10,7 @@ import com.android.tools.r8.blastradius.proto.BlastRadiusContainer;
 import com.android.tools.r8.blastradius.proto.BuildInfo;
 import com.android.tools.r8.blastradius.proto.FieldReference;
 import com.android.tools.r8.blastradius.proto.FileOrigin;
+import com.android.tools.r8.blastradius.proto.GlobalKeepRuleBlastRadius;
 import com.android.tools.r8.blastradius.proto.KeepConstraint;
 import com.android.tools.r8.blastradius.proto.KeepConstraints;
 import com.android.tools.r8.blastradius.proto.KeepRuleBlastRadius;
@@ -30,9 +31,12 @@ import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.EnqueuerResult;
+import com.android.tools.r8.shaking.GlobalConfigurationRule;
+import com.android.tools.r8.shaking.ProguardConfiguration;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.ProguardKeepRuleModifiers;
 import com.android.tools.r8.utils.ArrayUtils;
@@ -101,6 +105,7 @@ public class RootSetBlastRadiusSerializer {
               .setSource(blastRadiusForRule.getSource());
       container.addKeepRuleBlastRadiusTable(ruleProto);
     }
+    serializeGlobalKeepRuleBlastRadii(ruleIds.size());
     keptClassInfos.values().forEach(container::addKeptClassInfoTable);
     keptFieldInfos.values().forEach(container::addKeptFieldInfoTable);
     keptMethodInfos.values().forEach(container::addKeptMethodInfoTable);
@@ -226,6 +231,23 @@ public class RootSetBlastRadiusSerializer {
         });
   }
 
+  private void serializeGlobalKeepRuleBlastRadii(int nextRuleId) {
+    ProguardConfiguration proguardConfiguration = appView.options().getProguardConfiguration();
+    if (proguardConfiguration == null) {
+      return;
+    }
+    // The iteration over the global rules should have deterministic iteration order since the
+    // global rules lists are populated in-order by the ProguardConfigurationParser.
+    for (GlobalConfigurationRule rule : proguardConfiguration.getGlobalRules()) {
+      container.addGlobalKeepRuleBlastRadiusTable(
+          GlobalKeepRuleBlastRadius.newBuilder()
+              .setId(nextRuleId++)
+              .setOrigin(serializeTextFileOrigin(rule))
+              .setSource(rule.getSource())
+              .build());
+    }
+  }
+
   private MethodReference serializeMethodReference(DexMethod method) {
     return methodReferences.computeIfAbsent(
         method,
@@ -261,10 +283,18 @@ public class RootSetBlastRadiusSerializer {
         });
   }
 
-  private TextFileOrigin serializeTextFileOrigin(ProguardKeepRuleBase keepRule) {
+  private TextFileOrigin serializeTextFileOrigin(GlobalConfigurationRule rule) {
+    return serializeTextFileOrigin(rule.getOrigin(), rule.getPosition());
+  }
+
+  private TextFileOrigin serializeTextFileOrigin(ProguardKeepRuleBase rule) {
+    return serializeTextFileOrigin(rule.getOrigin(), rule.getPosition());
+  }
+
+  private TextFileOrigin serializeTextFileOrigin(Origin origin, Position position) {
     int line, column;
-    if (keepRule.getPosition() instanceof TextRange) {
-      TextRange textRange = (TextRange) keepRule.getPosition();
+    if (position instanceof TextRange) {
+      TextRange textRange = (TextRange) position;
       line = textRange.getStart().getLine();
       column = textRange.getStart().getColumn();
     } else {
@@ -272,7 +302,7 @@ public class RootSetBlastRadiusSerializer {
       column = -1;
     }
     return TextFileOrigin.newBuilder()
-        .setFileOriginId(serializeOrigin(keepRule.getOrigin()).getId())
+        .setFileOriginId(serializeOrigin(origin).getId())
         .setLineNumber(line)
         .setColumnNumber(column)
         .build();
@@ -325,6 +355,8 @@ public class RootSetBlastRadiusSerializer {
   @SuppressWarnings("UnusedVariable")
   private boolean validate(BlastRadiusContainer container) {
     // TODO(b/441055269): Check that ids of ClassFileInJarOrigin and FileOrigin are non-overlapping.
+    // TODO(b/441055269): Check that ids of GlobalKeepRuleBlastRadius and KeepRuleBlastRadius are
+    //  non-overlapping.
     // TODO(b/441055269): Check that the reference constants pools do not contain duplicates.
     return true;
   }

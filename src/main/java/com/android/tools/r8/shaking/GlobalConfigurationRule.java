@@ -23,4 +23,6 @@ public abstract class GlobalConfigurationRule {
   public Position getPosition() {
     return position;
   }
+
+  public abstract String getSource();
 }

@@ -11,4 +11,9 @@ public class DontObfuscateRule extends GlobalConfigurationRule {
   public DontObfuscateRule(Origin origin, Position position) {
     super(origin, position);
   }
+
+  @Override
+  public String getSource() {
+    return "-dontobfuscate";
+  }
 }

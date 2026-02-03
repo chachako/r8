@@ -42,6 +42,17 @@ message BlastRadius {
   repeated uint32 method_blast_radius = 4;
 }
 
+// The ids of GlobalKeepRuleBlastRadius and KeepRuleBlastRadius are
+// non-overlapping by design, so that a single uint32 id can be used to
+// unambiguously reference a GlobalKeepRuleBlastRadius or KeepRuleBlastRadius.
+message GlobalKeepRuleBlastRadius {
+  uint32 id = 1;
+  // Textual representation of the keep rule.
+  string source = 2;
+  // Where this rule comes from.
+  TextFileOrigin origin = 3;
+}
+
 // Information about the constraints of a single keep annotation or rule,
 // i.e., what is prohibited by it.
 //
@@ -207,7 +218,8 @@ message BlastRadiusContainer {
   // Keep specifications.
   repeated KeepConstraints keep_constraints_table = 12;
   repeated KeepRuleBlastRadius keep_rule_blast_radius_table = 13;
+  repeated GlobalKeepRuleBlastRadius global_keep_rule_blast_radius_table = 14;
 
   // Build info.
-  BuildInfo build_info = 14;
+  BuildInfo build_info = 15;
 }

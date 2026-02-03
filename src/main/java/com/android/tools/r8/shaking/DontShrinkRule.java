@@ -11,4 +11,9 @@ public class DontShrinkRule extends GlobalConfigurationRule {
   public DontShrinkRule(Origin origin, Position position) {
     super(origin, position);
   }
+
+  @Override
+  public String getSource() {
+    return "-dontshrink";
+  }
 }

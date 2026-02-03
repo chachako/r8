@@ -11,4 +11,9 @@ public class DontRepackageRule extends GlobalConfigurationRule {
   public DontRepackageRule(Origin origin, Position position) {
     super(origin, position);
   }
+
+  @Override
+  public String getSource() {
+    return "-dontrepackage";
+  }
 }

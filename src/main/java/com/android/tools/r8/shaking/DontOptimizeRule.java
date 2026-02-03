@@ -11,4 +11,9 @@ public class DontOptimizeRule extends GlobalConfigurationRule {
   public DontOptimizeRule(Origin origin, Position position) {
     super(origin, position);
   }
+
+  @Override
+  public String getSource() {
+    return "-dontoptimize";
+  }
 }

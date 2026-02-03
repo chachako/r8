@@ -839,6 +839,11 @@ public class ProguardConfiguration {
     return rules;
   }
 
+  public Iterable<GlobalConfigurationRule> getGlobalRules() {
+    return Iterables.concat(
+        dontObfuscateRules, dontOptimizeRules, dontRepackageRules, dontShrinkRules);
+  }
+
   public List<String> getObfuscationDictionary() {
     return obfuscationDictionary;
   }
