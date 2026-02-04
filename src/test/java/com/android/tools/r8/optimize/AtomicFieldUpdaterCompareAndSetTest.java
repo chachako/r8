@@ -64,7 +64,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
         .compile()
         .inspectDiagnosticMessages(
             diagnostics -> {
-              assertEquals(2, diagnostics.getInfos().size());
+              assertEquals(3, diagnostics.getInfos().size());
               Diagnostic diagnostic = diagnostics.getInfos().get(0);
               List<String> diagnosticLines =
                   StringUtils.splitLines(diagnostic.getDiagnosticMessage());
@@ -80,6 +80,13 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
                 assertTrue(
                     "Does not contain 'Can optimize': " + message,
                     message.contains("Can optimize"));
+              }
+              assertEquals(1, diagnosticLines.size());
+              diagnostic = diagnostics.getInfos().get(2);
+              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
+              for (String message : diagnosticLines) {
+                assertTrue(
+                    "Does not contain 'Can remove': " + message, message.contains("Can remove"));
               }
               assertEquals(1, diagnosticLines.size());
             })

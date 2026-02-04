@@ -31,6 +31,7 @@ import com.android.tools.r8.ir.code.NumberGenerator;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodConversionOptions.MutableMethodConversionOptions;
 import com.android.tools.r8.ir.conversion.passes.AssumeRemover;
+import com.android.tools.r8.ir.conversion.passes.AtomicNewUpdaterRemover;
 import com.android.tools.r8.ir.conversion.passes.ClassGetNameOptimizer;
 import com.android.tools.r8.ir.conversion.passes.CodeRewriterPassCollection;
 import com.android.tools.r8.ir.conversion.passes.DexConstantOptimizer;
@@ -610,6 +611,8 @@ public class IRConverter {
     if (isDebugMode) {
       codeRewriter.simplifyDebugLocals(code);
     }
+
+    AtomicNewUpdaterRemover.run(appView, methodProcessor, method, code);
 
     assertionsRewriter.run(method, code, deadCodeRemover, timing);
     previous = printMethod(code, "IR after assertions rewriter (SSA)", previous);

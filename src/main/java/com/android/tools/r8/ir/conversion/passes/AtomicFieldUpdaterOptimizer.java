@@ -234,7 +234,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       Value updaterValue,
       String methodNameForLogging) {
-    var updaterMightBeNull = updaterValue.getType().isNullable();
+    var unusedUpdaterMightBeNull = updaterValue.getType().isNullable();
     DexField updaterField;
     var updaterAbstractValue =
         updaterValue.getAbstractValue(appView, code.context()).removeNullOrAbstractValue();
@@ -256,7 +256,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
           "HERE." + methodNameForLogging + "(..) refers to an un-instrumented updater field");
       return null;
     }
-    return new ResolvedUpdater(updaterMightBeNull, updaterInfo);
+    // TODO(b/453628974): stop assuming non-null for all updaters.
+    return new ResolvedUpdater(false, updaterInfo);
   }
 
   private static class ResolvedUpdater {
