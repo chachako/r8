@@ -357,6 +357,7 @@ public class DexItemFactory {
   public final DexString newUpdaterName = createString("newUpdater");
   public final DexString compareAndSetName = createString("compareAndSet");
   public final DexString getName = createString("get");
+  public final DexString setName = createString("set");
 
   public final DexString constructorMethodName = createString(Constants.INSTANCE_INITIALIZER_NAME);
   public final DexString classConstructorMethodName =
@@ -2591,6 +2592,7 @@ public class DexItemFactory {
     public final DexMethod referenceUpdater;
     public final DexMethod referenceCompareAndSet;
     public final DexMethod referenceGet;
+    public final DexMethod referenceSet;
     private final Set<DexMethod> updaters;
 
     private AtomicFieldUpdaterMethods() {
@@ -2625,6 +2627,12 @@ public class DexItemFactory {
               getName,
               objectDescriptor,
               new DexString[] {objectDescriptor});
+      referenceSet =
+          createMethod(
+              referenceFieldUpdaterDescriptor,
+              setName,
+              voidDescriptor,
+              new DexString[] {objectDescriptor, objectDescriptor});
     }
 
     public boolean isFieldUpdater(DexMethod method) {
