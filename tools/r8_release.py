@@ -650,7 +650,7 @@ def gmaven_publisher_stage(args, gfiles):
     print("Staging: %s" % ', '.join(gfiles))
     print("")
 
-    cmd = [GMAVEN_PUBLISHER, 'stage', '--gfile', ','.join(gfiles)]
+    cmd = [GMAVEN_PUBLISHER, 'stage', '--ack_deprecated', '--gfile', ','.join(gfiles)]
     output = subprocess.check_output(cmd)
 
     # Expect output to contain:
