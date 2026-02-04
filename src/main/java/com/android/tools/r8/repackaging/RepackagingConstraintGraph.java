@@ -206,7 +206,7 @@ public class RepackagingConstraintGraph {
         MethodResolutionResult resolutionResult =
             appView.appInfo().resolveMethodOnLegacy(superClass, method.getReference());
         registry.registerMemberAccess(resolutionResult);
-        preserveInvalidOverridesOfPackagePrivateMethod(method, resolutionResult);
+        preserveInvalidOverridesOfPackagePrivateVirtualMethod(method, resolutionResult);
       }
     }
 
@@ -222,7 +222,7 @@ public class RepackagingConstraintGraph {
     }
   }
 
-  private void preserveInvalidOverridesOfPackagePrivateMethod(
+  private void preserveInvalidOverridesOfPackagePrivateVirtualMethod(
       ProgramMethod method, MethodResolutionResult resolutionResult) {
     if (!packageObfuscationMode.isRepackageClasses()) {
       // We are not merging packages.
@@ -231,8 +231,10 @@ public class RepackagingConstraintGraph {
 
     DexEncodedMethod resolvedMethod = resolutionResult.getResolvedMethod();
     DexClass resolvedHolder = resolutionResult.getResolvedHolder();
-    if (resolvedMethod == null || !resolvedMethod.getAccessFlags().isPackagePrivate()) {
-      // Not a package-private method.
+    if (resolvedMethod == null
+        || !resolvedMethod.getAccessFlags().isPackagePrivate()
+        || !resolvedMethod.isVirtualMethod()) {
+      // Not a package-private virtual method.
       return;
     }
 

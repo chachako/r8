@@ -50,8 +50,7 @@ public class RepackageClassInitializersSameHierarchyDifferentPackagesTest extend
 
               ClassSubject bClass = inspector.clazz("pkg.B");
               assertThat(bClass, isPresent());
-              // TODO(b/479862365): Should have been repackaged.
-              assertEquals("pkg", bClass.getDexProgramClass().getType().getPackageName());
+              assertEquals("", bClass.getDexProgramClass().getType().getPackageName());
             })
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("Hello, world!");
