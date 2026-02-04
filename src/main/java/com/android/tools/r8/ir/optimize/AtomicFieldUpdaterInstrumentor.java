@@ -374,6 +374,7 @@ public class AtomicFieldUpdaterInstrumentor {
 
   private UnsafeClassInfo synthesizeUnsafeClass(
       Set<DexProgramClass> classesWithAtomics, ProfileCollectionAdditions profiling) {
+    // TODO(b/453628974): This code breaks for dex 4.0.4.
     var context = getDeterministicContext(classesWithAtomics);
     var unsafeClass =
         appView
