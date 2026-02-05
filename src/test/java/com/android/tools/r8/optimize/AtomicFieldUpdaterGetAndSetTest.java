@@ -13,6 +13,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
@@ -27,7 +28,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetTest extends TestBase {
+public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -50,6 +51,7 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
+    boolean optimization = parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
     testForR8(parameters)
         .addOptionsModification(
             options -> {
@@ -78,29 +80,51 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
               diagnostic = diagnostics.getInfos().get(1);
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
-                assertTrue(
-                    "Does not contain 'Can optimize': " + message,
-                    message.contains("Can optimize"));
+                if (optimization) {
+                  assertTrue(
+                      "Does not contain 'Can optimize': " + message,
+                      message.contains("Can optimize"));
+                } else {
+                  assertTrue(
+                      "Does not contain 'Cannot optimize': " + message,
+                      message.contains("Cannot optimize"));
+                }
               }
               assertEquals(1, diagnosticLines.size());
               diagnostic = diagnostics.getInfos().get(2);
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
-                assertTrue(
-                    "Does not contain 'Can remove': " + message, message.contains("Can remove"));
+                if (optimization) {
+                  assertTrue(
+                      "Does not contain 'Can remove': " + message, message.contains("Can remove"));
+                } else {
+                  assertTrue(
+                      "Does not contain 'Cannot remove': " + message,
+                      message.contains("Cannot remove"));
+                }
               }
               assertEquals(1, diagnosticLines.size());
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              assertThat(
-                  method,
-                  CodeMatchers.invokesMethod(
-                      "java.lang.Object",
-                      "sun.misc.Unsafe",
-                      "getObjectVolatile",
-                      ImmutableList.of("java.lang.Object", "long")));
+              if (optimization) {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethod(
+                        "java.lang.Object",
+                        "sun.misc.Unsafe",
+                        "getAndSetObject",
+                        ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
+              } else {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethod(
+                        "java.lang.Object",
+                        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater",
+                        "getAndSet",
+                        ImmutableList.of("java.lang.Object", "java.lang.Object")));
+              }
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("Hello");
@@ -124,7 +148,7 @@ public class AtomicFieldUpdaterGetTest extends TestBase {
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.get(new TestClass()));
+      System.out.println(myString$FU.getAndSet(new TestClass(), "World!"));
     }
   }
 }

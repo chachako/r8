@@ -18,6 +18,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFieldUpdaterInstrumentorInfo;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Map;
@@ -115,7 +116,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         if (visitCompareAndSet(
             code,
             it,
-            next.getPosition(),
             invoke,
             atomicUpdaterFields,
             info.getUnsafeInstanceField(),
@@ -127,7 +127,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         if (visitGet(
             code,
             it,
-            next.getPosition(),
             invoke,
             atomicUpdaterFields,
             info.getUnsafeInstanceField(),
@@ -137,6 +136,17 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       } else if (invokedMethod.isIdenticalTo(
           dexItemFactory.atomicFieldUpdaterMethods.referenceSet)) {
         if (visitSet(
+            code,
+            it,
+            invoke,
+            atomicUpdaterFields,
+            info.getUnsafeInstanceField(),
+            next.outValue())) {
+          changed = true;
+        }
+      } else if (invokedMethod.isIdenticalTo(
+          dexItemFactory.atomicFieldUpdaterMethods.referenceGetAndSet)) {
+        if (visitGetAndSet(
             code,
             it,
             next.getPosition(),
@@ -157,7 +167,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   private boolean visitCompareAndSet(
       IRCode code,
       IRCodeInstructionListIterator it,
-      Position position,
       InvokeVirtual invoke,
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       DexField unsafeInstanceField,
@@ -165,7 +174,8 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
     var resolvedUpdater =
-        resolveUpdater(code, position, atomicUpdaterFields, updaterValue, "compareAndSet");
+        resolveUpdater(
+            code, invoke.getPosition(), atomicUpdaterFields, updaterValue, "compareAndSet");
     if (resolvedUpdater == null) {
       return false;
     }
@@ -173,7 +183,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    if (!isHolderValid(position, holderValue, expectedHolder, "compareAndSet")) {
+    if (!isHolderValid(invoke.getPosition(), holderValue, expectedHolder, "compareAndSet")) {
       return false;
     }
 
@@ -182,15 +192,15 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
     // Resolve update.
     var updateValue = invoke.getThirdNonReceiverArgument();
-    if (!isNewValueValid(position, resolvedUpdater, updateValue, "compareAndSet")) {
+    if (!isNewValueValid(invoke.getPosition(), resolvedUpdater, updateValue, "compareAndSet")) {
       return false;
     }
 
-    reportSuccess(position, resolvedUpdater.isNullable);
+    reportSuccess(invoke.getPosition(), resolvedUpdater.isNullable);
     rewriteCompareAndSet(
         code,
         it,
-        position,
+        invoke.getPosition(),
         resolvedUpdater.isNullable,
         unsafeInstanceField,
         updaterValue,
@@ -205,14 +215,14 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   private boolean visitGet(
       IRCode code,
       IRCodeInstructionListIterator it,
-      Position position,
       InvokeVirtual invoke,
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       DexField unsafeInstanceField,
       Value outValue) {
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
-    var resolvedUpdater = resolveUpdater(code, position, atomicUpdaterFields, updaterValue, "get");
+    var resolvedUpdater =
+        resolveUpdater(code, invoke.getPosition(), atomicUpdaterFields, updaterValue, "get");
     if (resolvedUpdater == null) {
       return false;
     }
@@ -220,15 +230,15 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    if (!isHolderValid(position, holderValue, expectedHolder, "get")) {
+    if (!isHolderValid(invoke.getPosition(), holderValue, expectedHolder, "get")) {
       return false;
     }
 
-    reportSuccess(position, resolvedUpdater.isNullable);
+    reportSuccess(invoke.getPosition(), resolvedUpdater.isNullable);
     rewriteGet(
         code,
         it,
-        position,
+        invoke.getPosition(),
         resolvedUpdater.isNullable,
         unsafeInstanceField,
         updaterValue,
@@ -241,14 +251,14 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   private boolean visitSet(
       IRCode code,
       IRCodeInstructionListIterator it,
-      Position position,
       InvokeVirtual invoke,
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       DexField unsafeInstanceField,
       Value outValue) {
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
-    var resolvedUpdater = resolveUpdater(code, position, atomicUpdaterFields, updaterValue, "set");
+    var resolvedUpdater =
+        resolveUpdater(code, invoke.getPosition(), atomicUpdaterFields, updaterValue, "set");
     if (resolvedUpdater == null) {
       return false;
     }
@@ -256,18 +266,68 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    if (!isHolderValid(position, holderValue, expectedHolder, "set")) {
+    if (!isHolderValid(invoke.getPosition(), holderValue, expectedHolder, "set")) {
       return false;
     }
 
     // Resolve newValue.
     var newValueValue = invoke.getSecondNonReceiverArgument();
-    if (!isNewValueValid(position, resolvedUpdater, newValueValue, "set")) {
+    if (!isNewValueValid(invoke.getPosition(), resolvedUpdater, newValueValue, "set")) {
+      return false;
+    }
+
+    reportSuccess(invoke.getPosition(), resolvedUpdater.isNullable);
+    rewriteSet(
+        code,
+        it,
+        invoke.getPosition(),
+        resolvedUpdater.isNullable,
+        unsafeInstanceField,
+        updaterValue,
+        holderValue,
+        resolvedUpdater.updaterFieldInfo.offsetField,
+        newValueValue,
+        outValue);
+    return true;
+  }
+
+  private boolean visitGetAndSet(
+      IRCode code,
+      IRCodeInstructionListIterator it,
+      Position position,
+      InvokeVirtual invoke,
+      Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
+      DexField unsafeInstanceField,
+      Value outValue) {
+    if (appView.options().isGeneratingDex()
+        && appView.options().getMinApiLevel().isLessThan(AndroidApiLevel.N)) {
+      reportFailure(position, "android api level < N");
+      return false;
+    }
+
+    // Resolve updater.
+    var updaterValue = invoke.getReceiver();
+    var resolvedUpdater =
+        resolveUpdater(code, position, atomicUpdaterFields, updaterValue, "getAndSet");
+    if (resolvedUpdater == null) {
+      return false;
+    }
+
+    // Resolve holder.
+    var holderValue = invoke.getFirstNonReceiverArgument();
+    var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
+    if (!isHolderValid(position, holderValue, expectedHolder, "getAndSet")) {
+      return false;
+    }
+
+    // Resolve newValue.
+    var newValueValue = invoke.getSecondNonReceiverArgument();
+    if (!isNewValueValid(position, resolvedUpdater, newValueValue, "getAndSet")) {
       return false;
     }
 
     reportSuccess(position, resolvedUpdater.isNullable);
-    rewriteSet(
+    rewriteGetAndSet(
         code,
         it,
         position,
@@ -516,6 +576,62 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
                 unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
     unsafeSet.setPosition(position);
     it.replaceCurrentInstruction(unsafeSet);
+    // TODO(b/453628974): Does profiling need to be updated?
+  }
+
+  /**
+   * Rewrites a call to {@code updater.getAndSet(holder, newValue)} (assumed to be the last
+   * instruction returned by {@code it.next}) into a call {@code
+   * SyntheticUnsafeClass.unsafe.getAndSetObject(holder, this.offset, newValue)} and potentially a
+   * null-check on updater.
+   */
+  private void rewriteGetAndSet(
+      IRCode code,
+      IRCodeInstructionListIterator it,
+      Position position,
+      boolean updaterMightBeNull,
+      DexField unsafeInstanceField,
+      Value updaterValue,
+      Value holderValue,
+      DexField offsetField,
+      Value newValueValue,
+      Value outValue) {
+    var instructions = new ArrayList<Instruction>(3);
+
+    // Null-check for updater.
+    if (updaterMightBeNull) {
+      instructions.add(createNullCheck(code, position, updaterValue));
+    }
+
+    // Get unsafe instance.
+    Instruction unsafeInstance = createUnsafeGet(code, position, unsafeInstanceField);
+    instructions.add(unsafeInstance);
+
+    // Get offset field.
+    Instruction offset = createOffsetGet(code, position, offsetField);
+    instructions.add(offset);
+
+    // Add instructions BEFORE the get instruction.
+    insertInstructionsBeforeCurrentInstruction(it, instructions);
+
+    // Call underlying unsafe method.
+    DexMethod unsafeGetAndSetMethod =
+        dexItemFactory.createMethod(
+            dexItemFactory.unsafeType,
+            dexItemFactory.createProto(
+                dexItemFactory.objectType,
+                dexItemFactory.objectType,
+                dexItemFactory.longType,
+                dexItemFactory.objectType),
+            "getAndSetObject");
+    Instruction unsafeGetAndSet =
+        new InvokeVirtual(
+            unsafeGetAndSetMethod,
+            outValue,
+            ImmutableList.of(
+                unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
+    unsafeGetAndSet.setPosition(position);
+    it.replaceCurrentInstruction(unsafeGetAndSet);
     // TODO(b/453628974): Does profiling need to be updated?
   }
 
