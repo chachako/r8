@@ -82,6 +82,7 @@ includeBuild(rootProject.projectDir.resolve("d8_r8/shared"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/assistant"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/blastradius"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/keepanno"))
+includeBuild(rootProject.projectDir.resolve("d8_r8/libanalyzer"))
 includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
 
 // We need to include src/main as a composite-build otherwise our test-modules

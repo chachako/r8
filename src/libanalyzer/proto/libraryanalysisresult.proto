@@ -1,0 +1,18 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+syntax = "proto3";
+
+package com.android.tools.r8.libanalyzer.proto;
+
+// Don't put all messages under the outer class.
+option java_multiple_files = true;
+
+// Camel-case the outer class name (default is `Libraryanalysisresult`).
+option java_outer_classname = "LibraryAnalysisResultProtos";
+
+// Java package consistent with R8 convention.
+option java_package = "com.android.tools.r8.libanalyzer.proto";
+
+// Analysis result produced by the library analyzer.
+message LibraryAnalysisResult {}

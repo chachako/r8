@@ -27,6 +27,7 @@ tasks {
     dependsOn(gradle.includedBuild("assistant").task(":clean"))
     dependsOn(gradle.includedBuild("blastradius").task(":clean"))
     dependsOn(gradle.includedBuild("keepanno").task(":clean"))
+    dependsOn(gradle.includedBuild("libanalyzer").task(":clean"))
     dependsOn(gradle.includedBuild("resourceshrinker").task(":clean"))
     dependsOn(gradle.includedBuild("main").task(":clean"))
     dependsOn(gradle.includedBuild("library_desugar").task(":clean"))
