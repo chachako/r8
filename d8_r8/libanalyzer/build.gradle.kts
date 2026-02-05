@@ -55,6 +55,7 @@ kotlin {
 dependencies {
   compileOnly(Deps.protobuf)
   compileOnly(":keepanno")
+  compileOnly(":r8")
 }
 
 tasks.named<Jar>("jar") {

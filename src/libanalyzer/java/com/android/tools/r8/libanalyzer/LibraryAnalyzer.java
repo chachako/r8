@@ -10,10 +10,21 @@ import com.android.tools.r8.keepanno.annotations.KeepForApi;
 // TODO(b/479726064): Add support for writing LibraryAnalyzer tests.
 // TODO(b/479726064): If this ends up not being bundled into r8.jar, do we need this to have its own
 //  Version.java or a --version?
+// TODO(b/479726064): Configure error prone.
 @KeepForApi
 public class LibraryAnalyzer {
 
-  public static void main(String[] args) {
-    // TBD
+  public static void run(LibraryAnalyzerCommand command) {
+    if (command.isPrintHelp()) {
+      System.out.println(LibraryAnalyzerCommandParser.getUsageMessage());
+      return;
+    }
+    if (command.isPrintVersion()) {
+      // TODO(b/479726064): Read the version from a field.
+      System.out.println("LibraryAnalyzer 0.0.1");
+      return;
+    }
+    // Implementation will go here.
+    System.out.println("Running LibraryAnalyzer with AAR: " + command.getAarPath());
   }
 }
