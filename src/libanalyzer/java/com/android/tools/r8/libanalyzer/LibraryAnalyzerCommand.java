@@ -5,6 +5,7 @@ package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.utils.Reporter;
 import java.nio.file.Path;
 
@@ -35,6 +36,10 @@ public final class LibraryAnalyzerCommand {
 
   public Path getAarPath() {
     return aarPath;
+  }
+
+  LibraryAnalyzerOptions getInternalOptions() {
+    return new LibraryAnalyzerOptions(aarPath, reporter);
   }
 
   public boolean isPrintHelp() {
