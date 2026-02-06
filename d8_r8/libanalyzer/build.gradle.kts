@@ -4,11 +4,13 @@
 
 import com.google.protobuf.gradle.proto
 import com.google.protobuf.gradle.ProtobufExtension
+import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
   `kotlin-dsl`
   id("dependencies-plugin")
+  id("net.ltgt.errorprone") version "3.0.1"
 }
 
 // It seems like the use of a local maven repo does not allow adding the plugin with the id+version
@@ -59,8 +61,15 @@ dependencies {
   compileOnly(Deps.protobuf)
   compileOnly(":keepanno")
   compileOnly(":r8")
+  errorprone(Deps.errorprone)
 }
 
 tasks.named<Jar>("jar") {
   exclude("libraryanalysisresult.proto")
 }
+
+tasks.withType<JavaCompile> {
+  options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")
+}
+
+configureErrorProneForJavaCompile()

@@ -17,7 +17,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
-import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.provider.Provider
@@ -37,12 +36,6 @@ plugins {
 }
 
 // Properties that you can set in your ~/.gradle/gradle.properties:
-
-// Causes builds to not fail on warnings.
-val treatWarningsAsErrors = !project.hasProperty("disable_warnings_as_errors")
-
-// Disable Error Prone checks (can make compiles marginally faster).
-var enableErrorProne = !project.hasProperty("disable_errorprone")
 
 // Use a separate sourceSet for files that have been modified when doing incremental builds.
 // Speeds up compile times where the list of files isn't changed from 1-2 minutes -> 1-2 seconds.
@@ -687,14 +680,6 @@ tasks.withType<KotlinCompile> {
   enabled = false
 }
 
-fun enableCheck(task: JavaCompile, warning: String) {
-  if (treatWarningsAsErrors) {
-    task.options.errorprone.error(warning)
-  } else {
-    task.options.errorprone.warn(warning)
-  }
-}
-
 /**
  * Re-packages a JAR file to ensure specific entries are stored uncompressed (STORED).
  * @param jarFile The target JAR file to modify in-place.
@@ -746,45 +731,5 @@ fun enforceUncompressedEntries(jarFile: File, uncompressedEntries: Set<String>) 
 tasks.withType<JavaCompile> {
   dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   println("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
-
-  // Enable error prone for D8/R8 main sources.
-  options.errorprone.isEnabled.set(enableErrorProne)
-
-  if (enableErrorProne) {
-    // Non-default / Experimental checks - explicitly enforced.
-    enableCheck(this, "RemoveUnusedImports")
-    enableCheck(this, "InconsistentOverloads")
-    enableCheck(this, "MissingDefault")
-    enableCheck(this, "MultipleTopLevelClasses")
-    enableCheck(this, "NarrowingCompoundAssignment")
-
-    // Warnings that cause unwanted edits (e.g., inability to write informative asserts).
-    options.errorprone.disable("AlreadyChecked")
-
-    // JavaDoc related warnings. Would be nice to resolve but of no real consequence.
-    options.errorprone.disable("InvalidLink")
-    options.errorprone.disable("InvalidBlockTag")
-    options.errorprone.disable("InvalidInlineTag")
-    options.errorprone.disable("EmptyBlockTag")
-    options.errorprone.disable("MissingSummary")
-    options.errorprone.disable("UnrecognisedJavadocTag")
-    options.errorprone.disable("AlmostJavadoc")
-
-    // Moving away from identity and canonical items is not planned.
-    options.errorprone.disable("IdentityHashMapUsage")
-
-    if (treatWarningsAsErrors) {
-      options.errorprone.allErrorsAsWarnings = true
-    }
-  }
-
-  // Make all warnings errors. Warnings that we have chosen not to fix (or suppress) are disabled
-  // outright below.
-  if (treatWarningsAsErrors) {
-    options.compilerArgs.add("-Werror")
-  }
-
-  // Increase number of reported errors to 1000 (default is 100).
-  options.compilerArgs.add("-Xmaxerrs")
-  options.compilerArgs.add("1000")
 }
+configureErrorProneForJavaCompile()
