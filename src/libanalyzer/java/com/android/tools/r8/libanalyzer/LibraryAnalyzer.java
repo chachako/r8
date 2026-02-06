@@ -11,6 +11,9 @@ import com.android.tools.r8.D8Command;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
+import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.CommandLineOrigin;
@@ -19,6 +22,10 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -82,17 +89,12 @@ public class LibraryAnalyzer {
   }
 
   private void run(ExecutorService executorService) {
-    D8RunResult d8RunResult = runD8(executorService);
-    R8RunResult r8RunResult = runR8(executorService);
-    // TODO(b/479726064): Write to protobuf.
-    System.out.println(
-        "D8="
-            + (d8RunResult != null ? d8RunResult.size : "N/A")
-            + ", R8="
-            + (r8RunResult != null ? r8RunResult.size : "N/A"));
+    InternalD8CompileResult d8CompileResult = runD8(executorService);
+    InternalR8CompileResult r8CompileResult = runR8(executorService);
+    writeAnalysisResult(d8CompileResult, r8CompileResult);
   }
 
-  private D8RunResult runD8(ExecutorService executorService) {
+  private InternalD8CompileResult runD8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     D8Command.Builder commandBuilder =
         D8Command.builder(options.reporter).setProgramConsumer(sizeConsumer);
@@ -104,10 +106,10 @@ public class LibraryAnalyzer {
       options.reporter.clearAbort();
       return null;
     }
-    return new D8RunResult(sizeConsumer.size());
+    return new InternalD8CompileResult(sizeConsumer.size());
   }
 
-  private R8RunResult runR8(ExecutorService executorService) {
+  private InternalR8CompileResult runR8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     R8Command.Builder commandBuilder =
         R8Command.builder(options.reporter)
@@ -121,7 +123,30 @@ public class LibraryAnalyzer {
       options.reporter.clearAbort();
       return null;
     }
-    return new R8RunResult(sizeConsumer.size());
+    return new InternalR8CompileResult(sizeConsumer.size());
+  }
+
+  private void writeAnalysisResult(
+      InternalD8CompileResult d8CompileResult, InternalR8CompileResult r8CompileResult) {
+    LibraryAnalysisResult.Builder resultBuilder = LibraryAnalysisResult.newBuilder();
+    if (d8CompileResult != null) {
+      resultBuilder.setD8CompileResult(
+          D8CompileResult.newBuilder().setSizeBytes(d8CompileResult.size).build());
+    }
+    if (r8CompileResult != null) {
+      resultBuilder.setR8CompileResult(
+          R8CompileResult.newBuilder().setSizeBytes(r8CompileResult.size).build());
+    }
+    LibraryAnalysisResult result = resultBuilder.build();
+    if (options.outputPath != null) {
+      try (OutputStream output = Files.newOutputStream(options.outputPath)) {
+        result.writeTo(output);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    } else {
+      System.out.println(result);
+    }
   }
 
   private void configure(BaseCompilerCommand.Builder<?, ?> commandBuilder) {
@@ -133,25 +158,25 @@ public class LibraryAnalyzer {
     app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
   }
 
-  private abstract static class RunResult {
+  private abstract static class CompileResult {
 
     final int size;
 
-    RunResult(int size) {
+    CompileResult(int size) {
       this.size = size;
     }
   }
 
-  private static class D8RunResult extends RunResult {
+  private static class InternalD8CompileResult extends CompileResult {
 
-    D8RunResult(int size) {
+    InternalD8CompileResult(int size) {
       super(size);
     }
   }
 
-  private static class R8RunResult extends RunResult {
+  private static class InternalR8CompileResult extends CompileResult {
 
-    R8RunResult(int size) {
+    InternalR8CompileResult(int size) {
       super(size);
     }
   }

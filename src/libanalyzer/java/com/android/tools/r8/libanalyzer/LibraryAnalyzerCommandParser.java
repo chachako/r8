@@ -5,6 +5,7 @@ package com.android.tools.r8.libanalyzer;
 
 import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
+import static com.android.tools.r8.BaseCompilerCommandParser.OUTPUT_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.THREAD_COUNT_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArgument;
 
@@ -26,7 +27,7 @@ public class LibraryAnalyzerCommandParser {
   private static final String AAR_FLAG = "--aar";
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
-      ImmutableSet.of(AAR_FLAG, LIB_FLAG, MIN_API_FLAG, THREAD_COUNT_FLAG);
+      ImmutableSet.of(AAR_FLAG, LIB_FLAG, MIN_API_FLAG, OUTPUT_FLAG, THREAD_COUNT_FLAG);
 
   private static final String USAGE_MESSAGE =
       StringUtils.lines(
@@ -35,6 +36,7 @@ public class LibraryAnalyzerCommandParser {
           "  --aar <path>            # Path to Android Archive (AAR) that should be analyzed.",
           "  --lib <path>            # Path to file or JDK home to use as a library resource.",
           "  --min-api <major.minor> # Minimum API level to use for analysis.",
+          "  --output <path>         # Path where to write the analysis result (protobuf).",
           "  --thread-count <int>    # Number of threads to use.",
           "  --help                  # Print this message.",
           "  --version               # Print the version.");
@@ -72,6 +74,8 @@ public class LibraryAnalyzerCommandParser {
             builder.getAppBuilder(), nextArg, origin, reporter);
       } else if (arg.equals(MIN_API_FLAG)) {
         builder.setMinApiLevel(AndroidApiLevel.parseAndroidApiLevel(nextArg));
+      } else if (arg.equals(OUTPUT_FLAG)) {
+        builder.setOutputPath(Paths.get(nextArg));
       } else if (arg.equals(THREAD_COUNT_FLAG)) {
         parsePositiveIntArgument(
             reporter::error, THREAD_COUNT_FLAG, nextArg, origin, builder::setThreadCount);

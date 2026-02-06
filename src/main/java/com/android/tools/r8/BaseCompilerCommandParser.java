@@ -20,6 +20,7 @@ public class BaseCompilerCommandParser<
   protected static final String BUILD_METADATA_OUTPUT_FLAG = "--build-metadata-output";
   public static final String LIB_FLAG = "--lib";
   public static final String MIN_API_FLAG = "--min-api";
+  public static final String OUTPUT_FLAG = "--output";
   protected static final String STARTUP_PROFILE_FLAG = "--startup-profile";
   public static final String THREAD_COUNT_FLAG = "--thread-count";
   protected static final String MAP_DIAGNOSTICS = "--map-diagnostics";

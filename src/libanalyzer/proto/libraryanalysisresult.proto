@@ -15,4 +15,15 @@ option java_outer_classname = "LibraryAnalysisResultProtos";
 option java_package = "com.android.tools.r8.libanalyzer.proto";
 
 // Analysis result produced by the library analyzer.
-message LibraryAnalysisResult {}
+message LibraryAnalysisResult {
+  D8CompileResult d8_compile_result = 1;
+  R8CompileResult r8_compile_result = 2;
+}
+
+message D8CompileResult {
+  uint32 size_bytes = 1;
+}
+
+message R8CompileResult {
+  uint32 size_bytes = 1;
+}

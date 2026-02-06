@@ -21,15 +21,21 @@ public final class LibraryAnalyzerCommand {
 
   private final AndroidApp app;
   private final AndroidApiLevel minApiLevel;
+  private final Path outputPath;
   private final Reporter reporter;
   private final int threadCount;
   private final boolean printHelp;
   private final boolean printVersion;
 
   private LibraryAnalyzerCommand(
-      AndroidApp app, AndroidApiLevel minApiLevel, Reporter reporter, int threadCount) {
+      AndroidApp app,
+      AndroidApiLevel minApiLevel,
+      Path outputPath,
+      Reporter reporter,
+      int threadCount) {
     this.app = app;
     this.minApiLevel = minApiLevel;
+    this.outputPath = outputPath;
     this.reporter = reporter;
     this.threadCount = threadCount;
     this.printHelp = false;
@@ -39,6 +45,7 @@ public final class LibraryAnalyzerCommand {
   private LibraryAnalyzerCommand(boolean printHelp, boolean printVersion) {
     this.app = null;
     this.minApiLevel = null;
+    this.outputPath = null;
     this.reporter = new Reporter();
     this.threadCount = ThreadUtils.NOT_SPECIFIED;
     this.printHelp = printHelp;
@@ -50,7 +57,7 @@ public final class LibraryAnalyzerCommand {
   }
 
   LibraryAnalyzerOptions getInternalOptions() {
-    return new LibraryAnalyzerOptions(minApiLevel, reporter, threadCount);
+    return new LibraryAnalyzerOptions(minApiLevel, outputPath, reporter, threadCount);
   }
 
   boolean isPrintHelp() {
@@ -73,6 +80,7 @@ public final class LibraryAnalyzerCommand {
 
     private final AndroidApp.Builder appBuilder;
     private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
+    private Path outputPath;
     private final Reporter reporter;
     private int threadCount;
 
@@ -95,6 +103,11 @@ public final class LibraryAnalyzerCommand {
 
     public Builder setAarPath(Path aarPath) {
       appBuilder.addProgramResourceProvider(AarArchiveResourceProvider.fromArchive(aarPath));
+      return this;
+    }
+
+    public Builder setOutputPath(Path outputPath) {
+      this.outputPath = outputPath;
       return this;
     }
 
@@ -127,13 +140,15 @@ public final class LibraryAnalyzerCommand {
         return new LibraryAnalyzerCommand(printHelp, printVersion);
       }
       validate();
-      return new LibraryAnalyzerCommand(appBuilder.build(), minApiLevel, reporter, threadCount);
+      return new LibraryAnalyzerCommand(
+          appBuilder.build(), minApiLevel, outputPath, reporter, threadCount);
     }
 
     private void validate() {
       if (appBuilder.getProgramResourceProviders().isEmpty()) {
         reporter.error("LibraryAnalyzer requires an input Android Archive (AAR).");
       }
+      reporter.failIfPendingErrors();
     }
   }
 }
