@@ -87,10 +87,45 @@ public class UtilityMethodsForCodeOptimizations {
     return new UtilityMethodForCodeOptimizations(syntheticMethod);
   }
 
+  public static UtilityMethodForCodeOptimizations synthesizeThrowClassCastExceptionIfNullMethod(
+      AppView<?> appView,
+      UtilityMethodsForCodeOptimizationsEventConsumer eventConsumer,
+      MethodProcessingContext methodProcessingContext) {
+    DexItemFactory dexItemFactory = appView.dexItemFactory();
+    DexProto proto = dexItemFactory.createProto(dexItemFactory.voidType, dexItemFactory.objectType);
+    SyntheticItems syntheticItems = appView.getSyntheticItems();
+    UniqueContext positionContext = methodProcessingContext.createUniqueContext();
+    ProgramMethod syntheticMethod =
+        syntheticItems.createMethod(
+            kinds -> kinds.THROW_CCE_IF_NULL,
+            positionContext,
+            appView,
+            builder ->
+                builder
+                    .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                    .setClassFileVersion(CfVersion.V1_8)
+                    .setApiLevelForDefinition(appView.computedMinApiLevel())
+                    .setApiLevelForCode(appView.computedMinApiLevel())
+                    .setCode(
+                        method ->
+                            getThrowClassCastExceptionIfNullCodeTemplate(method, dexItemFactory))
+                    .setProto(proto));
+    eventConsumer.acceptUtilityThrowClassCastExceptionIfNotNullMethod(
+        syntheticMethod, methodProcessingContext.getMethodContext());
+    return new UtilityMethodForCodeOptimizations(syntheticMethod);
+  }
+
   private static CfCode getThrowClassCastExceptionIfNotNullCodeTemplate(
       DexMethod method, DexItemFactory dexItemFactory) {
     return CfUtilityMethodsForCodeOptimizations
         .CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNotNull(
+            dexItemFactory, method);
+  }
+
+  private static CfCode getThrowClassCastExceptionIfNullCodeTemplate(
+      DexMethod method, DexItemFactory dexItemFactory) {
+    return CfUtilityMethodsForCodeOptimizations
+        .CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNull(
             dexItemFactory, method);
   }
 

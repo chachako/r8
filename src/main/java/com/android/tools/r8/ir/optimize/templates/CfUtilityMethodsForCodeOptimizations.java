@@ -136,6 +136,42 @@ public final class CfUtilityMethodsForCodeOptimizations {
         ImmutableList.of());
   }
 
+  public static CfCode CfUtilityMethodsForCodeOptimizationsTemplates_throwClassCastExceptionIfNull(
+      DexItemFactory factory, DexMethod method) {
+    CfLabel label0 = new CfLabel();
+    CfLabel label1 = new CfLabel();
+    CfLabel label2 = new CfLabel();
+    CfLabel label3 = new CfLabel();
+    return new CfCode(
+        method.holder,
+        2,
+        1,
+        ImmutableList.of(
+            label0,
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfIf(IfType.NE, ValueType.OBJECT, label2),
+            label1,
+            new CfNew(factory.createType("Ljava/lang/ClassCastException;")),
+            new CfStackInstruction(CfStackInstruction.Opcode.Dup),
+            new CfInvoke(
+                183,
+                factory.createMethod(
+                    factory.createType("Ljava/lang/ClassCastException;"),
+                    factory.createProto(factory.voidType),
+                    factory.createString("<init>")),
+                false),
+            new CfThrow(),
+            label2,
+            new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {FrameType.initializedNonNullReference(factory.objectType)})),
+            new CfReturnVoid(),
+            label3),
+        ImmutableList.of(),
+        ImmutableList.of());
+  }
+
   public static CfCode CfUtilityMethodsForCodeOptimizationsTemplates_throwIllegalAccessError(
       DexItemFactory factory, DexMethod method) {
     CfLabel label0 = new CfLabel();

@@ -22,6 +22,12 @@ public class CfUtilityMethodsForCodeOptimizationsTemplates {
     }
   }
 
+  public static void throwClassCastExceptionIfNull(Object o) {
+    if (o == null) {
+      throw new ClassCastException();
+    }
+  }
+
   public static AbstractMethodError throwAbstractMethodError() {
     throw new AbstractMethodError();
   }
