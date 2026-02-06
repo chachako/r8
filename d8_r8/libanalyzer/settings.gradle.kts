@@ -22,3 +22,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "libanalyzer"
+
+val root = rootProject.projectDir.parentFile
+includeBuild(root.resolve("main"))
+includeBuild(root.resolve("shared"))

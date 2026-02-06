@@ -5,6 +5,8 @@
 import com.google.protobuf.gradle.proto
 import com.google.protobuf.gradle.ProtobufExtension
 import net.ltgt.gradle.errorprone.errorprone
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.bundling.ZipEntryCompression
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
@@ -30,7 +32,7 @@ protobuf.protoc {
   } else if (os.isMacOsX) {
     path = getRoot().resolveAll("third_party", "protoc", "osx-x86_64", "bin", "protoc").path
   } else {
-    assert(os.isWindows);
+    assert(os.isWindows)
     path = getRoot().resolveAll("third_party", "protoc", "win64", "bin", "protoc.exe").path
   }
 }
@@ -55,8 +57,6 @@ kotlin {
 }
 
 dependencies {
-  // TODO(b/479726064): Need to relocate guava to com.android.tools.r8 to pickup implementation in
-  //  r8.jar.
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
   compileOnly(":keepanno")
@@ -66,10 +66,75 @@ dependencies {
 
 tasks.named<Jar>("jar") {
   exclude("libraryanalysisresult.proto")
+  archiveFileName.set("libanalyzer-exclude-deps.jar")
 }
 
 tasks.withType<JavaCompile> {
   options.errorprone.excludedPaths.set(".*/build/generated/source/proto/main/java/.*")
+}
+
+fun libanalyzerJarDependencies(): FileCollection {
+  return configurations
+    .compileClasspath
+    .get()
+    .filter {
+      val path = "$it"
+      path.contains("third_party")
+        && path.contains("dependencies")
+        && (path.contains("com/google/guava/guava")
+        || path.contains("com/google/protobuf/protobuf-java"))
+    }
+}
+
+val downloadDepsTask = gradle.includedBuild("shared").task(":downloadDeps")
+val r8Task = projectTask("main", "swissArmyKnifeWithoutLicense")
+val r8DepsTask = projectTask("main", "depsJar")
+
+tasks {
+  val depsJar by registering(Jar::class) {
+    dependsOn(downloadDepsTask)
+    from(libanalyzerJarDependencies().map(::zipTree))
+    exclude("META-INF/LICENSE*")
+    exclude("META-INF/MANIFEST.MF")
+    exclude("META-INF/maven/**")
+    exclude("META-INF/proguard/**")
+    exclude("com/google/thirdparty/publicsuffix/**")
+    exclude("google/protobuf/**")
+    entryCompression = ZipEntryCompression.STORED
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName.set("libanalyzer-deps.jar")
+  }
+
+  val libanalyzerWithRelocatedDeps by registering(Exec::class) {
+    dependsOn(r8Task, r8DepsTask, depsJar, named("jar"))
+    val libanalyzerJar = named<Jar>("jar").get().outputs.files.singleFile
+    val deps = depsJar.get().outputs.files.singleFile
+    val r8Jar = r8Task.outputs.files.singleFile
+    val r8DepsJar = r8DepsTask.outputs.files.singleFile
+    inputs.files(listOf(libanalyzerJar, deps))
+    val output = "build/libs/libanalyzer.jar"
+    outputs.file(output)
+    val pkg = "com.android.tools.r8.libanalyzer"
+    commandLine = baseCompilerCommandLine(
+      r8Jar,
+      r8DepsJar,
+      "relocator",
+      listOf(
+        "--input",
+        "$libanalyzerJar",
+        "--input",
+        "$deps",
+        "--output",
+        "$output",
+        "--map",
+        "com.android.tools.r8.libanalyzer.**->${pkg}",
+        "--map",
+        "com.google.common.**->${pkg}.com.google.common",
+        "--map",
+        "com.google.protobuf.**->${pkg}.com.google.protobuf"
+      )
+    )
+  }
 }
 
 configureErrorProneForJavaCompile()
