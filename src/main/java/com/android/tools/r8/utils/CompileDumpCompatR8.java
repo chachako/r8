@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
-import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
-
 import com.android.tools.r8.CompatProguardCommandBuilder;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
@@ -59,7 +57,7 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
   private static final List<String> VALID_OPTIONS_WITH_SINGLE_OPERAND =
       Arrays.asList(
           "--output",
-          LIB_FLAG,
+          "--lib",
           "--classpath",
           "--min-api",
           "--main-dex-rules",
@@ -176,7 +174,7 @@ public class CompileDumpCompatR8 extends CompileDumpBase {
               outputPath = Paths.get(operand);
               break;
             }
-          case LIB_FLAG:
+          case "--lib":
             {
               library.add(Paths.get(operand));
               break;
