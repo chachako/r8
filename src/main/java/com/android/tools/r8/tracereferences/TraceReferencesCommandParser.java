@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.tracereferences;
 
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
 
 import com.android.tools.r8.BaseCompilerCommandParser;
 import com.android.tools.r8.DiagnosticsHandler;
@@ -31,7 +32,7 @@ import java.util.Set;
 class TraceReferencesCommandParser {
 
   private static final Set<String> OPTIONS_WITH_PARAMETER =
-      ImmutableSet.of("--lib", "--target", "--source", "--output");
+      ImmutableSet.of(LIB_FLAG, "--target", "--source", "--output");
 
   static String getUsageMessage() {
     StringBuilder builder = new StringBuilder();
@@ -64,7 +65,7 @@ class TraceReferencesCommandParser {
     return ImmutableList.<ParseFlagInfo>builder()
         .add(
             ParseFlagInfoImpl.flag1(
-                "--lib", "<file|jdk-home>", "Add <file|jdk-home> runtime library."))
+                LIB_FLAG, "<file|jdk-home>", "Add <file|jdk-home> runtime library."))
         .add(
             ParseFlagInfoImpl.flag1(
                 "--source", "<file>", "Add <file> as a source for tracing references."))
@@ -177,7 +178,7 @@ class TraceReferencesCommandParser {
         command = Command.KEEP_RULES;
       } else if (arg.equals("--allowobfuscation")) {
         allowObfuscation = true;
-      } else if (arg.equals("--lib")) {
+      } else if (arg.equals(LIB_FLAG)) {
         addLibraryArgument(builder, origin, nextArg);
       } else if (arg.equals("--target")) {
         builder.addTargetFiles(Paths.get(nextArg));

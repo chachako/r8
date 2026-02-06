@@ -23,7 +23,7 @@ public class L8CommandParser extends BaseCompilerCommandParser<L8Command, L8Comm
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
       ImmutableSet.of(
           "--output",
-          "--lib",
+          LIB_FLAG,
           MIN_API_FLAG,
           "--desugared-lib",
           THREAD_COUNT_FLAG,
@@ -171,8 +171,8 @@ public class L8CommandParser extends BaseCompilerCommandParser<L8Command, L8Comm
               builder::error, MIN_API_FLAG, nextArg, origin, builder::setMinApiLevel);
           hasDefinedApiLevel = true;
         }
-      } else if (arg.equals("--lib")) {
-        addLibraryArgument(builder, origin, nextArg);
+      } else if (arg.equals(LIB_FLAG)) {
+        addLibraryArgument(builder, nextArg, origin);
       } else if (arg.equals("--pg-conf")) {
         builder.addProguardConfigurationFiles(Paths.get(nextArg));
       } else if (arg.equals("--pg-map-output")) {

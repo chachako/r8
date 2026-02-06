@@ -6,7 +6,11 @@ package com.android.tools.r8.libanalyzer;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
+import com.android.tools.r8.utils.AarArchiveResourceProvider;
+import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.Reporter;
+import com.android.tools.r8.utils.ThreadUtils;
 import java.nio.file.Path;
 
 // TODO(b/479726064): This is using R8 internal APIs, such as Reporter. As a result, this won't work
@@ -15,38 +19,45 @@ import java.nio.file.Path;
 @KeepForApi
 public final class LibraryAnalyzerCommand {
 
-  private final Path aarPath;
+  private final AndroidApp app;
+  private final AndroidApiLevel minApiLevel;
   private final Reporter reporter;
+  private final int threadCount;
   private final boolean printHelp;
   private final boolean printVersion;
 
-  private LibraryAnalyzerCommand(Path aarPath, Reporter reporter) {
-    this.aarPath = aarPath;
+  private LibraryAnalyzerCommand(
+      AndroidApp app, AndroidApiLevel minApiLevel, Reporter reporter, int threadCount) {
+    this.app = app;
+    this.minApiLevel = minApiLevel;
     this.reporter = reporter;
+    this.threadCount = threadCount;
     this.printHelp = false;
     this.printVersion = false;
   }
 
   private LibraryAnalyzerCommand(boolean printHelp, boolean printVersion) {
-    this.aarPath = null;
+    this.app = null;
+    this.minApiLevel = null;
     this.reporter = new Reporter();
+    this.threadCount = ThreadUtils.NOT_SPECIFIED;
     this.printHelp = printHelp;
     this.printVersion = printVersion;
   }
 
-  public Path getAarPath() {
-    return aarPath;
+  AndroidApp getApp() {
+    return app;
   }
 
   LibraryAnalyzerOptions getInternalOptions() {
-    return new LibraryAnalyzerOptions(aarPath, reporter);
+    return new LibraryAnalyzerOptions(minApiLevel, reporter, threadCount);
   }
 
-  public boolean isPrintHelp() {
+  boolean isPrintHelp() {
     return printHelp;
   }
 
-  public boolean isPrintVersion() {
+  boolean isPrintVersion() {
     return printVersion;
   }
 
@@ -60,8 +71,11 @@ public final class LibraryAnalyzerCommand {
 
   public static class Builder {
 
-    private Path aarPath;
+    private final AndroidApp.Builder appBuilder;
+    private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
     private final Reporter reporter;
+    private int threadCount;
+
     private boolean printHelp = false;
     private boolean printVersion = false;
 
@@ -70,11 +84,26 @@ public final class LibraryAnalyzerCommand {
     }
 
     private Builder(DiagnosticsHandler handler) {
-      this.reporter = handler instanceof Reporter ? (Reporter) handler : new Reporter(handler);
+      Reporter reporter = handler instanceof Reporter ? (Reporter) handler : new Reporter(handler);
+      this.appBuilder = AndroidApp.builder(reporter);
+      this.reporter = reporter;
+    }
+
+    AndroidApp.Builder getAppBuilder() {
+      return appBuilder;
     }
 
     public Builder setAarPath(Path aarPath) {
-      this.aarPath = aarPath;
+      appBuilder.addProgramResourceProvider(AarArchiveResourceProvider.fromArchive(aarPath));
+      return this;
+    }
+
+    public Builder setMinApiLevel(int minMajorApiLevel, int minMinorApiLevel) {
+      return setMinApiLevel(AndroidApiLevel.getAndroidApiLevel(minMajorApiLevel, minMinorApiLevel));
+    }
+
+    Builder setMinApiLevel(AndroidApiLevel minApiLevel) {
+      this.minApiLevel = minApiLevel;
       return this;
     }
 
@@ -88,16 +117,21 @@ public final class LibraryAnalyzerCommand {
       return this;
     }
 
+    public Builder setThreadCount(int threadCount) {
+      this.threadCount = threadCount;
+      return this;
+    }
+
     public LibraryAnalyzerCommand build() {
       if (printHelp || printVersion) {
         return new LibraryAnalyzerCommand(printHelp, printVersion);
       }
       validate();
-      return new LibraryAnalyzerCommand(aarPath, reporter);
+      return new LibraryAnalyzerCommand(appBuilder.build(), minApiLevel, reporter, threadCount);
     }
 
     private void validate() {
-      if (aarPath == null) {
+      if (appBuilder.getProgramResourceProviders().isEmpty()) {
         reporter.error("LibraryAnalyzer requires an input Android Archive (AAR).");
       }
     }

@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
+
 import com.android.tools.r8.experimental.graphinfo.GraphConsumer;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -173,7 +175,7 @@ public class GenerateMainDexListCommand extends BaseCommand {
         builder.setPrintHelp(true);
       } else if (arg.equals("--version")) {
         builder.setPrintVersion(true);
-      } else if (arg.equals("--lib")) {
+      } else if (arg.equals(LIB_FLAG)) {
         builder.addLibraryFiles(Paths.get(args[++i]));
       } else if (arg.equals("--main-dex-rules")) {
         builder.addMainDexRulesFiles(Paths.get(args[++i]));

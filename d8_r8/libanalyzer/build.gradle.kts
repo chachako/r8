@@ -53,6 +53,9 @@ kotlin {
 }
 
 dependencies {
+  // TODO(b/479726064): Need to relocate guava to com.android.tools.r8 to pickup implementation in
+  //  r8.jar.
+  compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
   compileOnly(":keepanno")
   compileOnly(":r8")

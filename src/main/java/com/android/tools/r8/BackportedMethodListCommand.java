@@ -3,6 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
+import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
+
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecificationParser;
@@ -116,7 +119,7 @@ public class BackportedMethodListCommand {
 
   public static Builder parse(String[] args) {
     final Set<String> OPTIONS_WITH_PARAMETER =
-        ImmutableSet.of("--output", "--min-api", "--desugared-lib", "--lib");
+        ImmutableSet.of("--output", MIN_API_FLAG, "--desugared-lib", LIB_FLAG);
 
     boolean hasDefinedApiLevel = false;
     Builder builder = builder();
@@ -137,7 +140,7 @@ public class BackportedMethodListCommand {
         builder.setPrintVersion(true);
       } else if (arg.equals("--android-platform-build")) {
         builder.setAndroidPlatformBuild(true);
-      } else if (arg.equals("--min-api")) {
+      } else if (arg.equals(MIN_API_FLAG)) {
         if (hasDefinedApiLevel) {
           builder.error(new StringDiagnostic("Cannot set multiple --min-api options"));
         } else {
@@ -146,7 +149,7 @@ public class BackportedMethodListCommand {
         }
       } else if (arg.equals("--desugared-lib")) {
         builder.addDesugaredLibraryConfiguration(StringResource.fromFile(Paths.get(nextArg)));
-      } else if (arg.equals("--lib")) {
+      } else if (arg.equals(LIB_FLAG)) {
         builder.addLibraryFiles(Paths.get(nextArg));
       } else if (arg.equals("--output")) {
         builder.setOutputPath(Paths.get(nextArg));

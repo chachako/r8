@@ -4,8 +4,15 @@
 package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.CompilationFailedException;
+import com.android.tools.r8.CompilationMode;
+import com.android.tools.r8.D8;
+import com.android.tools.r8.D8Command;
+import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
+import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.util.concurrent.ExecutorService;
@@ -19,10 +26,22 @@ import java.util.concurrent.ExecutorService;
 @KeepForApi
 public class LibraryAnalyzer {
 
+  private final AndroidApp app;
   private final LibraryAnalyzerOptions options;
 
-  private LibraryAnalyzer(LibraryAnalyzerOptions options) {
+  private LibraryAnalyzer(AndroidApp app, LibraryAnalyzerOptions options) {
+    this.app = app;
     this.options = options;
+  }
+
+  public static void main(String[] args) {
+    ExceptionUtils.withMainProgramHandler(() -> run(args));
+  }
+
+  private static void run(String[] args) throws CompilationFailedException {
+    LibraryAnalyzerCommand.Builder builder =
+        LibraryAnalyzerCommandParser.parse(args, CommandLineOrigin.INSTANCE);
+    run(builder.build());
   }
 
   public static void run(LibraryAnalyzerCommand command) throws CompilationFailedException {
@@ -54,13 +73,39 @@ public class LibraryAnalyzer {
     }
     ExceptionUtils.withR8CompilationHandler(
         options.reporter,
-        () -> {
-          new LibraryAnalyzer(options).run(executorService);
-        });
+        () -> new LibraryAnalyzer(command.getApp(), options).run(executorService));
   }
 
   private void run(ExecutorService executorService) {
-    // Implementation will go here.
-    System.out.println("Running LibraryAnalyzer with AAR: " + options.aarPath);
+    D8RunResult runResult = runD8(executorService);
+    // TODO(b/479726064): Write to protobuf.
+    System.out.println("D8=" + runResult.size);
+  }
+
+  private D8RunResult runD8(ExecutorService executorService) {
+    DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
+    D8Command.Builder commandBuilder =
+        D8Command.builder(options.reporter)
+            .setMode(CompilationMode.RELEASE)
+            .setMinApiLevel(options.minApiLevel.getLevel(), options.minApiLevel.getMinor())
+            .setProgramConsumer(sizeConsumer);
+    app.getProgramResourceProviders().forEach(commandBuilder::addProgramResourceProvider);
+    app.getClasspathResourceProviders().forEach(commandBuilder::addClasspathResourceProvider);
+    app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
+    try {
+      D8.run(commandBuilder.build(), executorService);
+    } catch (CompilationFailedException e) {
+      throw new CompilationError("D8 compilation failed", e);
+    }
+    return new D8RunResult(sizeConsumer.size());
+  }
+
+  private static class D8RunResult {
+
+    private final int size;
+
+    D8RunResult(int size) {
+      this.size = size;
+    }
   }
 }

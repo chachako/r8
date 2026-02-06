@@ -3,6 +3,9 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.utils;
 
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
+import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
+
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.OutputMode;
@@ -28,7 +31,7 @@ public class CompileDumpR8Assistant extends CompileDumpBase {
   private static final List<String> VALID_OPTIONS = Arrays.asList("--reflective-usage-json-output");
 
   private static final List<String> VALID_OPTIONS_WITH_SINGLE_OPERAND =
-      Arrays.asList("--output", "--lib", "--classpath", "--min-api", "--threads");
+      Arrays.asList("--output", LIB_FLAG, "--classpath", MIN_API_FLAG, "--threads");
 
   public static void main(String[] args) throws CompilationFailedException {
     Path outputPath = null;
@@ -58,7 +61,7 @@ public class CompileDumpR8Assistant extends CompileDumpBase {
               outputPath = Paths.get(operand);
               break;
             }
-          case "--lib":
+          case LIB_FLAG:
             {
               library.add(Paths.get(operand));
               break;
@@ -68,7 +71,7 @@ public class CompileDumpR8Assistant extends CompileDumpBase {
               classpath.add(Paths.get(operand));
               break;
             }
-          case "--min-api":
+          case MIN_API_FLAG:
             {
               minApi = Integer.parseInt(operand);
               break;

@@ -4,6 +4,7 @@
 
 package com.android.tools.r8;
 
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.VERBOSE_SYNTHETIC_NAMES;
 import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArgument;
 
@@ -53,7 +54,7 @@ public class GlobalSyntheticsGeneratorCommandParser {
   }
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
-      ImmutableSet.of("--output", "--lib", MIN_API_FLAG);
+      ImmutableSet.of("--output", LIB_FLAG, MIN_API_FLAG);
 
   public static GlobalSyntheticsGeneratorCommand.Builder parse(String[] args, Origin origin) {
     return new GlobalSyntheticsGeneratorCommandParser()
@@ -106,7 +107,7 @@ public class GlobalSyntheticsGeneratorCommandParser {
               builder::error, MIN_API_FLAG, nextArg, origin, builder::setMinApiLevel);
           hasDefinedApiLevel = true;
         }
-      } else if (arg.equals("--lib")) {
+      } else if (arg.equals(LIB_FLAG)) {
         builder.addLibraryFiles(Paths.get(nextArg));
       } else if (arg.equals(CLASSFILE_DESUGARING_MODE)) {
         builder.setClassfileDesugaringOnly(true);

@@ -32,7 +32,7 @@ public class D8CommandParser extends BaseCompilerCommandParser<D8Command, D8Comm
           "--output",
           "--globals",
           "--globals-output",
-          "--lib",
+          LIB_FLAG,
           "--classpath",
           "--pg-map",
           "--pg-map-output",
@@ -296,8 +296,8 @@ public class D8CommandParser extends BaseCompilerCommandParser<D8Command, D8Comm
           continue;
         }
         globalsOutputPath = Paths.get(nextArg);
-      } else if (arg.equals("--lib")) {
-        addLibraryArgument(builder, origin, nextArg);
+      } else if (arg.equals(LIB_FLAG)) {
+        addLibraryArgument(builder, nextArg, origin);
       } else if (arg.equals("--classpath")) {
         Path file = Paths.get(nextArg);
         try {

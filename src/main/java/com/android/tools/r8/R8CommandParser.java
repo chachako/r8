@@ -43,7 +43,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
       ImmutableSet.of(
           "--output",
-          "--lib",
+          LIB_FLAG,
           "--classpath",
           MIN_API_FLAG,
           "--main-dex-rules",
@@ -281,8 +281,8 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
                   argsOrigin));
         }
         state.outputPath = Paths.get(nextArg);
-      } else if (arg.equals("--lib")) {
-        addLibraryArgument(builder, argsOrigin, nextArg);
+      } else if (arg.equals(LIB_FLAG)) {
+        addLibraryArgument(builder, nextArg, argsOrigin);
       } else if (arg.equals("--classpath")) {
         builder.addClasspathFiles(Paths.get(nextArg));
       } else if (arg.equals(MIN_API_FLAG)) {

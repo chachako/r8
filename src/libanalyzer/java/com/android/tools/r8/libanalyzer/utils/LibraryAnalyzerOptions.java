@@ -4,21 +4,21 @@
 package com.android.tools.r8.libanalyzer.utils;
 
 import com.android.tools.r8.threading.ThreadingModule;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Reporter;
-import com.android.tools.r8.utils.ThreadUtils;
-import java.nio.file.Path;
 
 public class LibraryAnalyzerOptions {
 
-  public final Path aarPath;
+  public final AndroidApiLevel minApiLevel;
   public final Reporter reporter;
+  public final int threadCount;
 
   private ThreadingModule lazyThreadingModule = null;
-  public int threadCount = ThreadUtils.NOT_SPECIFIED;
 
-  public LibraryAnalyzerOptions(Path aarPath, Reporter reporter) {
-    this.aarPath = aarPath;
+  public LibraryAnalyzerOptions(AndroidApiLevel minApiLevel, Reporter reporter, int threadCount) {
+    this.minApiLevel = minApiLevel;
     this.reporter = reporter;
+    this.threadCount = threadCount;
   }
 
   public ThreadingModule getThreadingModule() {

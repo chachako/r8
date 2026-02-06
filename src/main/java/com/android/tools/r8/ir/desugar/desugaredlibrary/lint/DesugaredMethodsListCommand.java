@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir.desugar.desugaredlibrary.lint;
 
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
+
 import com.android.tools.r8.ArchiveClassFileProvider;
 import com.android.tools.r8.ArchiveProgramResourceProvider;
 import com.android.tools.r8.ClassFileResourceProvider;
@@ -309,7 +311,7 @@ public class DesugaredMethodsListCommand {
               ArchiveProgramResourceProvider.fromArchive(Paths.get(argValue)));
         } else if (arg.equals("--output")) {
           builder.setOutputPath(Paths.get(argValue));
-        } else if (arg.equals("--lib")) {
+        } else if (arg.equals(LIB_FLAG)) {
           builder.addLibrary(new ArchiveClassFileProvider(Paths.get(argValue)));
         } else {
           throw new Unreachable("Unsupported argument " + arg);

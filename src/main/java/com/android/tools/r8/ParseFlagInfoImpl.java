@@ -4,6 +4,7 @@
 package com.android.tools.r8;
 
 import static com.android.tools.r8.BaseCompilerCommandParser.ART_PROFILE_FLAG;
+import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.MAP_DIAGNOSTICS;
 import static com.android.tools.r8.BaseCompilerCommandParser.MIN_API_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.THREAD_COUNT_FLAG;
@@ -66,7 +67,7 @@ public class ParseFlagInfoImpl implements ParseFlagInfo {
   }
 
   public static ParseFlagInfoImpl getLib() {
-    return flag1("--lib", "<file|jdk-home>", "Add <file|jdk-home> as a library resource.");
+    return flag1(LIB_FLAG, "<file|jdk-home>", "Add <file|jdk-home> as a library resource.");
   }
 
   public static ParseFlagInfoImpl getClasspath() {
