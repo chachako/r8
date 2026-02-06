@@ -4,8 +4,13 @@
 package com.android.tools.r8.utils;
 
 import com.android.tools.r8.ArchiveProgramResourceProvider.ZipFileSupplier;
+import com.android.tools.r8.DataDirectoryResource;
+import com.android.tools.r8.DataEntryResource;
+import com.android.tools.r8.DataResourceProvider;
 import com.android.tools.r8.ProgramResource;
 import com.android.tools.r8.ProgramResource.Kind;
+import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.google.common.io.ByteStreams;
@@ -20,7 +25,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 public class ArchiveResourceProviderUtils {
@@ -99,6 +106,36 @@ public class ArchiveResourceProviderUtils {
     return enableOneShotByteResource
         ? OneShotByteResource.create(origin, kind, bytes, classDescriptors)
         : ProgramResource.fromBytes(origin, kind, bytes, classDescriptors);
+  }
+
+  public static void readDataResources(
+      Path archive,
+      Origin origin,
+      Predicate<ZipEntry> predicate,
+      DataResourceProvider.Visitor visitor)
+      throws ResourceException {
+    try (ZipFile zipFile = FileUtils.createZipFile(archive.toFile(), StandardCharsets.UTF_8)) {
+      final Enumeration<? extends ZipEntry> entries = zipFile.entries();
+      while (entries.hasMoreElements()) {
+        ZipEntry entry = entries.nextElement();
+        if (predicate.test(entry)) {
+          if (entry.isDirectory()) {
+            visitor.visit(DataDirectoryResource.fromZip(zipFile, entry));
+          } else {
+            visitor.visit(DataEntryResource.fromZip(zipFile, entry));
+          }
+        }
+      }
+    } catch (ZipException e) {
+      throw new ResourceException(
+          origin,
+          new CompilationError("Zip error while reading '" + archive + "': " + e.getMessage(), e));
+    } catch (IOException e) {
+      throw new ResourceException(
+          origin,
+          new CompilationError(
+              "I/O exception while reading '" + archive + "': " + e.getMessage(), e));
+    }
   }
 
   public interface ProgramResourceFactory {

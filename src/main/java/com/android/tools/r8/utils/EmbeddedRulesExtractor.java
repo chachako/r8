@@ -20,14 +20,18 @@ import java.util.function.Supplier;
 public class EmbeddedRulesExtractor implements DataResourceProvider.Visitor {
 
   private final Supplier<SemanticVersion> compilerVersionSupplier;
+  private final DataResourceProvider dataResourceProvider;
   private final Reporter reporter;
   private final List<ProguardConfigurationSource> proguardSources = new ArrayList<>();
   private final List<ProguardConfigurationSource> r8Sources = new ArrayList<>();
   private SemanticVersion compilerVersion;
 
   public EmbeddedRulesExtractor(
-      Reporter reporter, Supplier<SemanticVersion> compilerVersionSupplier) {
+      Supplier<SemanticVersion> compilerVersionSupplier,
+      DataResourceProvider dataResourceProvider,
+      Reporter reporter) {
     this.compilerVersionSupplier = compilerVersionSupplier;
+    this.dataResourceProvider = dataResourceProvider;
     this.reporter = reporter;
   }
 
@@ -61,12 +65,16 @@ public class EmbeddedRulesExtractor implements DataResourceProvider.Visitor {
 
   private boolean isRelevantProguardResource(DataEntryResource resource) {
     // Configurations in META-INF/com.android.tools/proguard/ are ignored.
-    final String proguardPrefix = "META-INF/proguard";
-    if (!resource.getName().startsWith(proguardPrefix)) {
-      return false;
+    String proguardPrefix = "META-INF/proguard";
+    if (resource.getName().startsWith(proguardPrefix)
+        && resource.getName().substring(proguardPrefix.length()).startsWith("/")) {
+      return true;
     }
-    String withoutPrefix = resource.getName().substring(proguardPrefix.length());
-    return withoutPrefix.startsWith("/");
+    if (dataResourceProvider instanceof AarArchiveResourceProvider
+        && resource.getName().equals("proguard.txt")) {
+      return true;
+    }
+    return false;
   }
 
   private boolean isRelevantR8Resource(DataEntryResource resource) {

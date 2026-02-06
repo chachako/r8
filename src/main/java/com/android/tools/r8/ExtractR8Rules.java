@@ -42,7 +42,7 @@ public class ExtractR8Rules {
       }
       try {
         EmbeddedRulesExtractor embeddedProguardConfigurationVisitor =
-            new EmbeddedRulesExtractor(reporter, semanticVersionSupplier);
+            new EmbeddedRulesExtractor(semanticVersionSupplier, dataResourceProvider, reporter);
         dataResourceProvider.accept(embeddedProguardConfigurationVisitor);
         embeddedProguardConfigurationVisitor.visitRelevantRules(
             rules -> {

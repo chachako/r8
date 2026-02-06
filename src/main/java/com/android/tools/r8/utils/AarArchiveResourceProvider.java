@@ -30,8 +30,9 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
-public class AarArchiveResourceProvider implements ProgramResourceProvider {
+public class AarArchiveResourceProvider implements ProgramResourceProvider, DataResourceProvider {
 
+  private final Origin classesOrigin;
   private final Origin origin;
   private final Path archive;
 
@@ -41,7 +42,9 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider {
 
   AarArchiveResourceProvider(Path archive) {
     assert isArchive(archive);
-    origin = new ArchiveEntryOrigin("classes.jar", new PathOrigin(archive));
+    PathOrigin origin = new PathOrigin(archive);
+    this.classesOrigin = new ArchiveEntryOrigin("classes.jar", origin);
+    this.origin = origin;
     this.archive = archive;
   }
 
@@ -51,11 +54,10 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider {
     while (null != (entry = stream.getNextEntry())) {
       String name = entry.getName();
       if (ZipUtils.isClassFile(name)) {
-        Origin entryOrigin = new ArchiveEntryOrigin(name, origin);
         String descriptor = DescriptorUtils.guessTypeDescriptor(name);
         ProgramResource resource =
             OneShotByteResource.create(
-                entryOrigin,
+                classesOrigin,
                 Kind.CF,
                 ByteStreams.toByteArray(stream),
                 Collections.singleton(descriptor));
@@ -92,7 +94,7 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider {
       readArchive(classResources::add);
       return classResources;
     } catch (IOException e) {
-      throw new ResourceException(origin, e);
+      throw new ResourceException(classesOrigin, e);
     }
   }
 
@@ -101,12 +103,18 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider {
     try {
       readArchive(consumer);
     } catch (IOException e) {
-      throw new ResourceException(origin, e);
+      throw new ResourceException(classesOrigin, e);
     }
   }
 
   @Override
   public DataResourceProvider getDataResourceProvider() {
-    return null;
+    return this;
+  }
+
+  @Override
+  public void accept(DataResourceProvider.Visitor visitor) throws ResourceException {
+    ArchiveResourceProviderUtils.readDataResources(
+        archive, origin, entry -> entry.getName().equals("proguard.txt"), visitor);
   }
 }

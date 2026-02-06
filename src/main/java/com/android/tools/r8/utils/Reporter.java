@@ -60,6 +60,10 @@ public class Reporter implements DiagnosticsHandler {
     this.clientHandler = clientHandler;
   }
 
+  public void clearAbort() {
+    abort = null;
+  }
+
   private void handleDiagnostic(DiagnosticsLevel level, Diagnostic diagnostic) {
     // To avoid having an entry for fatal error in the public  API enum use null to signal
     // fatal error internally.

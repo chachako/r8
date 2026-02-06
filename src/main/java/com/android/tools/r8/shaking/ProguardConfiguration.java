@@ -173,6 +173,10 @@ public class ProguardConfiguration {
       this.libraryJars.addAll(libraryJars);
     }
 
+    public List<FilteredClassPath> getLibraryJars() {
+      return libraryJars;
+    }
+
     @Override
     public void enableAllowAccessModification(
         ProguardConfigurationSourceParser parser, Position position, TextPosition positionStart) {

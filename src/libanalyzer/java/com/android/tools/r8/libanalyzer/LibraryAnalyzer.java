@@ -3,18 +3,23 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
+import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
-import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.R8;
+import com.android.tools.r8.R8Command;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
 import com.android.tools.r8.origin.CommandLineOrigin;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.ThreadUtils;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 // TODO(b/479726064): Extend SanityCheck test to verify that the libanalyzer jar does not contain
@@ -77,35 +82,77 @@ public class LibraryAnalyzer {
   }
 
   private void run(ExecutorService executorService) {
-    D8RunResult runResult = runD8(executorService);
+    D8RunResult d8RunResult = runD8(executorService);
+    R8RunResult r8RunResult = runR8(executorService);
     // TODO(b/479726064): Write to protobuf.
-    System.out.println("D8=" + runResult.size);
+    System.out.println(
+        "D8="
+            + (d8RunResult != null ? d8RunResult.size : "N/A")
+            + ", R8="
+            + (r8RunResult != null ? r8RunResult.size : "N/A"));
   }
 
   private D8RunResult runD8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     D8Command.Builder commandBuilder =
-        D8Command.builder(options.reporter)
-            .setMode(CompilationMode.RELEASE)
-            .setMinApiLevel(options.minApiLevel.getLevel(), options.minApiLevel.getMinor())
-            .setProgramConsumer(sizeConsumer);
-    app.getProgramResourceProviders().forEach(commandBuilder::addProgramResourceProvider);
-    app.getClasspathResourceProviders().forEach(commandBuilder::addClasspathResourceProvider);
-    app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
+        D8Command.builder(options.reporter).setProgramConsumer(sizeConsumer);
+    configure(commandBuilder);
     try {
       D8.run(commandBuilder.build(), executorService);
     } catch (CompilationFailedException e) {
-      throw new CompilationError("D8 compilation failed", e);
+      options.reporter.warning(new ExceptionDiagnostic(e));
+      options.reporter.clearAbort();
+      return null;
     }
     return new D8RunResult(sizeConsumer.size());
   }
 
-  private static class D8RunResult {
+  private R8RunResult runR8(ExecutorService executorService) {
+    DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
+    R8Command.Builder commandBuilder =
+        R8Command.builder(options.reporter)
+            .addProguardConfiguration(List.of("-ignorewarnings"), Origin.unknown())
+            .setProgramConsumer(sizeConsumer);
+    configure(commandBuilder);
+    try {
+      R8.run(commandBuilder.build(), executorService);
+    } catch (CompilationFailedException e) {
+      options.reporter.warning(new ExceptionDiagnostic(e));
+      options.reporter.clearAbort();
+      return null;
+    }
+    return new R8RunResult(sizeConsumer.size());
+  }
 
-    private final int size;
+  private void configure(BaseCompilerCommand.Builder<?, ?> commandBuilder) {
+    commandBuilder
+        .setMode(CompilationMode.RELEASE)
+        .setMinApiLevel(options.minApiLevel.getLevel(), options.minApiLevel.getMinor());
+    app.getProgramResourceProviders().forEach(commandBuilder::addProgramResourceProvider);
+    app.getClasspathResourceProviders().forEach(commandBuilder::addClasspathResourceProvider);
+    app.getLibraryResourceProviders().forEach(commandBuilder::addLibraryResourceProvider);
+  }
+
+  private abstract static class RunResult {
+
+    final int size;
+
+    RunResult(int size) {
+      this.size = size;
+    }
+  }
+
+  private static class D8RunResult extends RunResult {
 
     D8RunResult(int size) {
-      this.size = size;
+      super(size);
+    }
+  }
+
+  private static class R8RunResult extends RunResult {
+
+    R8RunResult(int size) {
+      super(size);
     }
   }
 }
