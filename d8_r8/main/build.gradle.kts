@@ -324,6 +324,7 @@ val blastRadiusJarTask = projectTask("blastradius", "jar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
+val libraryAnalyzerJarTask = projectTask("libanalyzer", "jar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val resourceShrinkerDepsTask = projectTask("resourceshrinker", "depsJar")
 
@@ -455,7 +456,7 @@ tasks {
   }
 
   val swissArmyKnife by registering(Jar::class) {
-    dependsOn(assistantJarTask, blastRadiusJarTask, keepAnnoJarTask, resourceShrinkerJarTask)
+    dependsOn(assistantJarTask, blastRadiusJarTask, keepAnnoJarTask, libraryAnalyzerJarTask, resourceShrinkerJarTask)
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     from(sourceSets.main.get().output)
     from(sourceSets["turbo"].output)
@@ -463,6 +464,7 @@ tasks {
     from(assistantJarTask.outputs.files.map(::zipTree))
     from(blastRadiusJarTask.outputs.files.map(::zipTree))
     from(keepAnnoJarTask.outputs.files.map(::zipTree))
+    from(libraryAnalyzerJarTask.outputs.files.map(::zipTree))
     from(resourceShrinkerJarTask.outputs.files.map(::zipTree))
     from(getRoot().resolve("LICENSE"))
     entryCompression = ZipEntryCompression.STORED
