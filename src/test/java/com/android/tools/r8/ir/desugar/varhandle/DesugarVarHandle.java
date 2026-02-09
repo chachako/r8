@@ -150,7 +150,7 @@ public final class DesugarVarHandle {
 
   // Helpers.
   static UnsafeStub getUnsafe() {
-    Field theUnsafe;
+    Field theUnsafe = null;
     try {
       theUnsafe = UnsafeStub.class.getDeclaredField("theUnsafe");
     } catch (NoSuchFieldException e) {
@@ -158,9 +158,12 @@ public final class DesugarVarHandle {
         if (Modifier.isStatic(field.getModifiers())
             && UnsafeStub.class.isAssignableFrom(field.getType())) {
           theUnsafe = field;
+          break;
         }
       }
-      throw new UnsupportedOperationException("Couldn't find the Unsafe", e);
+      if (theUnsafe != null) {
+        throw new UnsupportedOperationException("Couldn't find the Unsafe", e);
+      }
     }
     theUnsafe.setAccessible(true);
     try {
