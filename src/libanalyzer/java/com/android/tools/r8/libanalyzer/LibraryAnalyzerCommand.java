@@ -82,7 +82,7 @@ public final class LibraryAnalyzerCommand {
     private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
     private Path outputPath;
     private final Reporter reporter;
-    private int threadCount;
+    private int threadCount = ThreadUtils.NOT_SPECIFIED;
 
     private boolean printHelp = false;
     private boolean printVersion = false;

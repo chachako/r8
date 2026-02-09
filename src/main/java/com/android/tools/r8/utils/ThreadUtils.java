@@ -277,7 +277,7 @@ public class ThreadUtils {
 
   static ExecutorService getExecutorServiceForProcessors(
       int processors, ThreadingModule threadingModule) {
-    return getExecutorServiceForThreads(getThreadPoolSize(processors), threadingModule);
+    return getExecutorService(getThreadPoolSize(processors), threadingModule);
   }
 
   /**
@@ -303,16 +303,11 @@ public class ThreadUtils {
     }
   }
 
-  static ExecutorService getExecutorServiceForThreads(
-      int threads, ThreadingModule threadingModule) {
-    return threadingModule.createThreadedExecutorService(threads);
-  }
-
   public static ExecutorService getExecutorService(int threads, ThreadingModule threadingModule) {
     return threads == NOT_SPECIFIED
         ? getExecutorServiceForProcessors(
             Runtime.getRuntime().availableProcessors(), threadingModule)
-        : getExecutorServiceForThreads(threads, threadingModule);
+        : threadingModule.createThreadedExecutorService(threads);
   }
 
   public static ExecutorService getExecutorService(InternalOptions options) {
