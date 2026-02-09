@@ -150,7 +150,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
 
   private static void configureWithoutOpenInterfaceSuppression(R8FullTestBuilder testBuilder) {
     testBuilder
-        // TODO: Remove once we have figured out how to deal with keepanno.
+        // TODO(b/480100735): Remove once we have figured out how to deal with keepanno.
         .setMinApi(24)
         .allowUnnecessaryDontWarnWildcards()
         .allowUnusedDontWarnPatterns()
@@ -161,7 +161,7 @@ public class ComposeSamplesBenchmarks extends BenchmarkBase {
   private static void configureWithoutOpenInterfaceSuppressionPartial(
       R8PartialTestBuilder testBuilder) {
     testBuilder
-        // TODO: Remove once we have figured out how to deal with keepanno.
+        // TODO(b/480100735): Remove once we have figured out how to deal with keepanno.
         .setMinApi(24)
         .allowUnnecessaryDontWarnWildcards()
         .allowUnusedDontWarnPatterns()
