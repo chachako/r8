@@ -57,7 +57,7 @@ def FormatJava(upstream):
 
 
 def FormatKotlin(upstream):
-    changed_files_cmd = ['git', 'diff', '--name-only', upstream, '*.kt']
+    changed_files_cmd = ['git', 'diff', '--name-only', upstream, '*.kt', '*.kts']
     changed_files = subprocess.check_output(changed_files_cmd).decode(
         'utf-8').splitlines()
     if not changed_files:

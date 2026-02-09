@@ -4,27 +4,23 @@
 
 pluginManagement {
   repositories {
-    maven {
-      url = uri("file:../../../third_party/dependencies_plugin")
-    }
-    maven {
-      url = uri("file:../../../third_party/dependencies")
-    }
+    maven { url = uri("file:../../../third_party/dependencies_plugin") }
+    maven { url = uri("file:../../../third_party/dependencies") }
   }
 }
 
 dependencyResolutionManagement {
-  repositories {
-    maven {
-      url = uri("file:../../../third_party/dependencies")
-    }
-  }
+  repositories { maven { url = uri("file:../../../third_party/dependencies") } }
 }
 
 rootProject.name = "tests_java_21"
+
 val root = rootProject.projectDir.parentFile.parentFile
 
 includeBuild(root.resolve("shared"))
+
 includeBuild(root.resolve("assistant"))
+
 includeBuild(root.resolve("main"))
+
 includeBuild(root.resolve("test_modules").resolve("testbase"))

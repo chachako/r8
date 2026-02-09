@@ -66,9 +66,9 @@ def CheckFormatting(input_api, output_api, branch):
   results = []
   for f in input_api.AffectedFiles():
     path = f.LocalPath()
-    if not path.endswith('.java') and not path.endswith('.kt'):
+    if not path.endswith('.java') and not path.endswith('.kt') and not path.endswith('.kts'):
       continue
-    if path.endswith('.kt'):
+    if path.endswith('.kt') or path.endswith('.kts'):
       if path in KOTLIN_FMT_IGNORE:
         continue
       pending_kotlin_files.append(path)
@@ -119,13 +119,13 @@ def CheckKotlinFormatting(paths, output_api, results):
 def KotlinFormatPresubmitMessage():
   return """Please fix the Kotlin formatting by running:
 
-  git diff $(git cl upstream) --name-only "*.kt" | grep -v "^src/keepanno/" | xargs {java} -jar {fmt_jar} --google-style
-  git diff $(git cl upstream) --name-only "*.kt" | grep "^src/keepanno/" | xargs {java} -jar {fmt_jar} --kotlinlang-style
+  git diff $(git cl upstream) --name-only "*.kt" "*.kts" | grep -v "^src/keepanno/" | xargs {java} -jar {fmt_jar} --google-style
+  git diff $(git cl upstream) --name-only "*.kt" "*.kts" | grep "^src/keepanno/" | xargs {java} -jar {fmt_jar} --kotlinlang-style
 
 or fix formatting, commit and upload:
 
-  git diff $(git cl upstream) --name-only "*.kt" | grep -v "^src/keepanno/" | xargs {java} -jar {fmt_jar} --google-style && git commit -a --amend --no-edit && git cl upload
-  git diff $(git cl upstream) --name-only "*.kt" | grep "^src/keepanno/" | xargs {java} -jar {fmt_jar} --kotlinlang-style && git commit -a --amend --no-edit && git cl upload
+  git diff $(git cl upstream) --name-only "*.kt" "*.kts" | grep -v "^src/keepanno/" | xargs {java} -jar {fmt_jar} --google-style && git commit -a --amend --no-edit && git cl upload
+  git diff $(git cl upstream) --name-only "*.kt" "*.kts" | grep "^src/keepanno/" | xargs {java} -jar {fmt_jar} --kotlinlang-style && git commit -a --amend --no-edit && git cl upload
 
 or bypass the checks with:
 

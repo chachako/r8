@@ -4,29 +4,27 @@
 
 pluginManagement {
   repositories {
-    maven {
-      url = uri("file:../../third_party/dependencies_plugin")
-    }
-    maven {
-      url = uri("file:../../third_party/dependencies")
-    }
+    maven { url = uri("file:../../third_party/dependencies_plugin") }
+    maven { url = uri("file:../../third_party/dependencies") }
   }
 }
 
 dependencyResolutionManagement {
-  repositories {
-    maven {
-      url = uri("file:../../third_party/dependencies")
-    }
-  }
+  repositories { maven { url = uri("file:../../third_party/dependencies") } }
 }
 
 rootProject.name = "r8"
 
 val root = rootProject.projectDir.parentFile
+
 includeBuild(root.resolve("blastradius"))
+
 includeBuild(root.resolve("shared"))
+
 includeBuild(root.resolve("assistant"))
+
 includeBuild(root.resolve("keepanno"))
+
 includeBuild(root.resolve("libanalyzer"))
+
 includeBuild(root.resolve("resourceshrinker"))

@@ -7,19 +7,13 @@ plugins {
   id("dependencies-plugin")
 }
 
-dependencies {
-  compileOnly(":keepanno")
-}
+dependencies { compileOnly(":keepanno") }
 
 java {
-  sourceSets.main.configure {
-    java.srcDir(getRoot().resolveAll("src", "assistant", "java"))
-  }
+  sourceSets.main.configure { java.srcDir(getRoot().resolveAll("src", "assistant", "java")) }
   sourceCompatibility = JvmCompatibility.sourceCompatibility
   targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(JvmCompatibility.release)
-  }
+  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
   withSourcesJar()
 }
 
@@ -28,6 +22,4 @@ tasks.withType<Jar> {
   archiveFileName.set("assistant.jar")
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }

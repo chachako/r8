@@ -25,14 +25,10 @@ java {
   // compatible with java toolchains.
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(JvmCompatibility.release)
-  }
+  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }
 
 val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
@@ -63,40 +59,40 @@ dependencies {
   implementation(testbaseJavaCompileTask.outputs.files)
 }
 
-val sourceSetDependenciesTasks = arrayOf(
-  projectTask("tests_java_9", getExampleJarsTaskName("examplesJava9")),
-)
+val sourceSetDependenciesTasks =
+  arrayOf(projectTask("tests_java_9", getExampleJarsTaskName("examplesJava9")))
 
-fun testDependencies() : FileCollection {
-  return sourceSets
-    .test
-    .get()
-    .compileClasspath
-    .filter {
-        "$it".contains("third_party")
-          && !"$it".contains("errorprone")
-          && !"$it".contains("third_party/gradle")
-    }
+fun testDependencies(): FileCollection {
+  return sourceSets.test.get().compileClasspath.filter {
+    "$it".contains("third_party") &&
+      !"$it".contains("errorprone") &&
+      !"$it".contains("third_party/gradle")
+  }
 }
 
 tasks {
-
   getByName<Delete>("clean") {
     // TODO(b/327315907): Don't generating into the root build dir.
-    delete.add(getRoot().resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art"))
+    delete.add(
+      getRoot()
+        .resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
+    )
   }
 
-  val createArtTests by registering(Exec::class) {
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    // TODO(b/327315907): Don't generating into the root build dir.
-    val outputDir = getRoot().resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
-    val createArtTestsScript = getRoot().resolveAll("tools", "create_art_tests.py")
-    inputs.file(createArtTestsScript)
-    inputs.dir(getRoot().resolveAll("tests", "2017-10-04"))
-    outputs.dir(outputDir)
-    workingDir(getRoot())
-    commandLine("python3", createArtTestsScript)
-  }
+  val createArtTests by
+    registering(Exec::class) {
+      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
+      // TODO(b/327315907): Don't generating into the root build dir.
+      val outputDir =
+        getRoot()
+          .resolveAll("build", "generated", "test", "java", "com", "android", "tools", "r8", "art")
+      val createArtTestsScript = getRoot().resolveAll("tools", "create_art_tests.py")
+      inputs.file(createArtTestsScript)
+      inputs.dir(getRoot().resolveAll("tests", "2017-10-04"))
+      outputs.dir(outputDir)
+      workingDir(getRoot())
+      commandLine("python3", createArtTestsScript)
+    }
   "compileTestJava" {
     dependsOn(testbaseJavaCompileTask)
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
@@ -119,13 +115,9 @@ tasks {
     }
   }
 
-  withType<KotlinCompile> {
-    enabled = false
-  }
+  withType<KotlinCompile> { enabled = false }
 
-  val sourceSetDependencyTask by registering {
-    dependsOn(*sourceSetDependenciesTasks)
-  }
+  val sourceSetDependencyTask by registering { dependsOn(*sourceSetDependenciesTasks) }
 
   withType<Test> {
     TestingState.setUpTestingState(this)
@@ -135,37 +127,52 @@ tasks {
       dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
     }
     dependsOn(sourceSetDependencyTask)
-    systemProperty("TEST_DATA_LOCATION",
-                   layout.buildDirectory.dir("classes/java/test").get().toString())
-    systemProperty("TESTBASE_DATA_LOCATION",
-                   testbaseJavaCompileTask.outputs.files.asPath.split(File.pathSeparator)[0])
+    systemProperty(
+      "TEST_DATA_LOCATION",
+      layout.buildDirectory.dir("classes/java/test").get().toString(),
+    )
+    systemProperty(
+      "TESTBASE_DATA_LOCATION",
+      testbaseJavaCompileTask.outputs.files.asPath.split(File.pathSeparator)[0],
+    )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       extractClassesPaths(
         "keepanno" + File.separator,
         keepAnnoCompileTask.outputs.files.asPath,
-        keepAnnoCompileKotlinTask.outputs.files.asPath))
+        keepAnnoCompileKotlinTask.outputs.files.asPath,
+      ),
+    )
     // This path is set when compiling examples jar task in DependenciesPlugin.
     val r8RuntimePath =
-        mainCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-            File.pathSeparator + mainTurboCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-            File.pathSeparator + mainDepsJarTask.outputs.files.singleFile +
-            File.pathSeparator + getRoot().resolveAll("src", "main", "resources") +
-            File.pathSeparator + keepAnnoCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-            File.pathSeparator + assistantCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-            File.pathSeparator + resourceShrinkerJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-            File.pathSeparator + resourceShrinkerKotlinCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
+      mainCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        mainTurboCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        mainDepsJarTask.outputs.files.singleFile +
+        File.pathSeparator +
+        getRoot().resolveAll("src", "main", "resources") +
+        File.pathSeparator +
+        keepAnnoCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        assistantCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        resourceShrinkerJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        resourceShrinkerKotlinCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
     systemProperty("R8_DEPS", mainDepsJarTask.outputs.files.singleFile)
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 
-  val testJar by registering(Jar::class) {
-    from(sourceSets.test.get().output)
-    // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets. Renaming
-    //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
-    //  the jar and not show red underlines. However, navigation to base classes will not work.
-    archiveFileName.set("not_named_tests_java_8.jar")
-  }
+  val testJar by
+    registering(Jar::class) {
+      from(sourceSets.test.get().output)
+      // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
+      // Renaming
+      //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
+      //  the jar and not show red underlines. However, navigation to base classes will not work.
+      archiveFileName.set("not_named_tests_java_8.jar")
+    }
 }

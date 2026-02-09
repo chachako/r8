@@ -16,22 +16,17 @@ java {
   // Can be moved into src/test/java17 when all examples have been converted
   // to tests. Currently both the Test target below and buildExampleJars depend
   // on this.
-  sourceSets.test.configure {
-    java.srcDir(root.resolveAll("src", "test", "java17"))
-  }
+  sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "java17")) }
   sourceCompatibility = JavaVersion.VERSION_17
   targetCompatibility = JavaVersion.VERSION_17
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }
 
 val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 val mainTurboCompileTask = projectTask("main", "compileTurboJava")
 val mainCompileTask = projectTask("main", "compileJava")
-
 
 dependencies {
   implementation(files(testbaseDepsJarTask.outputs.files.getSingleFile()))
@@ -51,21 +46,27 @@ tasks {
 
   withType<Test> {
     notCompatibleWithConfigurationCache(
-      "Failure storing the configuration cache: cannot serialize object of type 'org.gradle.api.internal.project.DefaultProject', a subtype of 'org.gradle.api.Project', as these are not supported with the configuration cache")
+      "Failure storing the configuration cache: cannot serialize object of type 'org.gradle.api.internal.project.DefaultProject', a subtype of 'org.gradle.api.Project', as these are not supported with the configuration cache"
+    )
     TestingState.setUpTestingState(this)
     javaLauncher = getJavaLauncher(Jdk.JDK_17)
-    systemProperty("TEST_DATA_LOCATION",
-                   layout.buildDirectory.dir("classes/java/test").get().toString())
-    systemProperty("TESTBASE_DATA_LOCATION",
-                   testbaseJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0])
+    systemProperty(
+      "TEST_DATA_LOCATION",
+      layout.buildDirectory.dir("classes/java/test").get().toString(),
+    )
+    systemProperty(
+      "TESTBASE_DATA_LOCATION",
+      testbaseJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+    )
   }
 
-  val testJar by registering(Jar::class) {
-    from(sourceSets.test.get().output)
-    // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets. Renaming
-    //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
-    //  the jar and not show red underlines. However, navigation to base classes will not work.
-    archiveFileName.set("not_named_tests_java_17.jar")
-  }
+  val testJar by
+    registering(Jar::class) {
+      from(sourceSets.test.get().output)
+      // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
+      // Renaming
+      //  this from the default name (tests_java_8.jar) will allow IntelliJ to find the resources in
+      //  the jar and not show red underlines. However, navigation to base classes will not work.
+      archiveFileName.set("not_named_tests_java_17.jar")
+    }
 }
-

@@ -7,25 +7,26 @@ plugins {
   id("dependencies-plugin")
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }
 
 tasks {
+  val downloadDeps by
+    registering(DownloadAllDependenciesTask::class) {
+      this.setDependencies(getRoot(), allPublicDependencies())
+    }
 
-  val downloadDeps by registering(DownloadAllDependenciesTask::class) {
-    this.setDependencies(getRoot(), allPublicDependencies())
-  }
+  val downloadTestDeps by
+    registering(DownloadAllDependenciesTask::class) {
+      this.setDependencies(getRoot(), allPublicTestDependencies())
+    }
 
-  val downloadTestDeps by registering(DownloadAllDependenciesTask::class) {
-    this.setDependencies(getRoot(), allPublicTestDependencies())
-  }
+  val downloadDepsInternal by
+    registering(DownloadAllDependenciesTask::class) {
+      this.setDependencies(getRoot(), allInternalDependencies())
+    }
 
-  val downloadDepsInternal by registering(DownloadAllDependenciesTask::class) {
-    this.setDependencies(getRoot(), allInternalDependencies())
-  }
-
-  val downloadTestDepsInternal by registering(DownloadAllDependenciesTask::class) {
-    this.setDependencies(getRoot(), allInternalTestDependencies())
-  }
+  val downloadTestDepsInternal by
+    registering(DownloadAllDependenciesTask::class) {
+      this.setDependencies(getRoot(), allInternalTestDependencies())
+    }
 }

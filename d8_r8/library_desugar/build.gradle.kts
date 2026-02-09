@@ -14,14 +14,9 @@ java {
   }
   sourceCompatibility = JavaVersion.VERSION_1_8
   targetCompatibility = JavaVersion.VERSION_1_8
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(JvmCompatibility.release)
-  }
+  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }
 
-dependencies {
-}
+dependencies {}

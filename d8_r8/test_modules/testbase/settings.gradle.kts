@@ -4,28 +4,23 @@
 
 pluginManagement {
   repositories {
-    maven {
-      url = uri("file:../../../third_party/dependencies_plugin")
-    }
-    maven {
-      url = uri("file:../../../third_party/dependencies")
-    }
+    maven { url = uri("file:../../../third_party/dependencies_plugin") }
+    maven { url = uri("file:../../../third_party/dependencies") }
   }
 }
 
 dependencyResolutionManagement {
-  repositories {
-    maven {
-      url = uri("file:../../../third_party/dependencies")
-    }
-  }
+  repositories { maven { url = uri("file:../../../third_party/dependencies") } }
 }
 
 rootProject.name = "testbase"
 
 val root = rootProject.projectDir.parentFile.parentFile
+
 includeBuild(root.resolve("shared"))
+
 includeBuild(root.resolve("keepanno"))
+
 includeBuild(root.resolve("resourceshrinker"))
 
 // We need to include src/main as a composite-build otherwise our test-modules

@@ -4,23 +4,17 @@
 
 pluginManagement {
   repositories {
-    maven {
-      url = uri("file:../../third_party/dependencies_plugin")
-    }
-    maven {
-      url = uri("file:../../third_party/dependencies")
-    }
+    maven { url = uri("file:../../third_party/dependencies_plugin") }
+    maven { url = uri("file:../../third_party/dependencies") }
   }
 }
 
 dependencyResolutionManagement {
-  repositories {
-    maven {
-      url = uri("file:../../third_party/dependencies")
-    }
-  }
+  repositories { maven { url = uri("file:../../third_party/dependencies") } }
 }
 
 rootProject.name = "keepanno"
+
 val root = rootProject.projectDir.parentFile
+
 includeBuild(root.resolve("shared"))

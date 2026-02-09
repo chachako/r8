@@ -16,24 +16,20 @@ java {
   }
   sourceCompatibility = JvmCompatibility.sourceCompatibility
   targetCompatibility = JvmCompatibility.targetCompatibility
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(JvmCompatibility.release)
-  }
+  toolchain { languageVersion = JavaLanguageVersion.of(JvmCompatibility.release) }
   withSourcesJar()
 }
 
-kotlin {
-  explicitApi()
-}
+kotlin { explicitApi() }
 
-fun jarDependencies() : FileCollection {
-  return sourceSets
-    .main
+fun jarDependencies(): FileCollection {
+  return sourceSets.main
     .get()
     .compileClasspath
-    .filter({ "$it".contains("third_party")
-              && "$it".contains("dependencies")
-              && !"$it".contains("errorprone")
+    .filter({
+      "$it".contains("third_party") &&
+        "$it".contains("dependencies") &&
+        !"$it".contains("errorprone")
     })
 }
 
@@ -59,11 +55,12 @@ tasks {
     }
   }
 
-  val depsJar by registering(Jar::class) {
-    from(jarDependencies().map(::zipTree))
-    exclude("**/*.proto")
-    exclude("versions-offline/**")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveFileName.set("resourceshrinker_deps.jar")
-  }
+  val depsJar by
+    registering(Jar::class) {
+      from(jarDependencies().map(::zipTree))
+      exclude("**/*.proto")
+      exclude("versions-offline/**")
+      duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+      archiveFileName.set("resourceshrinker_deps.jar")
+    }
 }

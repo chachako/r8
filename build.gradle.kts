@@ -34,11 +34,10 @@ tasks {
     dependsOn(gradle.includedBuild("test").task(":clean"))
   }
 
-  val r8 by registering() {
-    dependsOn(gradle.includedBuild("main").task(":r8WithRelocatedDeps"))
-  }
+  val r8 by registering() { dependsOn(gradle.includedBuild("main").task(":r8WithRelocatedDeps")) }
 
-  val r8lib by registering() {
-    dependsOn(gradle.includedBuild("test").task(":assembleR8LibWithRelocatedDeps"))
-  }
+  val r8lib by
+    registering() {
+      dependsOn(gradle.includedBuild("test").task(":assembleR8LibWithRelocatedDeps"))
+    }
 }
