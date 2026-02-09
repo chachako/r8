@@ -22,6 +22,10 @@ public class LibraryProvidedProguardRulesTestBase extends TestBase {
       return this != JAR_WITH_RULES;
     }
 
+    boolean isAarWithRulesOnlyInJar() {
+      return this == AAR_WITH_RULES_ONLY_IN_JAR;
+    }
+
     boolean hasRulesInJar() {
       return this != AAR_WITH_RULES;
     }

@@ -7,13 +7,12 @@ package com.android.tools.r8.shaking;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticOrigin;
 import static com.android.tools.r8.OriginMatcher.hasPart;
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsent;
+import static com.android.tools.r8.utils.codeinspector.Matchers.isAbsentIf;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
@@ -101,38 +100,38 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
   @Test
   public void keepOnlyA() throws Exception {
     CodeInspector inspector = runTest("-keep class " + A.class.getTypeName() + " {}");
-    // TODO(b/228319861): Read Proguard rules from AAR's.
-    assertThat(inspector.clazz(A.class), notIf(isPresent(), libraryType.isAar()));
-    assertThat(inspector.clazz(B.class), not(isPresent()));
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
+    assertThat(inspector.clazz(A.class), isAbsentIf(isAarWithUnsupportedRules()));
+    assertThat(inspector.clazz(B.class), isAbsent());
   }
 
   @Test
   public void keepOnlyB() throws Exception {
     CodeInspector inspector = runTest("-keep class **B {}");
-    assertThat(inspector.clazz(A.class), not(isPresent()));
-    // TODO(b/228319861): Read Proguard rules from AAR's.
-    assertThat(inspector.clazz(B.class), notIf(isPresent(), libraryType.isAar()));
+    assertThat(inspector.clazz(A.class), isAbsent());
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
+    assertThat(inspector.clazz(B.class), isAbsentIf(isAarWithUnsupportedRules()));
   }
 
   @Test
   public void keepBoth() throws Exception {
     CodeInspector inspector = runTest("-keep class ** {}");
-    // TODO(b/228319861): Read Proguard rules from AAR's.
-    assertThat(inspector.clazz(A.class), notIf(isPresent(), libraryType.isAar()));
-    assertThat(inspector.clazz(B.class), notIf(isPresent(), libraryType.isAar()));
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
+    assertThat(inspector.clazz(A.class), isAbsentIf(isAarWithUnsupportedRules()));
+    assertThat(inspector.clazz(B.class), isAbsentIf(isAarWithUnsupportedRules()));
   }
 
   @Test
   public void multipleFiles() throws Exception {
     CodeInspector inspector = runTest(ImmutableList.of("-keep class **A {}", "-keep class **B {}"));
-    // TODO(b/228319861): Read Proguard rules from AAR's.
-    assertThat(inspector.clazz(A.class), notIf(isPresent(), libraryType.isAar()));
-    assertThat(inspector.clazz(B.class), notIf(isPresent(), libraryType.isAar()));
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
+    assertThat(inspector.clazz(A.class), isAbsentIf(isAarWithUnsupportedRules()));
+    assertThat(inspector.clazz(B.class), isAbsentIf(isAarWithUnsupportedRules()));
   }
 
   @Test
   public void providedKeepRuleSyntaxError() {
-    // TODO(b/228319861): Read Proguard rules from AAR's.
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
     assumeTrue(!libraryType.isAar());
     assertThrows(
         CompilationFailedException.class,
@@ -151,7 +150,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
 
   @Test
   public void providedKeepRuleInjarsError() {
-    // TODO(b/228319861): Read Proguard rules from AAR's.
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
     assumeTrue(!libraryType.isAar());
     assertThrows(
         CompilationFailedException.class,
@@ -168,7 +167,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
 
   @Test
   public void providedKeepRuleIncludeError() {
-    // TODO(b/228319861): Read Proguard rules from AAR's.
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
     assumeTrue(!libraryType.isAar());
     assertThrows(
         CompilationFailedException.class,
@@ -181,6 +180,11 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
                         diagnostics.assertErrorThatMatches(
                             diagnosticMessage(
                                 containsString("Options with file names are not supported")))));
+  }
+
+  private boolean isAarWithUnsupportedRules() {
+    return (libraryType.isAar() && providerType == ProviderType.INJARS)
+        || libraryType.isAarWithRulesOnlyInJar();
   }
 
   static class TestProvider implements ProgramResourceProvider, DataResourceProvider {
@@ -211,7 +215,7 @@ public class LibraryProvidedProguardRulesTest extends LibraryProvidedProguardRul
 
   @Test
   public void throwingDataResourceProvider() {
-    // TODO(b/228319861): Read Proguard rules from AAR's.
+    // TODO(b/228319861): Read Proguard rules from JARs in AARs.
     assumeTrue(!libraryType.isAar());
     assertThrows(
         CompilationFailedException.class,
