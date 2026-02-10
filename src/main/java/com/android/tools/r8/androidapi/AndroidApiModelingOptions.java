@@ -56,6 +56,9 @@ public class AndroidApiModelingOptions {
   private boolean enableOutliningOfMethods = true;
   private boolean checkAllApiReferencesAreSet = true;
 
+  // TODO(b/232823652): Enable when we can compute the offset correctly.
+  public boolean useMemoryMappedByteBuffer = false;
+
   // A mapping from references to the api-level introducing them.
   public Map<MethodReference, AndroidApiLevel> methodApiMapping = new HashMap<>();
   public Map<FieldReference, AndroidApiLevel> fieldApiMapping = new HashMap<>();

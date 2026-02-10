@@ -137,23 +137,27 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
   private final Map<DexReference, Optional<AndroidApiLevel>> lookupCache =
       new ConcurrentHashMap<>();
   private final Map<DexString, Integer> constantPoolCache = new ConcurrentHashMap<>();
+  private final InternalOptions options;
   private final DiagnosticsHandler diagnosticsHandler;
   private static volatile AndroidApiDataAccess dataAccess;
 
-  private static void ensureDataAccess(DiagnosticsHandler diagnosticsHandler) {
+  private static AndroidApiDataAccess getDataAccess(
+      InternalOptions options, DiagnosticsHandler diagnosticsHandler) {
     if (dataAccess == null) {
       synchronized (AndroidApiDataAccess.class) {
         if (dataAccess == null) {
-          dataAccess = AndroidApiDataAccess.create(diagnosticsHandler);
+          dataAccess = AndroidApiDataAccess.create(options, diagnosticsHandler);
         }
       }
     }
+    return dataAccess;
   }
 
   public AndroidApiLevelHashingDatabaseImpl(
       List<AndroidApiForHashingReference> predefinedApiTypeLookup,
       InternalOptions options,
       DiagnosticsHandler diagnosticsHandler) {
+    this.options = options;
     this.diagnosticsHandler = diagnosticsHandler;
     predefinedApiTypeLookup.forEach(
         predefinedApiReference -> {
@@ -253,7 +257,7 @@ public class AndroidApiLevelHashingDatabaseImpl implements AndroidApiLevelDataba
             ref -> {
               // Prefetch the data access
               if (dataAccess == null) {
-                ensureDataAccess(diagnosticsHandler);
+                getDataAccess(options, diagnosticsHandler);
               }
               if (dataAccess.isNoBacking()) {
                 return Optional.empty();
