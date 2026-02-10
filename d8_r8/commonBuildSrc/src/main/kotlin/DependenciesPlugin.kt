@@ -1145,7 +1145,7 @@ private fun getThirdPartyKotlinCompilers(): List<ThirdPartyDependency> {
       "kotlin-compiler-2.0.20",
       "kotlin-compiler-2.1.10",
       "kotlin-compiler-2.2.0",
-      "kotlin-compiler-2.3.0-RC",
+      "kotlin-compiler-2.3.10",
       "kotlin-compiler-dev",
     )
     .map {
