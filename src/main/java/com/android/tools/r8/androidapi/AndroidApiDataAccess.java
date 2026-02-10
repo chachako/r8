@@ -5,7 +5,6 @@
 package com.android.tools.r8.androidapi;
 
 import static com.android.tools.r8.lightir.ByteUtils.unsetBitAtIndex;
-import static com.android.tools.r8.utils.ZipUtils.getOffsetOfResourceInZip;
 
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.dex.CompatByteBuffer;
@@ -16,6 +15,8 @@ import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.StringDiagnostic;
+import com.android.zipflinger.Entry;
+import com.android.zipflinger.ZipArchive;
 import com.google.common.io.ByteStreams;
 import com.google.common.primitives.Ints;
 import java.io.File;
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import java.util.function.BiPredicate;
 
 /**
@@ -103,15 +105,21 @@ public abstract class AndroidApiDataAccess {
         // protocol: file, path: <path-to-file>
         // protocol: jar, path: file:<path-to-jar>!/<resource-name-in-jar>
         if (resource.getProtocol().equals("file")) {
-          return getDataAccessFromPathAndOffset(Paths.get(resource.toURI()), 0);
+          return memoryMappedFromFile(Paths.get(resource.toURI()));
         } else if (resource.getProtocol().equals("jar") && resource.getPath().startsWith("file:")) {
           // The path is on form 'file:<path-to-jar>!/<resource-name-in-jar>
           JarURLConnection jarUrl = (JarURLConnection) resource.openConnection();
           File jarFile = new File(jarUrl.getJarFileURL().getFile());
           String databaseEntry = jarUrl.getEntryName();
-          long offsetInJar = getOffsetOfResourceInZip(jarFile, databaseEntry);
-          if (offsetInJar > 0) {
-            return getDataAccessFromPathAndOffset(jarFile.toPath(), offsetInJar);
+          Map<String, Entry> map = ZipArchive.listEntries(jarFile.toPath());
+          if (map.containsKey(databaseEntry)) {
+            Entry entry = map.get(databaseEntry);
+            if (!entry.isCompressed()) {
+              return memoryMappedFromSectionOfFile(
+                  jarFile.toPath(),
+                  entry.getPayloadLocation().first,
+                  entry.getPayloadLocation().last - entry.getPayloadLocation().first + 1);
+            }
           }
         }
         // On older DEX platforms creating a new byte channel may fail:
@@ -140,11 +148,19 @@ public abstract class AndroidApiDataAccess {
     }
   }
 
-  private static AndroidApiDataAccessByteMapped getDataAccessFromPathAndOffset(
-      Path path, long offset) throws IOException {
+  private static AndroidApiDataAccessByteMapped memoryMappedFromFile(Path path) throws IOException {
     FileChannel fileChannel = (FileChannel) Files.newByteChannel(path, StandardOpenOption.READ);
     MappedByteBuffer mappedByteBuffer =
-        fileChannel.map(FileChannel.MapMode.READ_ONLY, offset, fileChannel.size() - offset);
+        fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
+    // Ensure that we can run on JDK 8 by using the CompatByteBuffer.
+    return new AndroidApiDataAccessByteMapped(new CompatByteBuffer(mappedByteBuffer));
+  }
+
+  private static AndroidApiDataAccessByteMapped memoryMappedFromSectionOfFile(
+      Path path, long offset, long length) throws IOException {
+    FileChannel fileChannel = (FileChannel) Files.newByteChannel(path, StandardOpenOption.READ);
+    MappedByteBuffer mappedByteBuffer =
+        fileChannel.map(FileChannel.MapMode.READ_ONLY, offset, length);
     // Ensure that we can run on JDK 8 by using the CompatByteBuffer.
     return new AndroidApiDataAccessByteMapped(new CompatByteBuffer(mappedByteBuffer));
   }

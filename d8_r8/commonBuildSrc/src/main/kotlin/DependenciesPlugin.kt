@@ -454,6 +454,7 @@ private object Versions {
   public const val mockito = "2.10.0"
   public const val smaliVersion = "3.0.3"
   public const val protobufVersion = "3.19.3"
+  public const val zipflingerVersion = "9.0.0"
 }
 
 public object Deps {
@@ -494,6 +495,7 @@ public object Deps {
   public val protobuf: String by lazy {
     "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
   }
+  public val zipflinger: String by lazy { "com.android:zipflinger:${Versions.zipflingerVersion}" }
 }
 
 public object ThirdPartyDeps {
