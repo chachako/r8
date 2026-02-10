@@ -450,7 +450,7 @@ private object Versions {
   public const val javassist = "3.29.2-GA"
   public const val junitVersion = "4.13-beta-2"
   public const val kotlinVersion = "1.9.20"
-  public const val kotlinMetadataVersion = "2.2.10"
+  public const val kotlinMetadataVersion = "2.3.10"
   public const val mockito = "2.10.0"
   public const val smaliVersion = "3.0.3"
   public const val protobufVersion = "3.19.3"

@@ -45,7 +45,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
 
   private final KotlinJvmMethodSignatureInfo syntheticMethodForDelegate;
   // Collection of context receiver types
-  private final List<KotlinTypeInfo> contextReceiverTypes;
+  private final List<KotlinValueParameterInfo> contextParameters;
 
   private ConcreteKotlinPropertyInfo(
       KmProperty kmProperty,
@@ -58,7 +58,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
       KotlinJvmMethodSignatureInfo setterSignature,
       KotlinJvmMethodSignatureInfo syntheticMethodForAnnotations,
       KotlinJvmMethodSignatureInfo syntheticMethodForDelegate,
-      List<KotlinTypeInfo> contextReceiverTypes) {
+      List<KotlinValueParameterInfo> contextParameters) {
     assert returnType != null;
     this.kmProperty = kmProperty;
     this.returnType = returnType;
@@ -70,7 +70,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
     this.setterSignature = setterSignature;
     this.syntheticMethodForAnnotations = syntheticMethodForAnnotations;
     this.syntheticMethodForDelegate = syntheticMethodForDelegate;
-    this.contextReceiverTypes = contextReceiverTypes;
+    this.contextParameters = contextParameters;
   }
 
   public static ConcreteKotlinPropertyInfo create(
@@ -91,8 +91,9 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
         KotlinJvmMethodSignatureInfo.create(
             JvmExtensionsKt.getSyntheticMethodForDelegate(kmProperty), factory),
         ListUtils.map(
-            kmProperty.getContextReceiverTypes(),
-            contextRecieverType -> KotlinTypeInfo.create(contextRecieverType, factory, reporter)));
+            kmProperty.getContextParameters(),
+            kmValueParameter ->
+                KotlinValueParameterInfo.create(kmValueParameter, factory, reporter)));
   }
 
   @Override
@@ -155,9 +156,9 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
     rewritten |=
         rewriteList(
             appView,
-            contextReceiverTypes,
-            rewrittenKmProperty.getContextReceiverTypes(),
-            KotlinTypeInfo::rewrite);
+            contextParameters,
+            rewrittenKmProperty.getContextParameters(),
+            KotlinValueParameterInfo::rewrite);
     rewrittenKmProperty.getVersionRequirements().addAll(kmProperty.getVersionRequirements());
     if (fieldSignature != null) {
       rewritten |=
@@ -209,7 +210,7 @@ public class ConcreteKotlinPropertyInfo implements KotlinPropertyInfo {
       setterParameter.trace(registry);
     }
     forEachApply(typeParameters, param -> param::trace, registry);
-    forEachApply(contextReceiverTypes, type -> type::trace, registry);
+    forEachApply(contextParameters, type -> type::trace, registry);
     if (fieldSignature != null) {
       fieldSignature.trace(registry);
     }

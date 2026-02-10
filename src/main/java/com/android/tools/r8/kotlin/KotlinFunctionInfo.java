@@ -39,7 +39,7 @@ public final class KotlinFunctionInfo implements KotlinMethodLevelInfo {
   // A value describing if any of the parameters are crossinline.
   private final boolean crossInlineParameter;
   // Collection of context receiver types
-  private final List<KotlinTypeInfo> contextReceiverTypes;
+  private final List<KotlinValueParameterInfo> contextParameters;
 
   private KotlinFunctionInfo(
       KmFunction kmFunction,
@@ -51,7 +51,7 @@ public final class KotlinFunctionInfo implements KotlinMethodLevelInfo {
       KotlinTypeReference lambdaClassOrigin,
       KotlinContractInfo contract,
       boolean crossInlineParameter,
-      List<KotlinTypeInfo> contextReceiverTypes) {
+      List<KotlinValueParameterInfo> contextParameters) {
     this.kmFunction = kmFunction;
     this.returnType = returnType;
     this.receiverParameterType = receiverParameterType;
@@ -61,7 +61,7 @@ public final class KotlinFunctionInfo implements KotlinMethodLevelInfo {
     this.lambdaClassOrigin = lambdaClassOrigin;
     this.contract = contract;
     this.crossInlineParameter = crossInlineParameter;
-    this.contextReceiverTypes = contextReceiverTypes;
+    this.contextParameters = contextParameters;
   }
 
   public boolean hasCrossInlineParameter() {
@@ -90,8 +90,9 @@ public final class KotlinFunctionInfo implements KotlinMethodLevelInfo {
         KotlinContractInfo.create(kmFunction.getContract(), factory, reporter),
         isCrossInline,
         ListUtils.map(
-            kmFunction.getContextReceiverTypes(),
-            contextReceiverType -> KotlinTypeInfo.create(contextReceiverType, factory, reporter)));
+            kmFunction.getContextParameters(),
+            contextParameter ->
+                KotlinValueParameterInfo.create(contextParameter, factory, reporter)));
   }
 
   private static KotlinTypeReference getlambdaClassOrigin(
@@ -146,9 +147,9 @@ public final class KotlinFunctionInfo implements KotlinMethodLevelInfo {
     rewritten |=
         rewriteList(
             appView,
-            contextReceiverTypes,
-            rewrittenKmFunction.getContextReceiverTypes(),
-            KotlinTypeInfo::rewrite);
+            contextParameters,
+            rewrittenKmFunction.getContextParameters(),
+            KotlinValueParameterInfo::rewrite);
     rewritten |=
         rewriteIfNotNull(
             appView,
@@ -201,7 +202,7 @@ public final class KotlinFunctionInfo implements KotlinMethodLevelInfo {
       receiverParameterType.trace(registry);
     }
     forEachApply(typeParameters, param -> param::trace, registry);
-    forEachApply(contextReceiverTypes, type -> type::trace, registry);
+    forEachApply(contextParameters, type -> type::trace, registry);
     if (signature != null) {
       signature.trace(registry);
     }

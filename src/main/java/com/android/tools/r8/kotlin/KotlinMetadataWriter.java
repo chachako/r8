@@ -462,8 +462,9 @@ public class KotlinMetadataWriter {
                       newNewIndent,
                       "KmType",
                       sb,
-                      function.getContextReceiverTypes(),
-                      (nextIndent, kmType) -> appendKmType(nextIndent, sb, kmType)));
+                      function.getContextParameters(),
+                      (nextIndent, kmValueParameter) ->
+                          appendValueParameter(nextIndent, sb, kmValueParameter)));
           JvmMethodSignature signature = JvmExtensionsKt.getSignature(function);
           appendKeyValue(newIndent, "signature", sb, Objects.toString(signature));
           appendKeyValue(
