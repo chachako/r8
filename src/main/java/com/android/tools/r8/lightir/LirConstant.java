@@ -28,7 +28,7 @@ public interface LirConstant {
     RECORD_FIELD_VALUES,
     ORIGINAL_FIELD_WITNESS,
     OUTLINE,
-    TYPE_LIST,
+    STRING_CONCAT,
   }
 
   class LirConstantStructuralAcceptor implements StructuralAcceptor<LirConstant> {

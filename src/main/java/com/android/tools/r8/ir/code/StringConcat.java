@@ -10,7 +10,6 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
@@ -20,7 +19,9 @@ import com.android.tools.r8.ir.optimize.Inliner;
 import com.android.tools.r8.ir.optimize.Inliner.ConstraintWithTarget;
 import com.android.tools.r8.ir.optimize.InliningConstraints;
 import com.android.tools.r8.lightir.LirBuilder;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Models string concatenation, mainly from invoke-dynamic instructions.
@@ -31,29 +32,40 @@ public class StringConcat extends Instruction {
 
   // Types are kept because Values do not distinguish boolean & char from int.
   // The types are normalized (e.g. Object for all reference types) to optimize outlining.
-  private DexTypeList argTypes;
+  private DexType[] argTypes;
+  // One entry for each arg type. Null entries mean use an inValue.
+  // It's invalid for two constants to be adjacent (they should have been merged in this case).
+  private List<DexString> argConstants;
 
-  private StringConcat(Value outValue, DexTypeList argTypes, List<Value> inValues) {
+  private StringConcat(
+      Value outValue, List<Value> inValues, DexType[] argTypes, List<DexString> argConstants) {
     super(outValue, inValues);
-    assert outValue == null || outValue.getType().isDefinitelyNotNull();
     this.argTypes = argTypes;
-    assert argTypes.size() == inValues.size();
-    assert argTypes.size() > 0;
+    this.argConstants = argConstants;
+    assertValidState();
   }
 
   public static StringConcat create(
-      AppView<?> appView, Value outValue, DexType[] argTypes, List<Value> inValues) {
+      Value outValue,
+      List<Value> inValues,
+      DexType[] argTypes,
+      List<DexString> argConstants,
+      AppView<?> appView) {
     return new StringConcat(
-        outValue, normalizeArgTypes(argTypes, appView.dexItemFactory()), inValues);
+        outValue, inValues, normalizeArgTypes(argTypes, appView.dexItemFactory()), argConstants);
   }
 
   public static StringConcat createNormalized(
-      AppView<?> appView, Value outValue, DexTypeList argTypes, List<Value> inValues) {
-    assert argTypes.equals(normalizeArgTypes(argTypes.getBacking(), appView.dexItemFactory()));
-    return new StringConcat(outValue, argTypes, inValues);
+      AppView<?> appView,
+      Value outValue,
+      DexType[] argTypes,
+      List<DexString> argConstants,
+      List<Value> inValues) {
+    assert Arrays.equals(argTypes, normalizeArgTypes(argTypes, appView.dexItemFactory()));
+    return new StringConcat(outValue, inValues, argTypes, argConstants);
   }
 
-  private static DexTypeList normalizeArgTypes(DexType[] argTypes, DexItemFactory dexItemFactory) {
+  private static DexType[] normalizeArgTypes(DexType[] argTypes, DexItemFactory dexItemFactory) {
     DexType[] syntheticArgTypes = new DexType[argTypes.length];
     for (int i = 0; i < argTypes.length; ++i) {
       DexType argType = argTypes[i];
@@ -72,37 +84,43 @@ public class StringConcat extends Instruction {
       }
       syntheticArgTypes[i] = argType;
     }
-    return new DexTypeList(syntheticArgTypes);
+    return syntheticArgTypes;
   }
 
-  public static Value addConstStringBeforeCurrent(
-      AppView<?> appView, IRCodeInstructionListIterator iterator, DexString stringData) {
-    Instruction curInstruction = iterator.previous();
-    ConstString constString =
-        ConstString.builder()
-            .setFreshOutValue(appView, iterator.getCode())
-            .setPosition(curInstruction)
-            .setValue(stringData)
-            .build();
-    iterator.addPossiblyThrowingInstructionToPossiblyThrowingBlock(constString, appView.options());
-    iterator.nextUntil(curInstruction);
-    return constString.outValue();
+  private void assertValidState() {
+    assert outValue == null || outValue.getType().isDefinitelyNotNull();
+    assert argTypes.length > 0;
+    assert argTypes.length == argConstants.size();
+    assert argConstants.stream().filter(Objects::nonNull).count() + inValues.size()
+        == argTypes.length;
+    assert !hasAdjacentConstants();
   }
 
-  /** Sets argTypes and inValues. Does not update any value users. */
-  public void setArguments(DexTypeList newArgTypes, List<Value> newInValues) {
-    assert newArgTypes.size() == newInValues.size();
+  private boolean hasAdjacentConstants() {
+    DexString prev = null;
+    for (DexString str : argConstants) {
+      assert str == null || prev == null : "Adjacent Constants: " + str + ", " + prev;
+      prev = str;
+    }
+    return false;
+  }
+
+  /** Sets argTypes, argConstants, and inValues. Does not update any value users. */
+  public void setArguments(
+      DexType[] newArgTypes, List<DexString> newArgConstants, List<Value> newInValues) {
     inValues.clear();
     inValues.addAll(newInValues);
     argTypes = newArgTypes;
-  }
-
-  public DexTypeList getArgTypeList() {
-    return argTypes;
+    argConstants = newArgConstants;
+    assertValidState();
   }
 
   public DexType[] getArgTypes() {
-    return argTypes.getBacking();
+    return argTypes;
+  }
+
+  public List<DexString> getArgConstants() {
+    return argConstants;
   }
 
   @Override
@@ -195,7 +213,7 @@ public class StringConcat extends Instruction {
 
   @Override
   public void buildLir(LirBuilder<Value, ?> builder) {
-    builder.addStringConcat(argTypes, inValues);
+    builder.addStringConcat(argTypes, argConstants, inValues);
   }
 
   @Override

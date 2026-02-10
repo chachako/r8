@@ -17,7 +17,6 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.graph.bytecodemetadata.BytecodeInstructionMetadata;
 import com.android.tools.r8.graph.lens.GraphLens;
@@ -191,6 +190,37 @@ public class LirBuilder<V, EV> {
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
       acceptHashing(visitor);
+    }
+  }
+
+  public static class StringConcatPayload implements LirConstant {
+    public final DexType[] argTypes;
+    public final List<DexString> argConstants;
+
+    public StringConcatPayload(DexType[] argTypes, List<DexString> argConstants) {
+      this.argTypes = argTypes;
+      this.argConstants = argConstants;
+    }
+
+    @Override
+    public LirConstantOrder getLirConstantOrder() {
+      return LirConstantOrder.STRING_CONCAT;
+    }
+
+    @Override
+    public int internalLirConstantAcceptCompareTo(LirConstant other, CompareToVisitor visitor) {
+      StringConcatPayload otherPayload = (StringConcatPayload) other;
+      int diff = visitor.visitItemArray(otherPayload.argTypes, argTypes);
+      if (diff != 0) {
+        return diff;
+      }
+      return visitor.visitItemCollection(argConstants, otherPayload.argConstants);
+    }
+
+    @Override
+    public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
+      visitor.visitItemArray(argTypes);
+      visitor.visitItemCollection(argConstants);
     }
   }
 
@@ -852,9 +882,12 @@ public class LirBuilder<V, EV> {
         Collections.singletonList(value));
   }
 
-  public LirBuilder<V, EV> addStringConcat(DexTypeList argTypes, List<V> arguments) {
+  public LirBuilder<V, EV> addStringConcat(
+      DexType[] argTypes, List<DexString> argConstants, List<V> arguments) {
     return addInstructionTemplate(
-        LirOpcodes.STRINGCONCAT, Collections.singletonList(argTypes), arguments);
+        LirOpcodes.STRINGCONCAT,
+        Collections.singletonList(new StringConcatPayload(argTypes, argConstants)),
+        arguments);
   }
 
   public LirBuilder<V, EV> addIf(

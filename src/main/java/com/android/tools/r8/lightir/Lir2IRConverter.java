@@ -14,7 +14,6 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.graph.proto.ArgumentInfo;
@@ -1096,12 +1095,14 @@ public class Lir2IRConverter {
     }
 
     @Override
-    public void onStringConcat(DexTypeList argTypes, List<EV> arguments) {
+    public void onStringConcat(
+        DexType[] argTypes, List<DexString> argConstants, List<EV> arguments) {
       Value dest =
           getOutValueForNextInstruction(
               TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
       List<Value> argValues = getValues(arguments);
-      addInstruction(StringConcat.createNormalized(appView, dest, argTypes, argValues));
+      addInstruction(
+          StringConcat.createNormalized(appView, dest, argTypes, argConstants, argValues));
     }
   }
 }

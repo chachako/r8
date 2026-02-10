@@ -10,6 +10,7 @@ import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexCallSite;
 import com.android.tools.r8.graph.DexMethod;
+import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.graph.DexValue;
 import com.android.tools.r8.ir.analysis.type.Nullability;
@@ -25,6 +26,7 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AffectedValues;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /** Converts InvokeCustom -> StringConcat. */
@@ -104,7 +106,8 @@ public class StringConcatCreator extends CodeRewriterPass<AppInfo> {
     }
     List<Value> argValues = invokeCustom.inValues();
     Value outValue = createStringConcatOutValue(code);
-    return StringConcat.create(appView, outValue, argTypes, argValues);
+    return StringConcat.create(
+        outValue, argValues, argTypes, Collections.nCopies(argTypes.length, null), appView);
   }
 
   private StringConcat buildStringConcatWithConstants(
@@ -114,6 +117,7 @@ public class StringConcatCreator extends CodeRewriterPass<AppInfo> {
     List<Value> argValues = new ArrayList<>(argValueTypes.length);
 
     List<DexType> argTypes = new ArrayList<>();
+    List<DexString> argConstants = new ArrayList<>();
     List<DexValue> bootstrapArgs = callSite.bootstrapArgs;
     String recipe = bootstrapArgs.get(0).asDexValueString().getValue().toString();
     int argTypesIdx = 0;
@@ -125,13 +129,12 @@ public class StringConcatCreator extends CodeRewriterPass<AppInfo> {
       char c = recipe.charAt(i);
       if (c == '\u0001') {
         if (acc.length() > 0) {
-          argValues.add(
-              StringConcat.addConstStringBeforeCurrent(
-                  appView, iterator, dexItemFactory.createString(acc.toString())));
           argTypes.add(dexItemFactory.objectType);
+          argConstants.add(dexItemFactory.createString(acc.toString()));
           acc.setLength(0);
         }
         argTypes.add(argValueTypes[argTypesIdx++]);
+        argConstants.add(null);
         argValues.add(inValues.get(inValuesIdx++));
 
       } else if (c == '\u0002') {
@@ -154,19 +157,18 @@ public class StringConcatCreator extends CodeRewriterPass<AppInfo> {
       }
     }
     if (acc.length() > 0) {
-      argValues.add(
-          StringConcat.addConstStringBeforeCurrent(
-              appView, iterator, dexItemFactory.createString(acc.toString())));
       argTypes.add(dexItemFactory.objectType);
+      argConstants.add(dexItemFactory.createString(acc.toString()));
     }
     assert inValuesIdx == inValues.size();
 
     // Can only happen with custom bytecode generators.
-    if (argValues.isEmpty()) {
+    if (argTypes.isEmpty()) {
       return null;
     }
 
     Value outValue = createStringConcatOutValue(iterator.getCode());
-    return StringConcat.create(appView, outValue, argTypes.toArray(DexType.EMPTY_ARRAY), argValues);
+    return StringConcat.create(
+        outValue, argValues, argTypes.toArray(DexType.EMPTY_ARRAY), argConstants, appView);
   }
 }

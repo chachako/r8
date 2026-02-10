@@ -39,10 +39,12 @@ import com.android.tools.r8.dex.code.DexPackedSwitchPayload;
 import com.android.tools.r8.dex.code.DexSget;
 import com.android.tools.r8.dex.code.DexThrow;
 import com.android.tools.r8.errors.Unreachable;
-import com.android.tools.r8.graph.DexTypeList;
+import com.android.tools.r8.graph.DexString;
+import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import java.util.List;
+import java.util.Objects;
 
 public class LirSizeEstimation<EV> extends LirParsedInstructionCallback<EV> implements LirOpcodes {
 
@@ -104,13 +106,15 @@ public class LirSizeEstimation<EV> extends LirParsedInstructionCallback<EV> impl
   }
 
   @Override
-  public void onStringConcat(DexTypeList argTypes, List<EV> arguments) {
+  public void onStringConcat(DexType[] argTypes, List<DexString> argConstants, List<EV> arguments) {
     // NewInstance, <init>(), one append() per-args, toString(), MoveResult
     // TODO(246658291): May want to estimate based on the assumption outlining will take place.
+    int numConstants = (int) argConstants.stream().filter(Objects::nonNull).count();
     sizeEstimate +=
         DexNewInstance.SIZE
             + DexInvokeDirect.SIZE
-            + (argTypes.size() + 1) * DexInvokeVirtual.SIZE
+            + numConstants * DexConstString.SIZE
+            + (argTypes.length + 1) * DexInvokeVirtual.SIZE
             + DexMoveResultObject.SIZE;
   }
 

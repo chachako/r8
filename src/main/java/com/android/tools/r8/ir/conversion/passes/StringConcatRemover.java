@@ -81,15 +81,14 @@ public class StringConcatRemover extends CodeRewriterPass {
         continue;
       }
       changed = true;
-
-      DexType[] argTypes = stringConcat.getArgTypes();
       List<Value> argValues = stringConcat.inValues();
+      DexType[] argTypes = stringConcat.getArgTypes();
 
       // StringConcatCreator should not create zero-arg instructions.
       assert argTypes.length != 0;
 
       if (argTypes.length == 1) {
-        Value argValue = argValues.get(0);
+        Value argValue = materializeInValues(code, iterator, stringConcat).get(0);
         TypeElement argTypeElement = argValue.getType();
         if (argTypeElement.isReferenceType() && argTypeElement.isDefinitelyNull()) {
           if (stringConcat.hasOutValue()) {
@@ -103,7 +102,7 @@ public class StringConcatRemover extends CodeRewriterPass {
             && argTypeElement.isDefinitelyNotNull()) {
           // One string literal argument -> noop.
           if (stringConcat.outValue() != null) {
-            stringConcat.outValue().replaceUsers(argValues.get(0));
+            stringConcat.outValue().replaceUsers(argValue);
           }
           iterator.removeOrReplaceByDebugLocalRead();
         } else {
@@ -119,7 +118,9 @@ public class StringConcatRemover extends CodeRewriterPass {
               affectedValues);
         }
         continue;
-      } else if (canUseConcatMethod(argValues)) {
+      } else if (argTypes.length == 2 && canUseConcatMethod(stringConcat)) {
+        argValues = materializeInValues(code, iterator, stringConcat);
+
         // Two non-null strings: String.concat()
         replaceWithInvoke(
             code,
@@ -133,11 +134,38 @@ public class StringConcatRemover extends CodeRewriterPass {
       if (canUseInvokeCustom) {
         replaceWithInvokeCustom(code, iterator, stringConcat, affectedValues);
       } else {
-        replaceWithDirectStringBuilderChain(code, iterator, affectedValues);
+        replaceWithDirectStringBuilderChain(code, iterator, stringConcat, affectedValues);
       }
     }
     affectedValues.widening(appView, code);
     return CodeRewriterResult.hasChanged(changed);
+  }
+
+  private List<Value> materializeInValues(
+      IRCode code, IRCodeInstructionListIterator iterator, StringConcat stringConcat) {
+    List<DexString> argConstants = stringConcat.getArgConstants();
+    List<Value> inValues = stringConcat.inValues();
+    List<Value> newInValues = new ArrayList<>(argConstants.size());
+    List<ConstString> newInstructions = new ArrayList<>();
+    int oldInValueIdx = 0;
+    for (int i = 0, l = argConstants.size(); i < l; ++i) {
+      DexString constValue = argConstants.get(i);
+      if (constValue != null) {
+        ConstString str =
+            ConstString.builder()
+                .setFreshOutValue(appView, code)
+                .setValue(constValue)
+                .setPosition(stringConcat)
+                .build();
+        newInstructions.add(str);
+        newInValues.add(str.outValue());
+      } else {
+        newInValues.add(inValues.get(oldInValueIdx++));
+      }
+    }
+    iterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+        newInstructions, appView.options());
+    return newInValues;
   }
 
   private void replaceWithInvokeCustom(
@@ -145,17 +173,26 @@ public class StringConcatRemover extends CodeRewriterPass {
       IRCodeInstructionListIterator iterator,
       StringConcat stringConcat,
       AffectedValues affectedValues) {
+    DexType[] argTypes = stringConcat.getArgTypes();
+    List<DexString> argConstants = stringConcat.getArgConstants();
     List<Value> inValues = stringConcat.inValues();
     List<Value> dynamicValues = new ArrayList<>();
     List<DexType> dynamicTypes = new ArrayList<>();
-    DexType[] argTypes = stringConcat.getArgTypes();
 
     StringBuilder recipe = new StringBuilder();
     boolean hasConstant = false;
-    for (int i = 0; i < inValues.size(); i++) {
-      Value value = inValues.get(i);
+    int inValueIdx = 0;
+    for (int i = 0; i < argTypes.length; i++) {
+      DexString argConstant = argConstants.get(i);
+      if (argConstant != null) {
+        hasConstant = true;
+        recipe.append(argConstant.toString());
+        continue;
+      }
+      Value value = inValues.get(inValueIdx++);
       Value aliasedValue = value.getAliasedValue();
       if (aliasedValue.isConstString()) {
+        assert false : aliasedValue; // StringConcatOptimizer should have moved to argConstants.
         hasConstant = true;
         recipe.append(aliasedValue.getDefinition().asConstString().getValue().toString());
       } else {
@@ -189,28 +226,30 @@ public class StringConcatRemover extends CodeRewriterPass {
     replaceWithInvoke(code, iterator, stringConcat, invoke, affectedValues);
   }
 
-  private boolean canUseConcatMethod(List<Value> argValues) {
-    if (argValues.size() != 2) {
+  private boolean canUseConcatMethod(StringConcat stringConcat) {
+    if (stringConcat.getArgTypes().length != 2) {
       return false;
     }
-    Value argValue0 = argValues.get(0);
-    TypeElement argTypeElement0 = argValue0.getType();
-    Value argValue1 = argValues.get(1);
-    TypeElement argTypeElement1 = argValue1.getType();
-    return argTypeElement0.isClassType(dexItemFactory.stringType)
-        && argTypeElement1.isClassType(dexItemFactory.stringType)
-        && argTypeElement0.isDefinitelyNotNull()
-        && argTypeElement1.isDefinitelyNotNull();
+    for (Value value : stringConcat.inValues()) {
+      TypeElement type = value.getType();
+      if (!type.isClassType(dexItemFactory.stringType) || type.isNullable()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private void replaceWithDirectStringBuilderChain(
-      IRCode code, IRCodeInstructionListIterator iterator, AffectedValues affectedValues) {
+      IRCode code,
+      IRCodeInstructionListIterator iterator,
+      StringConcat stringConcat,
+      AffectedValues affectedValues) {
     // TODO(b/246658291): Move the .append() calls to directly after their input values (instead of
     // all at the end) in order to minimize the number of required registers.
-    StringConcat stringConcat = iterator.previous().asStringConcat();
-    assert stringConcat != null : iterator.peekNext();
-    List<Value> inValues = stringConcat.inValues();
+    Instruction shouldBeStringConcat = iterator.previous();
+    assert shouldBeStringConcat == stringConcat : iterator.peekNext();
     DexType[] argTypes = stringConcat.getArgTypes();
+    List<Value> argValues = materializeInValues(code, iterator, stringConcat);
     List<Instruction> newInstructions = new ArrayList<>(2 + argTypes.length);
 
     Value stringBuilderValue =
@@ -222,16 +261,14 @@ public class StringConcatRemover extends CodeRewriterPass {
     newInstructions.add(newInstance);
 
     StringBuildingMethods stringBuilderMethods = dexItemFactory.stringBuilderMethods;
-    Value firstArg = inValues.get(0);
+    Value firstArg = argValues.get(0);
     InvokeDirect initInstruction;
     int firstAppendIndex;
     if (firstArg.getType().isStringType(dexItemFactory) && firstArg.isNeverNull()) {
       // Use StringBuilder.<init>(String) when the first value is a non-null string.
       initInstruction =
           new InvokeDirect(
-              stringBuilderMethods.stringConstructor,
-              null,
-              List.of(stringBuilderValue, inValues.get(0)));
+              stringBuilderMethods.stringConstructor, null, List.of(stringBuilderValue, firstArg));
       firstAppendIndex = 1;
     } else {
       initInstruction =
@@ -242,8 +279,8 @@ public class StringConcatRemover extends CodeRewriterPass {
     initInstruction.setPosition(stringConcat.getPosition());
     newInstructions.add(initInstruction);
 
-    for (int i = firstAppendIndex; i < inValues.size(); ++i) {
-      Value arg = inValues.get(i);
+    for (int i = firstAppendIndex; i < argValues.size(); ++i) {
+      Value arg = argValues.get(i);
       DexMethod appendMethod;
       if (arg.getType().isStringType(dexItemFactory)) {
         appendMethod = null;

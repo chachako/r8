@@ -50,6 +50,7 @@ public class StringConcatTest extends TestBase {
           "SIDE EFFECT",
           "10",
           "hi3",
+          "hi333",
           "truetruetruefalsetrue0truenull",
           "true-3truedtruee");
 
@@ -159,7 +160,7 @@ public class StringConcatTest extends TestBase {
             .filter(ins -> ins.isInvokeVirtual() && ins.getMethod().getName().isEqualTo("concat"))
             .count());
 
-    method = mainClass.uniqueMethodWithOriginalName("doesRemoveExplicitToString");
+    method = mainClass.uniqueMethodWithOriginalName("doesRemoveExplicitToString_singleUser");
     assertTrue(method.isPresent());
     assertEquals(
         0,
@@ -210,7 +211,8 @@ public class StringConcatTest extends TestBase {
       System.out.println(allTheParams(false, (byte) 1, '2', (short) 3, 4, 5, 6, 7, 8, "hi"));
       noOutValues();
       doesNotRemoveExplicitToString();
-      doesRemoveExplicitToString();
+      doesRemoveExplicitToString_singleUser();
+      doesRemoveExplicitToString_multiUser();
       numericAndBooleanStrings();
     }
 
@@ -321,10 +323,21 @@ public class StringConcatTest extends TestBase {
     }
 
     @NeverInline
-    public static void doesRemoveExplicitToString() {
-      String partOne = "hi".toString();
-      String partTwo = Integer.valueOf(3).toString();
+    public static void doesRemoveExplicitToString_singleUser() {
+      String partOne = "hi";
+      Integer three = 3;
+      String partTwo = three.toString();
       System.out.println(partOne + partTwo);
+    }
+
+    @NeverInline
+    public static void doesRemoveExplicitToString_multiUser() {
+      String partOne = "hi";
+      Integer three = 3;
+      String partTwo = three.toString();
+      System.out.print(partOne + partTwo);
+      System.out.print(three);
+      System.out.println(partTwo);
     }
 
     @NeverInline

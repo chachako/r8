@@ -14,7 +14,6 @@ import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.ClassTypeElement;
 import com.android.tools.r8.ir.analysis.type.Nullability;
@@ -666,8 +665,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
     Instruction newInstruction;
     ArrayList<Instruction> newInstructions = new ArrayList<>();
     if (appView.options().enableStringConcatInstruction) {
-      newInstruction =
-          createStringConcat(code, formatInvoke, parsedSpec, elementValues, newInstructions);
+      newInstruction = createStringConcat(code, formatInvoke, parsedSpec, elementValues);
     } else {
       newInstruction =
           createStringBuilderChain(
@@ -679,10 +677,12 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
               newInstructions);
     }
     instructionIterator.replaceCurrentInstruction(newInstruction, affectedValues);
-    instructionIterator.previous();
-    instructionIterator =
-        instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-            code, blockIterator, newInstructions, appView.options());
+    if (!newInstructions.isEmpty()) {
+      instructionIterator.previous();
+      instructionIterator =
+          instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+              code, blockIterator, newInstructions, appView.options());
+    }
     if (DEBUG) {
       debugLog(code, "String.format(): Optimized.");
     }
@@ -790,38 +790,29 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
       IRCode code,
       Instruction formatInstruction,
       SimpleStringFormatSpec parsedSpec,
-      List<Value> elementValues,
-      ArrayList<Instruction> newInstructions) {
+      List<Value> elementValues) {
     int numParts = parsedSpec.parts.size();
-    List<Value> argValues = new ArrayList<>(numParts);
     DexType[] argTypes = new DexType[numParts];
+    List<DexString> argConstants = new ArrayList<>();
+    List<Value> argValues = new ArrayList<>();
     Arrays.fill(argTypes, dexItemFactory.objectType);
 
     for (int i = 0; i < numParts; ++i) {
       SimpleStringFormatSpec.Part part = parsedSpec.parts.get(i);
-      DexString newConstStringValue = null;
+      DexString newArgConstant = null;
       if (part.isLiteral()) {
-        newConstStringValue = dexItemFactory.createString(part.value);
+        newArgConstant = dexItemFactory.createString(part.value);
       } else {
         Value paramValue = elementValues.get(part.placeholderIdx);
         if (part.formatChar == 'b' && isArrayElementAlwaysNull(paramValue)) {
-          newConstStringValue = dexItemFactory.falseString;
+          newArgConstant = dexItemFactory.falseString;
         } else if (paramValue == null) {
-          newConstStringValue = dexItemFactory.nullString;
+          newArgConstant = dexItemFactory.nullString;
         } else {
           argValues.add(paramValue);
         }
       }
-      if (newConstStringValue != null) {
-        ConstString constString =
-            ConstString.builder()
-                .setFreshOutValue(appView, code)
-                .setPosition(formatInstruction.getPosition())
-                .setValue(newConstStringValue)
-                .build();
-        argValues.add(constString.outValue());
-        newInstructions.add(constString);
-      }
+      argConstants.add(newArgConstant);
     }
     // Need to create a new Value to mark it as non-null.
     Value newOutValue = null;
@@ -829,8 +820,7 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
       newOutValue =
           code.createValue(TypeElement.stringClassType(appView, Nullability.definitelyNotNull()));
     }
-    return StringConcat.createNormalized(
-        appView, newOutValue, new DexTypeList(argTypes), argValues);
+    return StringConcat.createNormalized(appView, newOutValue, argTypes, argConstants, argValues);
   }
 
   private boolean isArrayElementAlwaysNull(Value value) {

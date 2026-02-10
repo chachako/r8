@@ -13,7 +13,6 @@ import com.android.tools.r8.graph.DexProto;
 import com.android.tools.r8.graph.DexReference;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.graph.DexTypeList;
 import com.android.tools.r8.graph.OriginalFieldWitness;
 import com.android.tools.r8.ir.code.IfType;
 import com.android.tools.r8.ir.code.MemberType;
@@ -24,6 +23,7 @@ import com.android.tools.r8.lightir.LirBuilder.FillArrayPayload;
 import com.android.tools.r8.lightir.LirBuilder.IntSwitchPayload;
 import com.android.tools.r8.lightir.LirBuilder.NameComputationPayload;
 import com.android.tools.r8.lightir.LirBuilder.RecordFieldValuesPayload;
+import com.android.tools.r8.lightir.LirBuilder.StringConcatPayload;
 import com.android.tools.r8.lightir.LirBuilder.StringSwitchPayload;
 import com.android.tools.r8.naming.dexitembasedstring.NameComputationInfo;
 import com.android.tools.r8.utils.IntUtils;
@@ -471,7 +471,7 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
     onInstruction();
   }
 
-  public void onStringConcat(DexTypeList argTypes, List<EV> arguments) {
+  public void onStringConcat(DexType[] argTypes, List<DexString> argConstants, List<EV> arguments) {
     onInstruction();
   }
 
@@ -1404,9 +1404,10 @@ public abstract class LirParsedInstructionCallback<EV> implements LirInstruction
         }
       case LirOpcodes.STRINGCONCAT:
         {
-          DexTypeList argTypes = (DexTypeList) getConstantItem(view.getNextConstantOperand());
+          StringConcatPayload payload =
+              (StringConcatPayload) getConstantItem(view.getNextConstantOperand());
           List<EV> arguments = getInvokeInstructionArguments(view);
-          onStringConcat(argTypes, arguments);
+          onStringConcat(payload.argTypes, payload.argConstants, arguments);
           return;
         }
       default:
