@@ -36,6 +36,14 @@ def get_names_that_matches(zip_file, predicate):
 
 
 def remove_files_from_zip(files, zip_file):
-    assert os.path.exists(zip_file)
-    cmd = ['zip', '-d', zip_file] + files
-    subprocess.run(cmd)
+    with utils.TempDir() as temp:
+        zip_out_name = os.path.join(temp, 'temp.zip')
+        with zipfile.ZipFile (zip_file, 'r') as zip_in:
+            with zipfile.ZipFile (zip_out_name, 'w', zip_in.compression) as zip_out:
+                for item in zip_in.infolist():
+                    buffer = zip_in.read(item.filename)
+                    if (not item.filename in files):
+                        zip_out.writestr(item, buffer)
+                    else:
+                        print("Removing " + item.filename)
+        shutil.move(zip_out_name, zip_file)
