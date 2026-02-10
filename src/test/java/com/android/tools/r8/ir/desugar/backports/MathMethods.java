@@ -4,8 +4,6 @@
 
 package com.android.tools.r8.ir.desugar.backports;
 
-import com.android.tools.r8.ir.desugar.backports.BackportMethodsStub.MathStub;
-
 public final class MathMethods {
 
   public static int addExactInt(int x, int y) {
@@ -288,14 +286,28 @@ public final class MathMethods {
     if (x == Integer.MIN_VALUE && y == -1) {
       throw new ArithmeticException("integer overflow");
     }
-    return MathStub.ceilDiv(x, y);
+    // Inlined: return Math.ceilDiv(x, y);
+    int div = x / y;
+    int rem = x % y;
+    boolean sameSign = (x ^ y) >= 0;
+    if (sameSign && (rem != 0)) {
+      return div + 1;
+    }
+    return div;
   }
 
   public static long ceilDivExactLongLong(long x, long y) {
     if (x == Long.MIN_VALUE && y == -1) {
       throw new ArithmeticException("long overflow");
     }
-    return MathStub.ceilDiv(x, y);
+    // Inlined: return Math.ceilDiv(x, y);
+    long div = x / y;
+    long rem = x % y;
+    boolean sameSign = (x ^ y) >= 0;
+    if (sameSign && (rem != 0)) {
+      return div + 1;
+    }
+    return div;
   }
 
   public static int ceilDivIntInt(int x, int y) {
@@ -309,7 +321,14 @@ public final class MathMethods {
   }
 
   public static long ceilDivLongInt(long x, int y) {
-    return MathStub.ceilDiv(x, (long) y);
+    // Inlined: return Math.ceilDiv(x, (long) y);
+    long div = x / (long) y;
+    long rem = x % (long) y;
+    boolean sameSign = (x ^ (long) y) >= 0;
+    if (sameSign && (rem != 0)) {
+      return div + 1;
+    }
+    return div;
   }
 
   public static long ceilDivLongLong(long x, long y) {
@@ -332,7 +351,10 @@ public final class MathMethods {
   }
 
   public static int ceilModLongInt(long x, int y) {
-    return (int) MathStub.ceilMod(x, (long) y);
+    // Inlined: return (int) Math.ceilMod(x, (long) y);
+    long rem = x % y;
+    boolean sameSign = (x ^ y) >= 0;
+    return (int) ((sameSign && rem != 0) ? rem - y : rem);
   }
 
   public static long ceilModLongLong(long x, long y) {
@@ -362,18 +384,43 @@ public final class MathMethods {
     if (x == Integer.MIN_VALUE && y == -1) {
       throw new ArithmeticException("integer overflow");
     }
-    return Math.floorDiv(x, y);
+    // Inlined: return Math.floorDiv(x,y);
+    int div = x / y;
+    int rem = x - y * div;
+    if (rem == 0) {
+      return div;
+    }
+    int signum = 1 | ((x ^ y) >> (Integer.SIZE - 1));
+    return signum < 0 ? div - 1 : div;
   }
 
   public static long floorDivExactLong(long x, long y) {
     if (x == Long.MIN_VALUE && y == -1) {
       throw new ArithmeticException("long overflow");
     }
-    return Math.floorDiv(x, y);
+    // Inlined: return Math.floorDiv(x,y);
+    long div = x / y;
+    long rem = x - y * div;
+    if (rem == 0L) {
+      return div;
+    }
+    long signum = 1L | ((x ^ y) >> (Long.SIZE - 1));
+    return signum < 0L ? div - 1L : div;
   }
 
   public static long unsignedMultiplyHigh(long x, long y) {
-    long result = MathStub.multiplyHigh(x, y);
+    long x1 = x >> 32;
+    long x2 = x & 0xFFFFFFFFL;
+    long y1 = y >> 32;
+    long y2 = y & 0xFFFFFFFFL;
+
+    long z2 = x2 * y2;
+    long t = x1 * y2 + (z2 >>> 32);
+    long z1 = t & 0xFFFFFFFFL;
+    long z0 = t >> 32;
+    z1 += x2 * y1;
+
+    long result = x1 * y1 + z0 + (z1 >> 32);
     if (x < 0) {
       result += y;
     }
@@ -381,115 +428,5 @@ public final class MathMethods {
       result += x;
     }
     return result;
-  }
-
-  public static int unsignedMultiplyExactIntInt(int x, int y) {
-    long r = (x & 0xFFFF_FFFFL) * (y & 0xFFFF_FFFFL);
-    if (r >>> 32 != 0) {
-      throw new ArithmeticException("unsigned integer overflow");
-    }
-    return (int) r;
-  }
-
-  public static long unsignedMultiplyExactLongInt(long x, int y) {
-    return MathStub.unsignedMultiplyExact(x, y & 0xFFFF_FFFFL);
-  }
-
-  public static long unsignedMultiplyExactLongLong(long x, long y) {
-    long l = x * y;
-    long h = MathStub.unsignedMultiplyHigh(x, y);
-    if (h == 0) {
-      return l;
-    }
-    throw new ArithmeticException("unsigned long overflow");
-  }
-
-  public static int unsignedPowExactInt(int x, int y) {
-    int result = x;
-    if (y < 0) {
-      throw new ArithmeticException("negative exponent");
-    }
-    if (y == 0) {
-      return 1;
-    }
-
-    long mask = 0xFFFF_FFFFL;
-
-    int p = 1;
-    while (y > 1) {
-      if ((y & 1) != 0) {
-        p *= result;
-      }
-      result = MathStub.unsignedMultiplyExact(result, result);
-      y >>>= 1;
-    }
-
-    return MathStub.unsignedMultiplyExact(p, result);
-  }
-
-  public static long unsignedPowExactLong(long x, int n) {
-    long result = x;
-    if (n < 0) {
-      throw new ArithmeticException("negative exponent");
-    }
-    if (n == 0) {
-      return 1;
-    }
-
-    int intShift = 32;
-    long mask32 = 0xFFFFFFFFL;
-
-    long p = 1;
-    while (n > 1) {
-      if ((n & 1) != 0) {
-        p *= result;
-      }
-      result = MathStub.unsignedMultiplyExact(result, result);
-      n >>>= 1;
-    }
-
-    return MathStub.unsignedMultiplyExact(p, result);
-  }
-
-  public static int powExactInt(int x, int y) {
-    int result = x;
-    int operand = y;
-    if (operand < 0) {
-      throw new ArithmeticException("negative exponent");
-    }
-    if (operand == 0) {
-      return 1;
-    }
-
-    int p = 1;
-    while (operand > 1) {
-      if ((operand & 1) != 0) {
-        p *= result;
-      }
-      result = Math.multiplyExact(result, result);
-      operand >>>= 1;
-    }
-    return Math.multiplyExact(p, result);
-  }
-
-  public static long powExactLong(long x, int y) {
-    long result = x;
-    int operand = y;
-    if (operand < 0) {
-      throw new ArithmeticException("negative exponent");
-    }
-    if (operand == 0) {
-      return 1;
-    }
-
-    long p = 1;
-    while (operand > 1) {
-      if ((operand & 0b1) != 0) {
-        p *= result;
-      }
-      result = Math.multiplyExact(result, result);
-      operand >>>= 1;
-    }
-    return Math.multiplyExact(p, result);
   }
 }

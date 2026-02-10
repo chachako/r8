@@ -40,47 +40,4 @@ public class BackportMethodsStub {
       return 0L;
     }
   }
-
-  static class MathStub {
-
-    public static long ceilMod(long x, int y) {
-      return 0L;
-    }
-
-    public static long ceilMod(long x, long y) {
-      return 0L;
-    }
-
-    public static int ceilDiv(int x, int y) {
-      return 0;
-    }
-
-    public static long ceilDiv(long x, int y) {
-      return 0L;
-    }
-
-    public static long ceilDiv(long x, long y) {
-      return 0L;
-    }
-
-    public static int unsignedMultiplyExact(int x, int y) {
-      return 0;
-    }
-
-    public static long unsignedMultiplyExact(long x, int y) {
-      return 0L;
-    }
-
-    public static long unsignedMultiplyExact(long x, long y) {
-      return 0L;
-    }
-
-    public static long unsignedMultiplyHigh(long x, long y) {
-      return 0L;
-    }
-
-    public static long multiplyHigh(long x, long y) {
-      return 0L;
-    }
-  }
 }
