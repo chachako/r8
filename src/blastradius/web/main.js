@@ -7,29 +7,45 @@ let filteredRules = [];
 let filteredFiles = [];
 let currentView = 'rules'; // 'rules' or 'files'
 let currentSelectedRule = null;
-let currentRulePagination = { classes: 100, methods: 100, fields: 100 };
+let currentRulePagination = {
+  classes: 100,
+  methods: 100,
+  fields: 100
+};
 
 // Lookup maps
 let tables = {
-    rules: new Map(),
-    classes: new Map(),
-    fields: new Map(),
-    methods: new Map(),
-    types: new Map(),
-    protos: new Map(),
-    typeLists: new Map(),
-    origins: new Map(),
-    jarOrigins: new Map(),
-    keepConstraints: new Map(),
-    files: new Map(), // filename -> { rules: [], totalRadius: 0, classes: 0, methods: 0, fields: 0 }
-    methodRefs: new Map(),
-    fieldRefs: new Map()
+  rules: new Map(),
+  classes: new Map(),
+  fields: new Map(),
+  methods: new Map(),
+  types: new Map(),
+  protos: new Map(),
+  typeLists: new Map(),
+  origins: new Map(),
+  jarOrigins: new Map(),
+  keepConstraints: new Map(),
+  files: new Map(), // filename -> { rules: [], totalRadius: 0, classes: 0, methods: 0, fields: 0 }
+  methodRefs: new Map(),
+  fieldRefs: new Map()
 };
 
 let constraintStats = {
-    DONT_OBFUSCATE: { classes: new Set(), methods: new Set(), fields: new Set() },
-    DONT_OPTIMIZE: { classes: new Set(), methods: new Set(), fields: new Set() },
-    DONT_SHRINK: { classes: new Set(), methods: new Set(), fields: new Set() }
+  DONT_OBFUSCATE: {
+    classes: new Set(),
+    methods: new Set(),
+    fields: new Set()
+  },
+  DONT_OPTIMIZE: {
+    classes: new Set(),
+    methods: new Set(),
+    fields: new Set()
+  },
+  DONT_SHRINK: {
+    classes: new Set(),
+    methods: new Set(),
+    fields: new Set()
+  }
 };
 
 const dropZone = document.getElementById('drop-zone');
@@ -41,278 +57,278 @@ const statsOverview = document.getElementById('stats-overview');
 
 // Load Protobuf definition
 protobuf.load("blastradius.proto", function(err, root) {
-    if (err) {
-        console.error("Error loading proto:", err);
-        alert("Failed to load blastradius.proto.");
-        return;
-    }
-    protobufRoot = root;
+  if (err) {
+    console.error("Error loading proto:", err);
+    alert("Failed to load blastradius.proto.");
+    return;
+  }
+  protobufRoot = root;
 });
 
 dropZone.addEventListener('click', () => fileInput.click());
 
 dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('hover');
+  e.preventDefault();
+  dropZone.classList.add('hover');
 });
 
 dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('hover');
+  dropZone.classList.remove('hover');
 });
 
 dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('hover');
-    if (e.dataTransfer.files.length > 0) {
-        handleFile(e.dataTransfer.files[0]);
-    }
+  e.preventDefault();
+  dropZone.classList.remove('hover');
+  if (e.dataTransfer.files.length > 0) {
+    handleFile(e.dataTransfer.files[0]);
+  }
 });
 
 fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        handleFile(e.target.files[0]);
-    }
+  if (e.target.files.length > 0) {
+    handleFile(e.target.files[0]);
+  }
 });
 
 searchInput.addEventListener('input', (e) => {
-    if (currentView === 'rules') {
-        filterRules(e.target.value);
-    } else if (currentView === 'unused') {
-        filterUnusedRules(e.target.value);
-    } else if (currentView === 'redundant') {
-        filterRedundantRules(e.target.value);
-    } else {
-        filterFiles(e.target.value);
-    }
+  if (currentView === 'rules') {
+    filterRules(e.target.value);
+  } else if (currentView === 'unused') {
+    filterUnusedRules(e.target.value);
+  } else if (currentView === 'redundant') {
+    filterRedundantRules(e.target.value);
+  } else {
+    filterFiles(e.target.value);
+  }
 });
 
 function handleFile(file) {
-    if (!protobufRoot) {
-        alert("Protobuf definition not loaded yet.");
-        return;
-    }
+  if (!protobufRoot) {
+    alert("Protobuf definition not loaded yet.");
+    return;
+  }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const arrayBuffer = e.target.result;
-        try {
-            const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
-            const buffer = new Uint8Array(arrayBuffer);
-            const message = BlastRadiusContainer.decode(buffer);
-            containerData = BlastRadiusContainer.toObject(message, {
-                longs: String,
-                enums: String,
-                bytes: String,
-                defaults: true,
-                arrays: true,
-                objects: true,
-                oneofs: true
-            });
-            processData();
-        } catch (err) {
-            console.error("Error decoding proto:", err);
-            alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
-        }
-    };
-    reader.readAsArrayBuffer(file);
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const arrayBuffer = e.target.result;
+    try {
+      const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+      const buffer = new Uint8Array(arrayBuffer);
+      const message = BlastRadiusContainer.decode(buffer);
+      containerData = BlastRadiusContainer.toObject(message, {
+        longs: String,
+        enums: String,
+        bytes: String,
+        defaults: true,
+        arrays: true,
+        objects: true,
+        oneofs: true
+      });
+      processData();
+    } catch (err) {
+      console.error("Error decoding proto:", err);
+      alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 function processData() {
-    // Clear previous data
-    Object.values(tables).forEach(map => map instanceof Map ? map.clear() : null);
-    tables.files = new Map();
+  // Clear previous data
+  Object.values(tables).forEach(map => map instanceof Map ? map.clear() : null);
+  tables.files = new Map();
 
-    // Reset constraint stats
-    Object.values(constraintStats).forEach(s => {
-        s.classes.clear();
-        s.methods.clear();
-        s.fields.clear();
+  // Reset constraint stats
+  Object.values(constraintStats).forEach(s => {
+    s.classes.clear();
+    s.methods.clear();
+    s.fields.clear();
+  });
+
+  // Build lookup tables for origins
+  if (containerData.classFileInJarOriginTable)
+    containerData.classFileInJarOriginTable.forEach(o => tables.jarOrigins.set(o.id, o));
+  if (containerData.fileOriginTable)
+    containerData.fileOriginTable.forEach(o => tables.origins.set(o.id, o));
+
+  // Build lookup table for references.
+  if (containerData.fieldReferenceTable)
+    containerData.fieldReferenceTable.forEach(f => tables.fieldRefs.set(f.id, f));
+  if (containerData.methodReferenceTable)
+    containerData.methodReferenceTable.forEach(m => tables.methodRefs.set(m.id, m));
+  if (containerData.protoReferenceTable)
+    containerData.protoReferenceTable.forEach(p => tables.protos.set(p.id, p));
+  if (containerData.typeReferenceTable)
+    containerData.typeReferenceTable.forEach(t => tables.types.set(t.id, t));
+  if (containerData.typeReferenceListTable)
+    containerData.typeReferenceListTable.forEach(tl => tables.typeLists.set(tl.id, tl));
+
+  // Build lookup tables for kept items
+  if (containerData.keptClassInfoTable)
+    containerData.keptClassInfoTable.forEach(c => tables.classes.set(c.id, c));
+  if (containerData.keptFieldInfoTable)
+    containerData.keptFieldInfoTable.forEach(f => tables.fields.set(f.id, f));
+  if (containerData.keptMethodInfoTable)
+    containerData.keptMethodInfoTable.forEach(m => tables.methods.set(m.id, m));
+
+  if (containerData.keepConstraintsTable)
+    containerData.keepConstraintsTable.forEach(c => tables.keepConstraints.set(c.id, c));
+
+  if (containerData.keepRuleBlastRadiusTable) {
+    containerData.keepRuleBlastRadiusTable.forEach(r => {
+      tables.rules.set(r.id, r);
+      r.totalRadius = (r.blastRadius.classBlastRadius?.length || 0) +
+        (r.blastRadius.fieldBlastRadius?.length || 0) +
+        (r.blastRadius.methodBlastRadius?.length || 0);
+
+      // Populate constraint stats
+      const constraints = tables.keepConstraints.get(r.constraintsId);
+      if (constraints && constraints.constraints) {
+        constraints.constraints.forEach(c => {
+          const stats = constraintStats[c];
+          if (stats) {
+            r.blastRadius.classBlastRadius?.forEach(id => stats.classes.add(id));
+            r.blastRadius.methodBlastRadius?.forEach(id => stats.methods.add(id));
+            r.blastRadius.fieldBlastRadius?.forEach(id => stats.fields.add(id));
+          }
+        });
+      }
+
+      // Group by file
+      const fileName = getFileName(r.origin);
+      if (!tables.files.has(fileName)) {
+        tables.files.set(fileName, {
+          name: fileName,
+          rules: [],
+          classIds: new Set(),
+          methodIds: new Set(),
+          fieldIds: new Set()
+        });
+      }
+      const fileData = tables.files.get(fileName);
+      fileData.rules.push(r);
+      r.blastRadius.classBlastRadius?.forEach(id => fileData.classIds.add(id));
+      r.blastRadius.methodBlastRadius?.forEach(id => fileData.methodIds.add(id));
+      r.blastRadius.fieldBlastRadius?.forEach(id => fileData.fieldIds.add(id));
     });
 
-    // Build lookup tables for origins
-    if (containerData.classFileInJarOriginTable)
-        containerData.classFileInJarOriginTable.forEach(o => tables.jarOrigins.set(o.id, o));
-    if (containerData.fileOriginTable)
-        containerData.fileOriginTable.forEach(o => tables.origins.set(o.id, o));
+    // Compute final counts for files
+    tables.files.forEach(fileData => {
+      fileData.classes = fileData.classIds.size;
+      fileData.methods = fileData.methodIds.size;
+      fileData.fields = fileData.fieldIds.size;
+      fileData.totalRadius = fileData.classes + fileData.methods + fileData.fields;
+    });
+  }
 
-    // Build lookup table for references.
-    if (containerData.fieldReferenceTable)
-        containerData.fieldReferenceTable.forEach(f => tables.fieldRefs.set(f.id, f));
-    if (containerData.methodReferenceTable)
-        containerData.methodReferenceTable.forEach(m => tables.methodRefs.set(m.id, m));
-    if (containerData.protoReferenceTable)
-        containerData.protoReferenceTable.forEach(p => tables.protos.set(p.id, p));
-    if (containerData.typeReferenceTable)
-        containerData.typeReferenceTable.forEach(t => tables.types.set(t.id, t));
-    if (containerData.typeReferenceListTable)
-        containerData.typeReferenceListTable.forEach(tl => tables.typeLists.set(tl.id, tl));
+  renderStats();
+  if (currentView === 'rules') {
+    filterRules("");
+  } else if (currentView === 'unused') {
+    filterUnusedRules("");
+  } else if (currentView === 'redundant') {
+    filterRedundantRules("");
+  } else {
+    filterFiles("");
+  }
 
-    // Build lookup tables for kept items
-    if (containerData.keptClassInfoTable)
-        containerData.keptClassInfoTable.forEach(c => tables.classes.set(c.id, c));
-    if (containerData.keptFieldInfoTable)
-        containerData.keptFieldInfoTable.forEach(f => tables.fields.set(f.id, f));
-    if (containerData.keptMethodInfoTable)
-        containerData.keptMethodInfoTable.forEach(m => tables.methods.set(m.id, m));
-
-    if (containerData.keepConstraintsTable)
-        containerData.keepConstraintsTable.forEach(c => tables.keepConstraints.set(c.id, c));
-
-    if (containerData.keepRuleBlastRadiusTable) {
-        containerData.keepRuleBlastRadiusTable.forEach(r => {
-            tables.rules.set(r.id, r);
-            r.totalRadius = (r.blastRadius.classBlastRadius?.length || 0) +
-                           (r.blastRadius.fieldBlastRadius?.length || 0) +
-                           (r.blastRadius.methodBlastRadius?.length || 0);
-
-            // Populate constraint stats
-            const constraints = tables.keepConstraints.get(r.constraintsId);
-            if (constraints && constraints.constraints) {
-                constraints.constraints.forEach(c => {
-                    const stats = constraintStats[c];
-                    if (stats) {
-                        r.blastRadius.classBlastRadius?.forEach(id => stats.classes.add(id));
-                        r.blastRadius.methodBlastRadius?.forEach(id => stats.methods.add(id));
-                        r.blastRadius.fieldBlastRadius?.forEach(id => stats.fields.add(id));
-                    }
-                });
-            }
-
-            // Group by file
-            const fileName = getFileName(r.origin);
-            if (!tables.files.has(fileName)) {
-                tables.files.set(fileName, {
-                    name: fileName,
-                    rules: [],
-                    classIds: new Set(),
-                    methodIds: new Set(),
-                    fieldIds: new Set()
-                });
-            }
-            const fileData = tables.files.get(fileName);
-            fileData.rules.push(r);
-            r.blastRadius.classBlastRadius?.forEach(id => fileData.classIds.add(id));
-            r.blastRadius.methodBlastRadius?.forEach(id => fileData.methodIds.add(id));
-            r.blastRadius.fieldBlastRadius?.forEach(id => fileData.fieldIds.add(id));
-        });
-
-        // Compute final counts for files
-        tables.files.forEach(fileData => {
-            fileData.classes = fileData.classIds.size;
-            fileData.methods = fileData.methodIds.size;
-            fileData.fields = fileData.fieldIds.size;
-            fileData.totalRadius = fileData.classes + fileData.methods + fileData.fields;
-        });
-    }
-
-    renderStats();
-    if (currentView === 'rules') {
-        filterRules("");
-    } else if (currentView === 'unused') {
-        filterUnusedRules("");
-    } else if (currentView === 'redundant') {
-        filterRedundantRules("");
-    } else {
-        filterFiles("");
-    }
-
-    dropZone.classList.add('hidden');
-    statsOverview.classList.remove('hidden');
-    document.querySelector('.search-box').classList.remove('hidden');
-    document.getElementById('welcome-message').classList.add('hidden');
+  dropZone.classList.add('hidden');
+  statsOverview.classList.remove('hidden');
+  document.querySelector('.search-box').classList.remove('hidden');
+  document.getElementById('welcome-message').classList.add('hidden');
 }
 
 function renderStats() {
-    const rules = containerData.keepRuleBlastRadiusTable || [];
-    const unusedCount = rules.filter(r => r.totalRadius === 0).length;
-    const redundantCount = rules.filter(r => r.blastRadius.subsumedBy && r.blastRadius.subsumedBy.length > 0).length;
+  const rules = containerData.keepRuleBlastRadiusTable || [];
+  const unusedCount = rules.filter(r => r.totalRadius === 0).length;
+  const redundantCount = rules.filter(r => r.blastRadius.subsumedBy && r.blastRadius.subsumedBy.length > 0).length;
 
-    const format = (val) => (val || 0).toLocaleString();
+  const format = (val) => (val || 0).toLocaleString();
 
-    document.getElementById('stat-rules').textContent = format(rules.length);
+  document.getElementById('stat-rules').textContent = format(rules.length);
 
-    // Constraint-specific counts
-    document.getElementById('stat-no-obfuscation-classes').textContent = format(constraintStats.DONT_OBFUSCATE.classes.size);
-    document.getElementById('stat-no-obfuscation-methods').textContent = format(constraintStats.DONT_OBFUSCATE.methods.size);
-    document.getElementById('stat-no-obfuscation-fields').textContent = format(constraintStats.DONT_OBFUSCATE.fields.size);
+  // Constraint-specific counts
+  document.getElementById('stat-no-obfuscation-classes').textContent = format(constraintStats.DONT_OBFUSCATE.classes.size);
+  document.getElementById('stat-no-obfuscation-methods').textContent = format(constraintStats.DONT_OBFUSCATE.methods.size);
+  document.getElementById('stat-no-obfuscation-fields').textContent = format(constraintStats.DONT_OBFUSCATE.fields.size);
 
-    document.getElementById('stat-no-optimization-classes').textContent = format(constraintStats.DONT_OPTIMIZE.classes.size);
-    document.getElementById('stat-no-optimization-methods').textContent = format(constraintStats.DONT_OPTIMIZE.methods.size);
-    document.getElementById('stat-no-optimization-fields').textContent = format(constraintStats.DONT_OPTIMIZE.fields.size);
+  document.getElementById('stat-no-optimization-classes').textContent = format(constraintStats.DONT_OPTIMIZE.classes.size);
+  document.getElementById('stat-no-optimization-methods').textContent = format(constraintStats.DONT_OPTIMIZE.methods.size);
+  document.getElementById('stat-no-optimization-fields').textContent = format(constraintStats.DONT_OPTIMIZE.fields.size);
 
-    document.getElementById('stat-no-shrinking-classes').textContent = format(constraintStats.DONT_SHRINK.classes.size);
-    document.getElementById('stat-no-shrinking-methods').textContent = format(constraintStats.DONT_SHRINK.methods.size);
-    document.getElementById('stat-no-shrinking-fields').textContent = format(constraintStats.DONT_SHRINK.fields.size);
+  document.getElementById('stat-no-shrinking-classes').textContent = format(constraintStats.DONT_SHRINK.classes.size);
+  document.getElementById('stat-no-shrinking-methods').textContent = format(constraintStats.DONT_SHRINK.methods.size);
+  document.getElementById('stat-no-shrinking-fields').textContent = format(constraintStats.DONT_SHRINK.fields.size);
 
-    if (containerData.buildInfo) {
-        const info = containerData.buildInfo;
-        // Reachable counts
-        document.getElementById('stat-reachable-classes').textContent = format(info.liveClassCount);
-        document.getElementById('stat-reachable-methods').textContent = format(info.liveMethodCount);
-        document.getElementById('stat-reachable-fields').textContent = format(info.liveFieldCount);
-        // Total counts
-        document.getElementById('stat-total-classes').textContent = format(info.classCount);
-        document.getElementById('stat-total-methods').textContent = format(info.methodCount);
-        document.getElementById('stat-total-fields').textContent = format(info.fieldCount);
-    } else {
-        // Fallback if buildInfo is missing
-        document.getElementById('stat-reachable-classes').textContent = "-";
-        document.getElementById('stat-reachable-methods').textContent = "-";
-        document.getElementById('stat-reachable-fields').textContent = "-";
-        document.getElementById('stat-total-classes').textContent = "-";
-        document.getElementById('stat-total-methods').textContent = "-";
-        document.getElementById('stat-total-fields').textContent = "-";
-    }
+  if (containerData.buildInfo) {
+    const info = containerData.buildInfo;
+    // Reachable counts
+    document.getElementById('stat-reachable-classes').textContent = format(info.liveClassCount);
+    document.getElementById('stat-reachable-methods').textContent = format(info.liveMethodCount);
+    document.getElementById('stat-reachable-fields').textContent = format(info.liveFieldCount);
+    // Total counts
+    document.getElementById('stat-total-classes').textContent = format(info.classCount);
+    document.getElementById('stat-total-methods').textContent = format(info.methodCount);
+    document.getElementById('stat-total-fields').textContent = format(info.fieldCount);
+  } else {
+    // Fallback if buildInfo is missing
+    document.getElementById('stat-reachable-classes').textContent = "-";
+    document.getElementById('stat-reachable-methods').textContent = "-";
+    document.getElementById('stat-reachable-fields').textContent = "-";
+    document.getElementById('stat-total-classes').textContent = "-";
+    document.getElementById('stat-total-methods').textContent = "-";
+    document.getElementById('stat-total-fields').textContent = "-";
+  }
 
-    const unusedBadge = document.getElementById('unused-count');
-    unusedBadge.textContent = unusedCount;
-    unusedBadge.classList.remove('hidden');
+  const unusedBadge = document.getElementById('unused-count');
+  unusedBadge.textContent = unusedCount;
+  unusedBadge.classList.remove('hidden');
 
-    const redundantBadge = document.getElementById('redundant-count');
-    redundantBadge.textContent = redundantCount;
-    redundantBadge.classList.remove('hidden');
+  const redundantBadge = document.getElementById('redundant-count');
+  redundantBadge.textContent = redundantCount;
+  redundantBadge.classList.remove('hidden');
 }
 
 function filterRules(query) {
-    const rules = containerData.keepRuleBlastRadiusTable || [];
-    const lowerQuery = query.toLowerCase();
+  const rules = containerData.keepRuleBlastRadiusTable || [];
+  const lowerQuery = query.toLowerCase();
 
-    filteredRules = rules.filter(r =>
-        r.source.toLowerCase().includes(lowerQuery)
-    );
+  filteredRules = rules.filter(r =>
+    r.source.toLowerCase().includes(lowerQuery)
+  );
 
-    filteredRules.sort((a, b) => b.totalRadius - a.totalRadius);
-    renderRuleList();
+  filteredRules.sort((a, b) => b.totalRadius - a.totalRadius);
+  renderRuleList();
 }
 
 function filterFiles(query) {
-    const files = Array.from(tables.files.values());
-    const lowerQuery = query.toLowerCase();
+  const files = Array.from(tables.files.values());
+  const lowerQuery = query.toLowerCase();
 
-    filteredFiles = files.filter(f =>
-        f.name.toLowerCase().includes(lowerQuery)
-    );
+  filteredFiles = files.filter(f =>
+    f.name.toLowerCase().includes(lowerQuery)
+  );
 
-    filteredFiles.sort((a, b) => b.totalRadius - a.totalRadius);
-    renderFileList();
+  filteredFiles.sort((a, b) => b.totalRadius - a.totalRadius);
+  renderFileList();
 }
 
 function renderRuleList() {
-    ruleList.innerHTML = '';
-    filteredRules.forEach(rule => {
-        const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
-        let sameOriginSubsumption = false;
-        if (isRedundant) {
-            const ruleOriginFile = getFileName(rule.origin);
-            sameOriginSubsumption = rule.blastRadius.subsumedBy.some(id => {
-                const subsumer = tables.rules.get(id);
-                return subsumer && getFileName(subsumer.origin) === ruleOriginFile;
-            });
-        }
+  ruleList.innerHTML = '';
+  filteredRules.forEach(rule => {
+    const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
+    let sameOriginSubsumption = false;
+    if (isRedundant) {
+      const ruleOriginFile = getFileName(rule.origin);
+      sameOriginSubsumption = rule.blastRadius.subsumedBy.some(id => {
+        const subsumer = tables.rules.get(id);
+        return subsumer && getFileName(subsumer.origin) === ruleOriginFile;
+      });
+    }
 
-        const div = document.createElement('div');
-        div.className = 'rule-item';
-        div.innerHTML = `
+    const div = document.createElement('div');
+    div.className = 'rule-item';
+    div.innerHTML = `
             <div style="display: flex; align-items: flex-start; gap: 8px;">
                 ${sameOriginSubsumption ? '<span title="Subsumed by rule in same file" style="color: #ff9800; cursor: help;">⚠️</span>' : ''}
                 <div style="flex: 1;">
@@ -326,47 +342,51 @@ function renderRuleList() {
                 </div>
             </div>
         `;
-        div.onclick = () => selectRule(rule, div);
-        ruleList.appendChild(div);
-    });
+    div.onclick = () => selectRule(rule, div);
+    ruleList.appendChild(div);
+  });
 }
 
 function renderFileList() {
-    ruleList.innerHTML = '';
-    filteredFiles.forEach(file => {
-        const div = document.createElement('div');
-        div.className = 'rule-item';
-        div.innerHTML = `
+  ruleList.innerHTML = '';
+  filteredFiles.forEach(file => {
+    const div = document.createElement('div');
+    div.className = 'rule-item';
+    div.innerHTML = `
             <span class="rule-name">${escapeHtml(file.name)}</span>
             <div class="rule-stats">
                 Total radius: ${file.totalRadius} across ${file.rules.length} rules
                 <br>(${file.classes} classes, ${file.methods} methods, ${file.fields} fields)
             </div>
         `;
-        div.onclick = () => selectFile(file, div);
-        ruleList.appendChild(div);
-    });
+    div.onclick = () => selectFile(file, div);
+    ruleList.appendChild(div);
+  });
 }
 
 function selectRule(rule, element) {
-    document.querySelectorAll('.rule-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
-    currentSelectedRule = rule;
-    currentRulePagination = { classes: 100, methods: 100, fields: 100 };
-    renderRuleDetail(rule);
+  document.querySelectorAll('.rule-item').forEach(el => el.classList.remove('active'));
+  element.classList.add('active');
+  currentSelectedRule = rule;
+  currentRulePagination = {
+    classes: 100,
+    methods: 100,
+    fields: 100
+  };
+  renderRuleDetail(rule);
 }
 
 function selectFile(file, element) {
-    document.querySelectorAll('.rule-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
-    renderFileDetail(file);
+  document.querySelectorAll('.rule-item').forEach(el => el.classList.remove('active'));
+  element.classList.add('active');
+  renderFileDetail(file);
 }
 
 function renderRuleDetail(rule) {
-    const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
-    const ruleOriginFile = getFileName(rule.origin);
+  const isRedundant = rule.blastRadius.subsumedBy && rule.blastRadius.subsumedBy.length > 0;
+  const ruleOriginFile = getFileName(rule.origin);
 
-    let html = `
+  let html = `
         <div class="card">
             <h2>Keep Rule Details</h2>
             ${isRedundant ? rule.blastRadius.subsumedBy.map(id => {
@@ -390,12 +410,12 @@ function renderRuleDetail(rule) {
         </div>
     `;
 
-    html += renderBlastRadiusItems(rule.blastRadius);
-    mainContent.innerHTML = html;
+  html += renderBlastRadiusItems(rule.blastRadius);
+  mainContent.innerHTML = html;
 }
 
 function renderFileDetail(file) {
-    let html = `
+  let html = `
         <div class="card">
             <h2>File Details</h2>
             <p><strong>File:</strong> ${escapeHtml(file.name)}</p>
@@ -413,18 +433,18 @@ function renderFileDetail(file) {
             </div>
         </div>
     `;
-    mainContent.innerHTML = html;
+  mainContent.innerHTML = html;
 }
 
 function renderBlastRadiusItems(blastRadius) {
-    let html = "";
+  let html = "";
 
-    const renderSection = (title, items, type, formatter, badgeClass, limit) => {
-        if (!items || items.length === 0) return "";
-        const visibleItems = items.slice(0, limit);
-        const hasMore = items.length > limit;
+  const renderSection = (title, items, type, formatter, badgeClass, limit) => {
+    if (!items || items.length === 0) return "";
+    const visibleItems = items.slice(0, limit);
+    const hasMore = items.length > limit;
 
-        return `
+    return `
             <div class="card">
                 <div class="section-title">${title} <span class="badge ${badgeClass}">${items.length}</span></div>
                 <ul class="item-list">
@@ -439,156 +459,175 @@ function renderBlastRadiusItems(blastRadius) {
                 ${hasMore ? `<button class="show-more-btn" onclick="showMore('${type}')">Show more (${items.length - limit} remaining)</button>` : ''}
             </div>
         `;
-    };
+  };
 
-    html += renderSection("Matched Classes", blastRadius.classBlastRadius, 'class', formatTypeName, 'badge-green', currentRulePagination.classes);
-    html += renderSection("Matched Methods", blastRadius.methodBlastRadius, 'method', formatMethodName, 'badge-blue', currentRulePagination.methods);
-    html += renderSection("Matched Fields", blastRadius.fieldBlastRadius, 'field', formatFieldName, 'badge-red', currentRulePagination.fields);
+  html += renderSection("Matched Classes", blastRadius.classBlastRadius, 'class', formatTypeName, 'badge-green', currentRulePagination.classes);
+  html += renderSection("Matched Methods", blastRadius.methodBlastRadius, 'method', formatMethodName, 'badge-blue', currentRulePagination.methods);
+  html += renderSection("Matched Fields", blastRadius.fieldBlastRadius, 'field', formatFieldName, 'badge-red', currentRulePagination.fields);
 
-    return html;
+  return html;
 }
 
 function showMore(type) {
-    if (type === 'class') currentRulePagination.classes += 100;
-    else if (type === 'method') currentRulePagination.methods += 100;
-    else if (type === 'field') currentRulePagination.fields += 100;
+  if (type === 'class') currentRulePagination.classes += 100;
+  else if (type === 'method') currentRulePagination.methods += 100;
+  else if (type === 'field') currentRulePagination.fields += 100;
 
-    if (currentSelectedRule) {
-        renderRuleDetail(currentSelectedRule);
-    }
+  if (currentSelectedRule) {
+    renderRuleDetail(currentSelectedRule);
+  }
 }
 
 function filterUnusedRules(query) {
-    const rules = containerData.keepRuleBlastRadiusTable || [];
-    const lowerQuery = query.toLowerCase();
+  const rules = containerData.keepRuleBlastRadiusTable || [];
+  const lowerQuery = query.toLowerCase();
 
-    filteredRules = rules.filter(r =>
-        r.totalRadius === 0 && r.source.toLowerCase().includes(lowerQuery)
-    );
+  filteredRules = rules.filter(r =>
+    r.totalRadius === 0 && r.source.toLowerCase().includes(lowerQuery)
+  );
 
-    // For unused rules, sort by source text
-    filteredRules.sort((a, b) => a.source.localeCompare(b.source));
-    renderRuleList();
+  // For unused rules, sort by source text
+  filteredRules.sort((a, b) => a.source.localeCompare(b.source));
+  renderRuleList();
 }
 
 function filterRedundantRules(query) {
-    const rules = containerData.keepRuleBlastRadiusTable || [];
-    const lowerQuery = query.toLowerCase();
+  const rules = containerData.keepRuleBlastRadiusTable || [];
+  const lowerQuery = query.toLowerCase();
 
-    filteredRules = rules.filter(r =>
-        r.blastRadius.subsumedBy && r.blastRadius.subsumedBy.length > 0 &&
-        r.source.toLowerCase().includes(lowerQuery)
-    );
+  filteredRules = rules.filter(r =>
+    r.blastRadius.subsumedBy && r.blastRadius.subsumedBy.length > 0 &&
+    r.source.toLowerCase().includes(lowerQuery)
+  );
 
-    filteredRules.sort((a, b) => b.totalRadius - a.totalRadius);
-    renderRuleList();
+  filteredRules.sort((a, b) => b.totalRadius - a.totalRadius);
+  renderRuleList();
 }
 
 function switchView(view) {
-    currentView = view;
-    document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(view));
-    });
+  currentView = view;
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes(view));
+  });
 
-    searchInput.value = "";
-    searchInput.placeholder = view === 'files' ? "Search files..." : "Search keep rules...";
+  searchInput.value = "";
+  searchInput.placeholder = view === 'files' ? "Search files..." : "Search keep rules...";
 
-    if (containerData) {
-        if (view === 'rules') {
-            filterRules("");
-        } else if (view === 'unused') {
-            filterUnusedRules("");
-        } else if (view === 'redundant') {
-            filterRedundantRules("");
-        } else {
-            filterFiles("");
-        }
+  if (containerData) {
+    if (view === 'rules') {
+      filterRules("");
+    } else if (view === 'unused') {
+      filterUnusedRules("");
+    } else if (view === 'redundant') {
+      filterRedundantRules("");
+    } else {
+      filterFiles("");
     }
-    mainContent.innerHTML = '';
+  }
+  mainContent.innerHTML = '';
 }
 
 function formatTypeName(typeId) {
-    const type = tables.types.get(typeId);
-    if (!type) return "Unknown";
-    return formatDescriptor(type.javaDescriptor);
+  const type = tables.types.get(typeId);
+  if (!type) return "Unknown";
+  return formatDescriptor(type.javaDescriptor);
 }
 
 function formatDescriptor(desc) {
-    if (!desc) return "";
-    let dimensions = 0;
-    while (desc[dimensions] === '[') {
-        dimensions++;
-    }
-    let base = desc.substring(dimensions);
-    let res = "";
-    if (base.startsWith('L') && base.endsWith(';')) {
-        res = base.substring(1, base.length - 1).replace(/\//g, '.');
-    } else if (base.length === 1) {
-        switch (base[0]) {
-            case 'V': res = "void"; break;
-            case 'Z': res = "boolean"; break;
-            case 'B': res = "byte"; break;
-            case 'S': res = "short"; break;
-            case 'C': res = "char"; break;
-            case 'I': res = "int"; break;
-            case 'J': res = "long"; break;
-            case 'F': res = "float"; break;
-            case 'D': res = "double"; break;
-            default: res = base;
-        }
-    } else {
+  if (!desc) return "";
+  let dimensions = 0;
+  while (desc[dimensions] === '[') {
+    dimensions++;
+  }
+  let base = desc.substring(dimensions);
+  let res = "";
+  if (base.startsWith('L') && base.endsWith(';')) {
+    res = base.substring(1, base.length - 1).replace(/\//g, '.');
+  } else if (base.length === 1) {
+    switch (base[0]) {
+      case 'V':
+        res = "void";
+        break;
+      case 'Z':
+        res = "boolean";
+        break;
+      case 'B':
+        res = "byte";
+        break;
+      case 'S':
+        res = "short";
+        break;
+      case 'C':
+        res = "char";
+        break;
+      case 'I':
+        res = "int";
+        break;
+      case 'J':
+        res = "long";
+        break;
+      case 'F':
+        res = "float";
+        break;
+      case 'D':
+        res = "double";
+        break;
+      default:
         res = base;
     }
-    for (let i = 0; i < dimensions; i++) {
-        res += "[]";
-    }
-    return res;
+  } else {
+    res = base;
+  }
+  for (let i = 0; i < dimensions; i++) {
+    res += "[]";
+  }
+  return res;
 }
 
 function formatMethodName(methodRefId) {
-    const ref = tables.methodRefs.get(methodRefId);
-    if (!ref) return "Unknown method";
-    const className = formatTypeName(ref.classReferenceId);
-    const proto = tables.protos.get(ref.protoReferenceId);
-    let params = "";
-    if (proto && proto.parametersId) {
-        const list = tables.typeLists.get(proto.parametersId);
-        if (list && list.typeReferenceIds) {
-            params = list.typeReferenceIds.map(id => formatTypeName(id)).join(', ');
-        }
+  const ref = tables.methodRefs.get(methodRefId);
+  if (!ref) return "Unknown method";
+  const className = formatTypeName(ref.classReferenceId);
+  const proto = tables.protos.get(ref.protoReferenceId);
+  let params = "";
+  if (proto && proto.parametersId) {
+    const list = tables.typeLists.get(proto.parametersId);
+    if (list && list.typeReferenceIds) {
+      params = list.typeReferenceIds.map(id => formatTypeName(id)).join(', ');
     }
-    const returnType = proto ? formatTypeName(proto.returnTypeId) : "";
-    return `${returnType} ${className}.${ref.name}(${params})`;
+  }
+  const returnType = proto ? formatTypeName(proto.returnTypeId) : "";
+  return `${returnType} ${className}.${ref.name}(${params})`;
 }
 
 function formatFieldName(fieldRefId) {
-    const ref = tables.fieldRefs.get(fieldRefId);
-    if (!ref) return "Unknown field";
-    const className = formatTypeName(ref.classReferenceId);
-    const type = formatTypeName(ref.typeReferenceId);
-    return `${type} ${className}.${ref.name}`;
+  const ref = tables.fieldRefs.get(fieldRefId);
+  if (!ref) return "Unknown field";
+  const className = formatTypeName(ref.classReferenceId);
+  const type = formatTypeName(ref.typeReferenceId);
+  return `${type} ${className}.${ref.name}`;
 }
 
 function getFileName(origin) {
-    if (!origin) return "Unknown";
-    const fileOrigin = tables.origins.get(origin.fileOriginId);
-    return fileOrigin ? fileOrigin.filename : "Unknown";
+  if (!origin) return "Unknown";
+  const fileOrigin = tables.origins.get(origin.fileOriginId);
+  return fileOrigin ? fileOrigin.filename : "Unknown";
 }
 
 function getOriginString(origin) {
-    if (!origin) return "Unknown";
-    const name = getFileName(origin);
-    let res = name;
-    if (origin.lineNumber) {
-        res += ":" + origin.lineNumber;
-        if (origin.columnNumber) res += ":" + origin.columnNumber;
-    }
-    return res;
+  if (!origin) return "Unknown";
+  const name = getFileName(origin);
+  let res = name;
+  if (origin.lineNumber) {
+    res += ":" + origin.lineNumber;
+    if (origin.columnNumber) res += ":" + origin.columnNumber;
+  }
+  return res;
 }
 
 function escapeHtml(text) {
-    if (!text) return "";
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  if (!text) return "";
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
