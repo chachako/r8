@@ -4028,12 +4028,18 @@ public final class VarHandleDesugaringMethods {
     CfLabel label13 = new CfLabel();
     CfLabel label14 = new CfLabel();
     CfLabel label15 = new CfLabel();
+    CfLabel label16 = new CfLabel();
+    CfLabel label17 = new CfLabel();
+    CfLabel label18 = new CfLabel();
     return new CfCode(
         method.holder,
         4,
         6,
         ImmutableList.of(
             label0,
+            new CfConstNull(),
+            new CfStore(ValueType.OBJECT, 0),
+            label1,
             new CfConstClass(factory.createType("Lsun/misc/Unsafe;")),
             new CfConstString(factory.createString("theUnsafe")),
             new CfInvoke(
@@ -4045,16 +4051,22 @@ public final class VarHandleDesugaringMethods {
                     factory.createString("getDeclaredField")),
                 false),
             new CfStore(ValueType.OBJECT, 0),
-            label1,
-            new CfGoto(label10),
             label2,
+            new CfGoto(label13),
+            label3,
             new CfFrame(
+                new Int2ObjectAVLTreeMap<>(
+                    new int[] {0},
+                    new FrameType[] {
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/Field;"))
+                    }),
                 new ArrayDeque<>(
                     Arrays.asList(
                         FrameType.initializedNonNullReference(
                             factory.createType("Ljava/lang/NoSuchFieldException;"))))),
             new CfStore(ValueType.OBJECT, 1),
-            label3,
+            label4,
             new CfConstClass(factory.createType("Lsun/misc/Unsafe;")),
             new CfInvoke(
                 182,
@@ -4069,12 +4081,13 @@ public final class VarHandleDesugaringMethods {
             new CfStore(ValueType.INT, 3),
             new CfConstNumber(0, ValueType.INT),
             new CfStore(ValueType.INT, 4),
-            label4,
+            label5,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4},
                     new FrameType[] {
-                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/Field;")),
                       FrameType.initializedNonNullReference(
                           factory.createType("Ljava/lang/NoSuchFieldException;")),
                       FrameType.initializedNonNullReference(
@@ -4084,12 +4097,12 @@ public final class VarHandleDesugaringMethods {
                     })),
             new CfLoad(ValueType.INT, 4),
             new CfLoad(ValueType.INT, 3),
-            new CfIfCmp(IfType.GE, ValueType.INT, label9),
+            new CfIfCmp(IfType.GE, ValueType.INT, label11),
             new CfLoad(ValueType.OBJECT, 2),
             new CfLoad(ValueType.INT, 4),
             new CfArrayLoad(MemberType.OBJECT),
             new CfStore(ValueType.OBJECT, 5),
-            label5,
+            label6,
             new CfLoad(ValueType.OBJECT, 5),
             new CfInvoke(
                 182,
@@ -4105,10 +4118,10 @@ public final class VarHandleDesugaringMethods {
                     factory.createProto(factory.booleanType, factory.intType),
                     factory.createString("isStatic")),
                 false),
-            new CfIf(IfType.EQ, ValueType.INT, label8),
+            new CfIf(IfType.EQ, ValueType.INT, label10),
             new CfConstClass(factory.createType("Lsun/misc/Unsafe;")),
             new CfLoad(ValueType.OBJECT, 5),
-            label6,
+            label7,
             new CfInvoke(
                 182,
                 factory.createMethod(
@@ -4123,16 +4136,19 @@ public final class VarHandleDesugaringMethods {
                     factory.createProto(factory.booleanType, factory.classType),
                     factory.createString("isAssignableFrom")),
                 false),
-            new CfIf(IfType.EQ, ValueType.INT, label8),
-            label7,
+            new CfIf(IfType.EQ, ValueType.INT, label10),
+            label8,
             new CfLoad(ValueType.OBJECT, 5),
             new CfStore(ValueType.OBJECT, 0),
-            label8,
+            label9,
+            new CfGoto(label11),
+            label10,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1, 2, 3, 4},
                     new FrameType[] {
-                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/Field;")),
                       FrameType.initializedNonNullReference(
                           factory.createType("Ljava/lang/NoSuchFieldException;")),
                       FrameType.initializedNonNullReference(
@@ -4141,16 +4157,20 @@ public final class VarHandleDesugaringMethods {
                       FrameType.intType()
                     })),
             new CfIinc(4, 1),
-            new CfGoto(label4),
-            label9,
+            new CfGoto(label5),
+            label11,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0, 1},
                     new FrameType[] {
-                      FrameType.oneWord(),
+                      FrameType.initializedNonNullReference(
+                          factory.createType("Ljava/lang/reflect/Field;")),
                       FrameType.initializedNonNullReference(
                           factory.createType("Ljava/lang/NoSuchFieldException;"))
                     })),
+            new CfLoad(ValueType.OBJECT, 0),
+            new CfIf(IfType.EQ, ValueType.OBJECT, label13),
+            label12,
             new CfNew(factory.createType("Ljava/lang/UnsupportedOperationException;")),
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
             new CfConstString(factory.createString("Couldn't find the Unsafe")),
@@ -4164,7 +4184,7 @@ public final class VarHandleDesugaringMethods {
                     factory.createString("<init>")),
                 false),
             new CfThrow(),
-            label10,
+            label13,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0},
@@ -4181,7 +4201,7 @@ public final class VarHandleDesugaringMethods {
                     factory.createProto(factory.voidType, factory.booleanType),
                     factory.createString("setAccessible")),
                 false),
-            label11,
+            label14,
             new CfLoad(ValueType.OBJECT, 0),
             new CfConstNull(),
             new CfInvoke(
@@ -4192,9 +4212,9 @@ public final class VarHandleDesugaringMethods {
                     factory.createString("get")),
                 false),
             new CfCheckCast(factory.createType("Lsun/misc/Unsafe;")),
-            label12,
+            label15,
             new CfReturn(ValueType.OBJECT),
-            label13,
+            label16,
             new CfFrame(
                 new Int2ObjectAVLTreeMap<>(
                     new int[] {0},
@@ -4207,7 +4227,7 @@ public final class VarHandleDesugaringMethods {
                         FrameType.initializedNonNullReference(
                             factory.createType("Ljava/lang/Exception;"))))),
             new CfStore(ValueType.OBJECT, 1),
-            label14,
+            label17,
             new CfNew(factory.createType("Ljava/lang/RuntimeException;")),
             new CfStackInstruction(CfStackInstruction.Opcode.Dup),
             new CfLoad(ValueType.OBJECT, 1),
@@ -4219,18 +4239,18 @@ public final class VarHandleDesugaringMethods {
                     factory.createString("<init>")),
                 false),
             new CfThrow(),
-            label15),
+            label18),
         ImmutableList.of(
             new CfTryCatch(
-                label0,
                 label1,
+                label2,
                 ImmutableList.of(factory.createType("Ljava/lang/NoSuchFieldException;")),
-                ImmutableList.of(label2)),
+                ImmutableList.of(label3)),
             new CfTryCatch(
-                label11,
-                label12,
+                label14,
+                label15,
                 ImmutableList.of(factory.createType("Ljava/lang/Exception;")),
-                ImmutableList.of(label13))),
+                ImmutableList.of(label16))),
         ImmutableList.of());
   }
 
