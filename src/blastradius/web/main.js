@@ -55,40 +55,107 @@ const searchInput = document.getElementById('search-input');
 const mainContent = document.getElementById('main-content');
 const statsOverview = document.getElementById('stats-overview');
 
-// Load Protobuf definition
-protobuf.load("blastradius.proto", function(err, root) {
-  if (err) {
-    console.error("Error loading proto:", err);
-    alert("Failed to load blastradius.proto.");
-    return;
+const embeddedProtoSchemaSource = document.getElementById('blastradius-proto');
+const embeddedProtoDataSource = document.getElementById('blastradius-data');
+
+// Load Protobuf definition.
+if (embeddedProtoSchemaSource) {
+  try {
+    protobufRoot = protobuf.parse(embeddedProtoSchemaSource.textContent).root;
+  } catch (e) {
+    console.error("Failed to parse embedded proto:", e);
   }
-  protobufRoot = root;
-});
+} else {
+  protobuf.load("blastradius.proto", function(err, root) {
+    if (err) {
+      console.error("Error loading proto:", err);
+      alert("Failed to load blastradius.proto.");
+      return;
+    }
+    protobufRoot = root;
+  });
+}
 
-dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('hover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('hover');
-});
-
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('hover');
-  if (e.dataTransfer.files.length > 0) {
-    handleFile(e.dataTransfer.files[0]);
+// Load blast radius data (.pb).
+if (embeddedProtoDataSource) {
+  try {
+    const binary = atob(embeddedProtoDataSource.textContent.trim());
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+    const message = BlastRadiusContainer.decode(bytes);
+    containerData = BlastRadiusContainer.toObject(message, {
+      longs: String,
+      enums: String,
+      bytes: String,
+      defaults: true,
+      arrays: true,
+      objects: true,
+      oneofs: true
+    });
+    processData();
+  } catch (e) {
+    console.error("Failed to decode embedded data:", e);
   }
-});
+} else {
+  dropZone.addEventListener('click', () => fileInput.click());
 
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files.length > 0) {
-    handleFile(e.target.files[0]);
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('hover');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('hover');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('hover');
+    if (e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      handleFile(e.target.files[0]);
+    }
+  });
+
+  function handleFile(file) {
+    if (!protobufRoot) {
+      alert("Protobuf definition not loaded yet.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const arrayBuffer = e.target.result;
+      try {
+        const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+        const buffer = new Uint8Array(arrayBuffer);
+        const message = BlastRadiusContainer.decode(buffer);
+        containerData = BlastRadiusContainer.toObject(message, {
+          longs: String,
+          enums: String,
+          bytes: String,
+          defaults: true,
+          arrays: true,
+          objects: true,
+          oneofs: true
+        });
+        processData();
+      } catch (err) {
+        console.error("Error decoding proto:", err);
+        alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
   }
-});
+}
 
 searchInput.addEventListener('input', (e) => {
   if (currentView === 'rules') {
@@ -101,37 +168,6 @@ searchInput.addEventListener('input', (e) => {
     filterFiles(e.target.value);
   }
 });
-
-function handleFile(file) {
-  if (!protobufRoot) {
-    alert("Protobuf definition not loaded yet.");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const arrayBuffer = e.target.result;
-    try {
-      const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
-      const buffer = new Uint8Array(arrayBuffer);
-      const message = BlastRadiusContainer.decode(buffer);
-      containerData = BlastRadiusContainer.toObject(message, {
-        longs: String,
-        enums: String,
-        bytes: String,
-        defaults: true,
-        arrays: true,
-        objects: true,
-        oneofs: true
-      });
-      processData();
-    } catch (err) {
-      console.error("Error decoding proto:", err);
-      alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
 
 function processData() {
   // Clear previous data
