@@ -301,23 +301,22 @@ public final class R8Command extends BaseCompilerCommand {
       return self();
     }
 
-    /** Add proguard configuration-file resources. */
-    public Builder addProguardConfigurationFiles(Path... paths) {
-      guard(() -> {
-        for (Path path : paths) {
-          proguardConfigs.add(new ProguardConfigurationSourceFile(path));
-        }
-      });
+    /** Add a proguard configuration-file resource with a given origin. */
+    public Builder addProguardConfigurationFile(Path path, Origin origin) {
+      proguardConfigs.add(new ProguardConfigurationSourceFile(path, origin));
       return self();
     }
 
     /** Add proguard configuration-file resources. */
+    public Builder addProguardConfigurationFiles(Path... paths) {
+      return addProguardConfigurationFiles(Arrays.asList(paths));
+    }
+
+    /** Add proguard configuration-file resources. */
     public Builder addProguardConfigurationFiles(List<Path> paths) {
-      guard(() -> {
-        for (Path path : paths) {
-          proguardConfigs.add(new ProguardConfigurationSourceFile(path));
-        }
-      });
+      for (Path path : paths) {
+        proguardConfigs.add(new ProguardConfigurationSourceFile(path));
+      }
       return self();
     }
 

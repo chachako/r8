@@ -33,7 +33,7 @@ public class ProguardConfigurationSourceStrings implements ProguardConfiguration
 
   @Override
   public String get() {
-    return String.join(System.lineSeparator(), config);
+    return config;
   }
 
   @Override
@@ -50,5 +50,4 @@ public class ProguardConfigurationSourceStrings implements ProguardConfiguration
   public Origin getOrigin() {
     return origin;
   }
-
 }

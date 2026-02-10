@@ -7,21 +7,27 @@ package com.android.tools.r8.shaking;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.origin.PathOrigin;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ProguardConfigurationSourceFile implements ProguardConfigurationSource {
+
   private final Path path;
+  private final Origin origin;
 
   public ProguardConfigurationSourceFile(Path path) {
+    this(path, new PathOrigin(path));
+  }
+
+  public ProguardConfigurationSourceFile(Path path, Origin origin) {
     this.path = path;
+    this.origin = origin;
   }
 
   @Override
   public String get() throws IOException{
-    return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+    return Files.readString(path);
   }
 
   @Override
@@ -42,6 +48,6 @@ public class ProguardConfigurationSourceFile implements ProguardConfigurationSou
 
   @Override
   public Origin getOrigin() {
-    return new PathOrigin(path);
+    return origin;
   }
 }
