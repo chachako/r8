@@ -360,6 +360,7 @@ function renderRuleList() {
 
     const div = document.createElement('div');
     div.className = 'rule-item';
+    div.dataset.ruleId = rule.id;
     const classes = rule.blastRadius.classBlastRadius?.length || 0;
     const methods = rule.blastRadius.methodBlastRadius?.length || 0;
     const fields = rule.blastRadius.fieldBlastRadius?.length || 0;
@@ -433,7 +434,7 @@ function renderRuleDetail(rule) {
                     <div class="banner banner-warning">
                         <strong>Redundant Rule:</strong> This rule is fully subsumed by ${isSameFile ? 'another rule in the same file' : 'a rule in a different file'}:
                         <div style="margin-top: 0.5rem;">
-                            <div class="subsumed-by-item">
+                            <div class="subsumed-by-item" onclick="navigateToRule('${id}')">
                                 <div style="font-weight: 500;">${r ? escapeHtml(r.source) : `Rule ID: ${id}`}</div>
                                 <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">Origin: ${escapeHtml(originStr)}</div>
                             </div>
@@ -462,17 +463,24 @@ function renderRuleDetail(rule) {
 }
 
 function renderFileDetail(file) {
+  const usedRules = file.rules.filter(r => r.totalRadius > 0).sort((a, b) => b.totalRadius - a.totalRadius);
+  const unusedRules = file.rules.filter(r => r.totalRadius === 0).sort((a, b) => a.source.localeCompare(b.source));
+
   let html = `
         <div class="card">
             <h2>File Details</h2>
             <p><strong>File:</strong> ${escapeHtml(file.name)}</p>
             <p><strong>Blast radius:</strong> ${file.totalRadius} items kept across ${file.rules.length} rules.</p>
         </div>
+    `;
+
+  if (usedRules.length > 0) {
+    html += `
         <div class="card">
             <h2>Keep Rules in this File</h2>
             <div class="item-list">
-                ${file.rules.sort((a,b) => b.totalRadius - a.totalRadius).map(r => `
-                    <div style="padding: 1rem; border-bottom: 1px solid #eee;">
+                ${usedRules.map(r => `
+                    <div class="rule-item" onclick="navigateToRule('${r.id}')">
                         <div class="rule-name">${escapeHtml(r.source)}</div>
                         <div class="rule-stats">Blast radius: ${r.totalRadius}</div>
                     </div>
@@ -480,6 +488,23 @@ function renderFileDetail(file) {
             </div>
         </div>
     `;
+  }
+
+  if (unusedRules.length > 0) {
+    html += `
+        <div class="card">
+            <h2>Unused Keep Rules in this File</h2>
+            <div class="item-list">
+                ${unusedRules.map(r => `
+                    <div class="rule-item" onclick="navigateToRule('${r.id}')">
+                        <div class="rule-name">${escapeHtml(r.source)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+  }
+
   mainContent.innerHTML = html;
 }
 
@@ -557,7 +582,19 @@ function filterRedundantRules(query) {
   renderRuleList();
 }
 
-function switchView(view) {
+function navigateToRule(ruleId) {
+  const rule = tables.rules.get(Number(ruleId));
+  if (!rule) return;
+
+  switchView('rules', true);
+  const element = ruleList.querySelector(`[data-rule-id="${rule.id}"]`);
+  if (element) {
+    selectRule(rule, element);
+    element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function switchView(view, preserveDetail = false) {
   currentView = view;
   document.querySelectorAll('.tab-button').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${view}'`));
@@ -569,7 +606,9 @@ function switchView(view) {
   if (containerData) {
     if (view === 'rules') {
       filterRules("");
-      renderStatsOverview();
+      if (!preserveDetail) {
+        renderStatsOverview();
+      }
     } else if (view === 'unused') {
       filterUnusedRules("");
       mainContent.innerHTML = '';
