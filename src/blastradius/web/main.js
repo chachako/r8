@@ -6,6 +6,7 @@ let containerData = null;
 let filteredRules = [];
 let filteredFiles = [];
 let currentView = 'rules'; // 'rules', 'files', 'unused', 'redundant'
+let currentSubView = 'class'; // 'class', 'method', 'field'
 let currentSelectedRule = null;
 let currentRulePagination = {
   classes: 100,
@@ -402,6 +403,7 @@ function selectRule(rule, element) {
   document.querySelectorAll('.rule-item').forEach(el => el.classList.remove('active'));
   element.classList.add('active');
   currentSelectedRule = rule;
+  currentSubView = 'class';
   currentRulePagination = {
     classes: 100,
     methods: 100,
@@ -442,6 +444,17 @@ function renderRuleDetail(rule) {
             <div class="keep-rule-source">${escapeHtml(rule.source)}</div>
             <p><strong>Origin:</strong> ${escapeHtml(getOriginString(rule.origin))}</p>
         </div>
+        <div class="sub-tabs">
+            <button class="sub-tab-button ${currentSubView === 'class' ? 'active' : ''}" onclick="switchSubView('class')">
+                Matched Classes <span class="badge">${rule.blastRadius.classBlastRadius?.length || 0}</span>
+            </button>
+            <button class="sub-tab-button ${currentSubView === 'method' ? 'active' : ''}" onclick="switchSubView('method')">
+                Matched Methods <span class="badge">${rule.blastRadius.methodBlastRadius?.length || 0}</span>
+            </button>
+            <button class="sub-tab-button ${currentSubView === 'field' ? 'active' : ''}" onclick="switchSubView('field')">
+                Matched Fields <span class="badge">${rule.blastRadius.fieldBlastRadius?.length || 0}</span>
+            </button>
+        </div>
     `;
 
   html += renderBlastRadiusItems(rule.blastRadius);
@@ -474,13 +487,19 @@ function renderBlastRadiusItems(blastRadius) {
   let html = "";
 
   const renderSection = (title, items, type, formatter, badgeClass, limit) => {
-    if (!items || items.length === 0) return "";
+    if (currentSubView !== type) return "";
+    if (!items || items.length === 0) {
+      return `
+        <div class="card">
+            <p style="color: #666; font-style: italic;">No items matched this category.</p>
+        </div>
+      `;
+    }
     const visibleItems = items.slice(0, limit);
     const hasMore = items.length > limit;
 
     return `
             <div class="card">
-                <div class="section-title">${title} <span class="badge ${badgeClass}">${items.length}</span></div>
                 <ul class="item-list">
                     ${visibleItems.map(id => {
                         const info = type === 'class' ? tables.classes.get(id) :
@@ -563,6 +582,13 @@ function switchView(view) {
     }
   } else {
     renderWelcomeMessage();
+  }
+}
+
+function switchSubView(subView) {
+  currentSubView = subView;
+  if (currentSelectedRule) {
+    renderRuleDetail(currentSelectedRule);
   }
 }
 
