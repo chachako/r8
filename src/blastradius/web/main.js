@@ -433,14 +433,14 @@ function renderRuleDetail(rule) {
                         <div style="margin-top: 0.5rem;">
                             <div class="subsumed-by-item">
                                 <div style="font-weight: 500;">${r ? escapeHtml(r.source) : `Rule ID: ${id}`}</div>
-                                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">Origin: ${originStr}</div>
+                                <div style="font-size: 0.8rem; color: #666; margin-top: 2px;">Origin: ${escapeHtml(originStr)}</div>
                             </div>
                         </div>
                     </div>
                 `;
             }).join('') : ''}
             <div class="keep-rule-source">${escapeHtml(rule.source)}</div>
-            <p><strong>Origin:</strong> ${getOriginString(rule.origin)}</p>
+            <p><strong>Origin:</strong> ${escapeHtml(getOriginString(rule.origin))}</p>
         </div>
     `;
 
@@ -485,8 +485,8 @@ function renderBlastRadiusItems(blastRadius) {
                     ${visibleItems.map(id => {
                         const info = type === 'class' ? tables.classes.get(id) :
                                    (type === 'method' ? tables.methods.get(id) : tables.fields.get(id));
-                        return info ? `<li>${formatter(type === 'class' ? info.classReferenceId :
-                                                     (type === 'method' ? info.methodReferenceId : info.fieldReferenceId))}</li>`
+                        return info ? `<li>${escapeHtml(formatter(type === 'class' ? info.classReferenceId :
+                                                     (type === 'method' ? info.methodReferenceId : info.fieldReferenceId)))}</li>`
                                     : `<li>Unknown ${type} ID ${id}</li>`;
                     }).join('')}
                 </ul>
