@@ -93,10 +93,10 @@ public class KotlinCompilerTool {
     KOTLINC_2_3_10("kotlin-compiler-2.3.10", INVOKE_DYNAMIC, JAVA_8),
     KOTLIN_DEV("kotlin-compiler-dev", INVOKE_DYNAMIC, JAVA_8);
 
-    public static final KotlinCompilerVersion MIN_SUPPORTED_VERSION = KOTLINC_2_1_10;
-    public static final KotlinCompilerVersion MAX_SUPPORTED_VERSION = KOTLINC_2_1_10;
+    public static final KotlinCompilerVersion MIN_SUPPORTED_VERSION = KOTLINC_2_2_0;
+    public static final KotlinCompilerVersion MAX_SUPPORTED_VERSION = KOTLINC_2_2_0;
     public static final KotlinCompilerVersion[] DEV_COMPILERS =
-        new KotlinCompilerVersion[] {KOTLINC_2_2_0, KOTLINC_2_3_10, KOTLIN_DEV};
+        new KotlinCompilerVersion[] {KOTLINC_2_3_10, KOTLIN_DEV};
 
     private final String folder;
     private final KotlinLambdaGeneration defaultLambdaGeneration;
