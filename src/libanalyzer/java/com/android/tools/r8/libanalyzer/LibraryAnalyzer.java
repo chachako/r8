@@ -10,6 +10,7 @@ import com.android.tools.r8.D8;
 import com.android.tools.r8.D8Command;
 import com.android.tools.r8.R8;
 import com.android.tools.r8.R8Command;
+import com.android.tools.r8.Version;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
@@ -78,8 +79,7 @@ public class LibraryAnalyzer {
       return;
     }
     if (command.isPrintVersion()) {
-      // TODO(b/479726064): Read the version from a field.
-      System.out.println("LibraryAnalyzer 0.0.1");
+      System.out.println("LibraryAnalyzer " + Version.getVersionString());
       return;
     }
     ExceptionUtils.withR8CompilationHandler(
@@ -96,7 +96,9 @@ public class LibraryAnalyzer {
   private InternalD8CompileResult runD8(ExecutorService executorService) {
     DexIndexedSizeConsumer sizeConsumer = new DexIndexedSizeConsumer();
     D8Command.Builder commandBuilder =
-        D8Command.builder(options.reporter).setProgramConsumer(sizeConsumer);
+        D8Command.builder(options.reporter)
+            .setClassConflictResolver((reference, origins, handler) -> origins.iterator().next())
+            .setProgramConsumer(sizeConsumer);
     configure(commandBuilder);
     try {
       D8.run(commandBuilder.build(), executorService);

@@ -21,10 +21,15 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableSet;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 @KeepForApi
 public class LibraryAnalyzerCommandParser {
@@ -32,6 +37,7 @@ public class LibraryAnalyzerCommandParser {
   private static final String AAR_FLAG = "--aar";
   private static final String BLAST_RADIUS_OUTPUT_FLAG = "--blast-radius-output";
   private static final String JAR_FLAG = "--jar";
+  private static final String REPO_FLAG = "--repo";
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
       ImmutableSet.of(
@@ -41,6 +47,7 @@ public class LibraryAnalyzerCommandParser {
           LIB_FLAG,
           MIN_API_FLAG,
           OUTPUT_FLAG,
+          REPO_FLAG,
           THREAD_COUNT_FLAG);
 
   private static final String USAGE_MESSAGE =
@@ -55,6 +62,7 @@ public class LibraryAnalyzerCommandParser {
           "                               # Only allowed after --aar <path> or --jar <path>.",
           "  --min-api <major.minor>      # Minimum API level to use for analysis.",
           "  --output <path>              # Path where to write analysis result (protobuf).",
+          "  --repo <path>                # Path to local Maven repository.",
           "  --thread-count <int>         # Number of threads to use.",
           "  --help                       # Print this message.",
           "  --version                    # Print the version.");
@@ -130,6 +138,26 @@ public class LibraryAnalyzerCommandParser {
         builder.setMinApiLevel(AndroidApiLevel.parseAndroidApiLevel(nextArg));
       } else if (arg.equals(OUTPUT_FLAG)) {
         builder.setOutputPath(Paths.get(nextArg));
+      } else if (arg.equals(REPO_FLAG)) {
+        Path repoPath = Paths.get(nextArg);
+        if (!Files.isDirectory(repoPath)) {
+          throw new IllegalArgumentException(
+              "Invalid parameter for --repo. Expected directory, got: " + nextArg);
+        }
+        try (Stream<Path> paths = Files.walk(repoPath)) {
+          paths
+              .filter(path -> FileUtils.isAarFile(path) || FileUtils.isJarFile(path))
+              .forEach(
+                  path -> {
+                    if (FileUtils.isAarFile(path)) {
+                      builder.addAarPath(path, getMavenOriginFromArchive(repoPath, path));
+                    } else {
+                      builder.addJarPath(path, getMavenOriginFromArchive(repoPath, path));
+                    }
+                  });
+        } catch (IOException e) {
+          throw new UncheckedIOException("Failed to walk repository path: " + nextArg, e);
+        }
       } else if (arg.equals(THREAD_COUNT_FLAG)) {
         parsePositiveIntArgument(
             reporter::error, THREAD_COUNT_FLAG, nextArg, origin, builder::setThreadCount);
@@ -138,6 +166,17 @@ public class LibraryAnalyzerCommandParser {
       }
     }
     return builder;
+  }
+
+  private static Origin getMavenOriginFromArchive(Path repoPath, Path path) {
+    String directoryName = repoPath.relativize(path).getParent().toString();
+    int lastSeparator = directoryName.lastIndexOf(File.separatorChar);
+    int prevSeparator = directoryName.lastIndexOf(File.separatorChar, lastSeparator - 1);
+    String group =
+        StringUtils.replaceAll(directoryName.substring(0, prevSeparator), File.separator, ".");
+    String module = directoryName.substring(prevSeparator + 1, lastSeparator);
+    String version = directoryName.substring(lastSeparator + 1);
+    return new PathBasedMavenOrigin(path, group, module, version);
   }
 
   private static String peekArg(String[] expandedArgs, int index) {
