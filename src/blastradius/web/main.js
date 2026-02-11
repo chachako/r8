@@ -359,17 +359,20 @@ function renderRuleList() {
 
     const div = document.createElement('div');
     div.className = 'rule-item';
+    const classes = rule.blastRadius.classBlastRadius?.length || 0;
+    const methods = rule.blastRadius.methodBlastRadius?.length || 0;
+    const fields = rule.blastRadius.fieldBlastRadius?.length || 0;
     div.innerHTML = `
             <div style="display: flex; align-items: flex-start; gap: 8px;">
                 ${sameOriginSubsumption ? '<span title="Subsumed by rule in same file" style="color: #ff9800; cursor: help;">⚠️</span>' : ''}
                 <div style="flex: 1;">
                     <span class="rule-name">${escapeHtml(rule.source)}</span>
-                    <div class="rule-stats">
-                        Blast radius: ${rule.totalRadius}
-                        (${rule.blastRadius.classBlastRadius?.length || 0} classes,
-                         ${rule.blastRadius.methodBlastRadius?.length || 0} methods,
-                         ${rule.blastRadius.fieldBlastRadius?.length || 0} fields)
-                    </div>
+                    ${currentView !== "unused" ? `
+                        <div class="rule-stats">
+                            Blast radius: ${rule.totalRadius}
+                            ${formatStatsBreakdown(classes, methods, fields)}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -386,8 +389,8 @@ function renderFileList() {
     div.innerHTML = `
             <span class="rule-name">${escapeHtml(getOriginString(file.origin))}</span>
             <div class="rule-stats">
-                Total radius: ${file.totalRadius} across ${file.rules.length} rules
-                <br>(${file.classes} classes, ${file.methods} methods, ${file.fields} fields)
+                Blast radius: ${file.totalRadius} across ${file.rules.length} rules
+                <br>${formatStatsBreakdown(file.classes, file.methods, file.fields)}
             </div>
         `;
     div.onclick = () => selectFile(file, div);
@@ -450,7 +453,7 @@ function renderFileDetail(file) {
         <div class="card">
             <h2>File Details</h2>
             <p><strong>File:</strong> ${escapeHtml(file.name)}</p>
-            <p><strong>Total Impact:</strong> ${file.totalRadius} items kept across ${file.rules.length} rules.</p>
+            <p><strong>Blast radius:</strong> ${file.totalRadius} items kept across ${file.rules.length} rules.</p>
         </div>
         <div class="card">
             <h2>Keep Rules in this File</h2>
@@ -704,6 +707,14 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function formatStatsBreakdown(classes, methods, fields) {
+  const parts = [];
+  if (classes > 0) parts.push(`${classes} classes`);
+  if (methods > 0) parts.push(`${methods} methods`);
+  if (fields > 0) parts.push(`${fields} fields`);
+  return parts.length > 0 ? `(${parts.join(', ')})` : '';
 }
 
 if (!containerData && !embeddedProtoDataSource) {
