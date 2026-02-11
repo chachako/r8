@@ -5,7 +5,7 @@ let protobufRoot = null;
 let containerData = null;
 let filteredRules = [];
 let filteredFiles = [];
-let currentView = 'rules'; // 'rules' or 'files'
+let currentView = 'rules'; // 'rules', 'files', 'unused', 'redundant'
 let currentSelectedRule = null;
 let currentRulePagination = {
   classes: 100,
@@ -53,7 +53,6 @@ const fileInput = document.getElementById('file-input');
 const ruleList = document.getElementById('rule-list');
 const searchInput = document.getElementById('search-input');
 const mainContent = document.getElementById('main-content');
-const statsOverview = document.getElementById('stats-overview');
 
 const embeddedProtoSchemaSource = document.getElementById('blastradius-proto');
 const embeddedProtoDataSource = document.getElementById('blastradius-data');
@@ -78,27 +77,29 @@ if (embeddedProtoSchemaSource) {
 
 // Load blast radius data (.pb).
 if (embeddedProtoDataSource) {
-  try {
-    const binary = atob(embeddedProtoDataSource.textContent.trim());
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
+  setTimeout(() => {
+    try {
+      const binary = atob(embeddedProtoDataSource.textContent.trim());
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+      const message = BlastRadiusContainer.decode(bytes);
+      containerData = BlastRadiusContainer.toObject(message, {
+        longs: String,
+        enums: String,
+        bytes: String,
+        defaults: true,
+        arrays: true,
+        objects: true,
+        oneofs: true
+      });
+      processData();
+    } catch (e) {
+      console.error("Failed to decode embedded data:", e);
     }
-    const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
-    const message = BlastRadiusContainer.decode(bytes);
-    containerData = BlastRadiusContainer.toObject(message, {
-      longs: String,
-      enums: String,
-      bytes: String,
-      defaults: true,
-      arrays: true,
-      objects: true,
-      oneofs: true
-    });
-    processData();
-  } catch (e) {
-    console.error("Failed to decode embedded data:", e);
-  }
+  }, 0);
 } else {
   dropZone.addEventListener('click', () => fileInput.click());
 
@@ -131,27 +132,32 @@ if (embeddedProtoDataSource) {
       return;
     }
 
+    renderLoading();
     const reader = new FileReader();
     reader.onload = function(e) {
       const arrayBuffer = e.target.result;
-      try {
-        const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
-        const buffer = new Uint8Array(arrayBuffer);
-        const message = BlastRadiusContainer.decode(buffer);
-        containerData = BlastRadiusContainer.toObject(message, {
-          longs: String,
-          enums: String,
-          bytes: String,
-          defaults: true,
-          arrays: true,
-          objects: true,
-          oneofs: true
-        });
-        processData();
-      } catch (err) {
-        console.error("Error decoding proto:", err);
-        alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
-      }
+      setTimeout(() => {
+        try {
+          const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
+          const buffer = new Uint8Array(arrayBuffer);
+          const message = BlastRadiusContainer.decode(buffer);
+          containerData = BlastRadiusContainer.toObject(message, {
+            longs: String,
+            enums: String,
+            bytes: String,
+            defaults: true,
+            arrays: true,
+            objects: true,
+            oneofs: true
+          });
+          processData();
+        } catch (err) {
+          console.error("Error decoding proto:", err);
+          alert("Failed to decode the .pb file. Ensure it matches the blastradius.proto schema.");
+          renderWelcomeMessage();
+          dropZone.classList.remove('hidden');
+        }
+      }, 0);
     };
     reader.readAsArrayBuffer(file);
   }
@@ -164,7 +170,7 @@ searchInput.addEventListener('input', (e) => {
     filterUnusedRules(e.target.value);
   } else if (currentView === 'redundant') {
     filterRedundantRules(e.target.value);
-  } else {
+  } else if (currentView === 'files') {
     filterFiles(e.target.value);
   }
 });
@@ -258,21 +264,9 @@ function processData() {
     });
   }
 
-  renderStats();
-  if (currentView === 'rules') {
-    filterRules("");
-  } else if (currentView === 'unused') {
-    filterUnusedRules("");
-  } else if (currentView === 'redundant') {
-    filterRedundantRules("");
-  } else {
-    filterFiles("");
-  }
-
   dropZone.classList.add('hidden');
-  statsOverview.classList.remove('hidden');
   document.querySelector('.search-box').classList.remove('hidden');
-  document.getElementById('welcome-message').classList.add('hidden');
+  switchView('rules');
 }
 
 function renderStats() {
@@ -544,7 +538,7 @@ function filterRedundantRules(query) {
 function switchView(view) {
   currentView = view;
   document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('onclick').includes(view));
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes(`'${view}'`));
   });
 
   searchInput.value = "";
@@ -553,15 +547,44 @@ function switchView(view) {
   if (containerData) {
     if (view === 'rules') {
       filterRules("");
+      renderStatsOverview();
     } else if (view === 'unused') {
       filterUnusedRules("");
+      mainContent.innerHTML = '';
     } else if (view === 'redundant') {
       filterRedundantRules("");
-    } else {
+      mainContent.innerHTML = '';
+    } else if (view === 'files') {
       filterFiles("");
+      mainContent.innerHTML = '';
     }
+  } else {
+    renderWelcomeMessage();
   }
+}
+
+function renderStatsOverview() {
+  const template = document.getElementById('stats-overview-template');
   mainContent.innerHTML = '';
+  mainContent.appendChild(template.content.cloneNode(true));
+  renderStats();
+}
+
+function renderWelcomeMessage() {
+  const template = document.getElementById('welcome-message-template');
+  if (template) {
+    mainContent.innerHTML = '';
+    mainContent.appendChild(template.content.cloneNode(true));
+  }
+}
+
+function renderLoading() {
+  mainContent.innerHTML = `
+    <div id="loading-screen">
+      <div class="spinner"></div>
+      <p>Processing data...</p>
+    </div>
+  `;
 }
 
 function formatTypeName(typeId) {
@@ -681,4 +704,9 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+if (!containerData && !embeddedProtoDataSource) {
+  renderWelcomeMessage();
+  dropZone.classList.remove('hidden');
 }
