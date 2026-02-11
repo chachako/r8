@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.origin;
 
-import androidx.annotation.keep.KeepForApi;
+import com.android.tools.r8.keepanno.annotations.KeepForApi;
 
 /**
  * An identifier for a component instance which is available as a module version. See also {@link
