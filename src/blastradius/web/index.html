@@ -12,8 +12,8 @@
     <header>
         <h1 onclick="switchView('rules')" style="cursor: pointer;">R8 Blast Radius Visualizer</h1>
         <div id="tabs">
-            <button class="tab-button active" onclick="switchView('rules')">Keep Rules</button>
-            <button class="tab-button" onclick="switchView('files')">Keep Rule Files</button>
+            <button class="tab-button active" onclick="switchView('rules')">Keep Rules <span id="rules-count" class="badge hidden">0</span></button>
+            <button class="tab-button" onclick="switchView('files')">Keep Rule Files <span id="files-count" class="badge hidden">0</span></button>
             <button class="tab-button" onclick="switchView('unused')">Unused Rules <span id="unused-count" class="badge hidden">0</span></button>
             <button class="tab-button" onclick="switchView('redundant')">Redundant Rules <span id="redundant-count" class="badge hidden">0</span></button>
         </div>

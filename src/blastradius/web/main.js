@@ -319,6 +319,14 @@ function renderStats() {
   const redundantBadge = document.getElementById('redundant-count');
   redundantBadge.textContent = redundantCount;
   redundantBadge.classList.remove('hidden');
+
+  const rulesBadge = document.getElementById('rules-count');
+  rulesBadge.textContent = rules.length;
+  rulesBadge.classList.remove('hidden');
+
+  const filesBadge = document.getElementById('files-count');
+  filesBadge.textContent = tables.files.size;
+  filesBadge.classList.remove('hidden');
 }
 
 function filterRules(query) {
