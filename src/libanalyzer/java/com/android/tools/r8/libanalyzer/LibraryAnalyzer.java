@@ -113,10 +113,19 @@ public class LibraryAnalyzer {
     R8Command.Builder commandBuilder =
         R8Command.builder(options.reporter)
             .addProguardConfiguration(List.of("-ignorewarnings"), Origin.unknown())
+            .setClassConflictResolver((reference, origins, handler) -> origins.iterator().next())
             .setProgramConsumer(sizeConsumer);
     configure(commandBuilder);
     try {
-      R8.run(commandBuilder.build(), executorService);
+      R8.LibraryAnalyzerEntryPoint.run(
+          commandBuilder.build(),
+          executorService,
+          r8Options -> {
+            if (options.blastRadiusOutputPath != null) {
+              r8Options.getBlastRadiusOptions().outputPath =
+                  options.blastRadiusOutputPath.toString();
+            }
+          });
     } catch (CompilationFailedException e) {
       options.reporter.warning(new ExceptionDiagnostic(e));
       options.reporter.clearAbort();

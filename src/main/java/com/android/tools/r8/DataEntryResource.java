@@ -49,6 +49,10 @@ public interface DataEntryResource extends DataResource {
     return new ZipDataEntryResource(zip, entry);
   }
 
+  static DataEntryResource fromZip(ZipFile zip, ZipEntry entry, Origin zipOrigin) {
+    return new ZipDataEntryResource(zip, entry, zipOrigin);
+  }
+
   default DataEntryResource withName(String name) {
     return new NestedDataEntryResource(name, null, this);
   }
@@ -84,17 +88,23 @@ public interface DataEntryResource extends DataResource {
   class ZipDataEntryResource implements DataEntryResource {
     private final ZipFile zip;
     private final ZipEntry entry;
+    private final Origin zipOrigin;
 
     private ZipDataEntryResource(ZipFile zip, ZipEntry entry) {
+      this(zip, entry, new PathOrigin(Paths.get(zip.getName())));
+    }
+
+    private ZipDataEntryResource(ZipFile zip, ZipEntry entry, Origin zipOrigin) {
       assert zip != null;
       assert entry != null;
       this.zip = zip;
       this.entry = entry;
+      this.zipOrigin = zipOrigin;
     }
 
     @Override
     public Origin getOrigin() {
-      return new ArchiveEntryOrigin(entry.getName(), new PathOrigin(Paths.get(zip.getName())));
+      return new ArchiveEntryOrigin(entry.getName(), zipOrigin);
     }
 
     @Override

@@ -6,9 +6,11 @@ package com.android.tools.r8.libanalyzer;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.libanalyzer.utils.LibraryAnalyzerOptions;
+import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.utils.AarArchiveResourceProvider;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.AndroidApp;
+import com.android.tools.r8.utils.ArchiveResourceProvider;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.nio.file.Path;
@@ -20,6 +22,7 @@ import java.nio.file.Path;
 public final class LibraryAnalyzerCommand {
 
   private final AndroidApp app;
+  private final Path blastRadiusOutputPath;
   private final AndroidApiLevel minApiLevel;
   private final Path outputPath;
   private final Reporter reporter;
@@ -29,11 +32,13 @@ public final class LibraryAnalyzerCommand {
 
   private LibraryAnalyzerCommand(
       AndroidApp app,
+      Path blastRadiusOutputPath,
       AndroidApiLevel minApiLevel,
       Path outputPath,
       Reporter reporter,
       int threadCount) {
     this.app = app;
+    this.blastRadiusOutputPath = blastRadiusOutputPath;
     this.minApiLevel = minApiLevel;
     this.outputPath = outputPath;
     this.reporter = reporter;
@@ -44,6 +49,7 @@ public final class LibraryAnalyzerCommand {
 
   private LibraryAnalyzerCommand(boolean printHelp, boolean printVersion) {
     this.app = null;
+    this.blastRadiusOutputPath = null;
     this.minApiLevel = null;
     this.outputPath = null;
     this.reporter = new Reporter();
@@ -57,7 +63,8 @@ public final class LibraryAnalyzerCommand {
   }
 
   LibraryAnalyzerOptions getInternalOptions() {
-    return new LibraryAnalyzerOptions(minApiLevel, outputPath, reporter, threadCount);
+    return new LibraryAnalyzerOptions(
+        blastRadiusOutputPath, minApiLevel, outputPath, reporter, threadCount);
   }
 
   boolean isPrintHelp() {
@@ -79,6 +86,7 @@ public final class LibraryAnalyzerCommand {
   public static class Builder {
 
     private final AndroidApp.Builder appBuilder;
+    private Path blastRadiusOutputPath;
     private AndroidApiLevel minApiLevel = AndroidApiLevel.getDefault();
     private Path outputPath;
     private final Reporter reporter;
@@ -101,8 +109,30 @@ public final class LibraryAnalyzerCommand {
       return appBuilder;
     }
 
-    public Builder setAarPath(Path aarPath) {
+    public Builder addAarPath(Path aarPath) {
       appBuilder.addProgramResourceProvider(AarArchiveResourceProvider.fromArchive(aarPath));
+      return this;
+    }
+
+    public Builder addAarPath(Path aarPath, Origin origin) {
+      appBuilder.addProgramResourceProvider(
+          AarArchiveResourceProvider.fromArchive(aarPath, origin));
+      return this;
+    }
+
+    public Builder addJarPath(Path jarPath) {
+      appBuilder.addProgramResourceProvider(ArchiveResourceProvider.fromArchive(jarPath, true));
+      return this;
+    }
+
+    public Builder addJarPath(Path jarPath, Origin origin) {
+      appBuilder.addProgramResourceProvider(
+          ArchiveResourceProvider.fromArchive(jarPath, true, origin));
+      return this;
+    }
+
+    public Builder setBlastRadiusOutputPath(Path blastRadiusOutputPath) {
+      this.blastRadiusOutputPath = blastRadiusOutputPath;
       return this;
     }
 
@@ -141,7 +171,12 @@ public final class LibraryAnalyzerCommand {
       }
       validate();
       return new LibraryAnalyzerCommand(
-          appBuilder.build(), minApiLevel, outputPath, reporter, threadCount);
+          appBuilder.build(),
+          blastRadiusOutputPath,
+          minApiLevel,
+          outputPath,
+          reporter,
+          threadCount);
     }
 
     private void validate() {

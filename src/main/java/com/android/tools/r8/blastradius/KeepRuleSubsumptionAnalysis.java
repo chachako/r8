@@ -24,7 +24,11 @@ public class KeepRuleSubsumptionAnalysis {
     this.blastRadius = blastRadius;
   }
 
-  Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> run() {
+  Map<RootSetBlastRadiusForRule, Collection<RootSetBlastRadiusForRule>> run(
+      BlastRadiusOptions options) {
+    if (!options.enableSubsumptionAnalysis) {
+      return subsumedBy;
+    }
     // Visit all keep rule pairs.
     // TODO(b/441055269): Parallelize.
     // TODO(b/441055269): Consider narrowing the candidate pairs by syntactic analysis of the keep

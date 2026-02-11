@@ -133,6 +133,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -1394,6 +1395,28 @@ public class R8 {
     @Override
     public Origin getOrigin() {
       return androidResource.getOrigin();
+    }
+  }
+
+  public static class LibraryAnalyzerEntryPoint {
+
+    public static void run(
+        R8Command command,
+        ExecutorService executorService,
+        Consumer<InternalOptions> optionsModification)
+        throws CompilationFailedException {
+      AndroidApp app = command.getInputApp();
+      InternalOptions options = command.getInternalOptions();
+      optionsModification.accept(options);
+      ExceptionUtils.withR8CompilationHandler(
+          options.reporter,
+          () -> {
+            try {
+              runInternal(app, options, executorService);
+            } finally {
+              executorService.shutdown();
+            }
+          });
     }
   }
 

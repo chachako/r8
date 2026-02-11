@@ -37,12 +37,15 @@ public class AarArchiveResourceProvider implements ProgramResourceProvider, Data
   private final Path archive;
 
   public static AarArchiveResourceProvider fromArchive(Path archive) {
-    return new AarArchiveResourceProvider(archive);
+    return fromArchive(archive, new PathOrigin(archive));
   }
 
-  AarArchiveResourceProvider(Path archive) {
+  public static AarArchiveResourceProvider fromArchive(Path archive, Origin origin) {
+    return new AarArchiveResourceProvider(archive, origin);
+  }
+
+  AarArchiveResourceProvider(Path archive, Origin origin) {
     assert isArchive(archive);
-    PathOrigin origin = new PathOrigin(archive);
     this.classesOrigin = new ArchiveEntryOrigin("classes.jar", origin);
     this.origin = origin;
     this.archive = archive;

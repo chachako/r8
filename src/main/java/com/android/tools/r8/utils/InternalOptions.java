@@ -27,6 +27,7 @@ import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.AndroidApiModelingOptions;
+import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
@@ -1071,6 +1072,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   }
 
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
+  private final BlastRadiusOptions blastRadiusOptions = new BlastRadiusOptions();
   private final RewriteArrayOptions rewriteArrayOptions = new RewriteArrayOptions();
   private final CallSiteOptimizationOptions callSiteOptimizationOptions =
       new CallSiteOptimizationOptions();
@@ -1198,6 +1200,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public AccessModifierOptions getAccessModifierOptions() {
     return accessModifierOptions;
+  }
+
+  public BlastRadiusOptions getBlastRadiusOptions() {
+    return blastRadiusOptions;
   }
 
   public CfCodeAnalysisOptions getCfCodeAnalysisOptions() {

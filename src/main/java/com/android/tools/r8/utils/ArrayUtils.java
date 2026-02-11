@@ -29,6 +29,10 @@ public class ArrayUtils {
     return false;
   }
 
+  public static <T> T getOrDefault(T[] array, int index, T defaultValue) {
+    return index < array.length ? array[index] : defaultValue;
+  }
+
   public static <T> boolean none(T[] array, Predicate<T> predicate) {
     return !any(array, predicate);
   }

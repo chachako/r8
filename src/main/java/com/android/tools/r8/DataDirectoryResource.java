@@ -29,6 +29,10 @@ public interface DataDirectoryResource extends DataResource {
     return new ZipDataDirectoryResource(zip, entry);
   }
 
+  static DataDirectoryResource fromZip(ZipFile zip, ZipEntry entry, Origin zipOrigin) {
+    return new ZipDataDirectoryResource(zip, entry, zipOrigin);
+  }
+
   class NamedDataDirectoryResource implements DataDirectoryResource {
     private final String name;
     private final Origin origin;
@@ -52,19 +56,23 @@ public interface DataDirectoryResource extends DataResource {
   }
 
   class ZipDataDirectoryResource implements DataDirectoryResource {
-    private final ZipFile zip;
     private final ZipEntry entry;
+    private final Origin zipOrigin;
 
     private ZipDataDirectoryResource(ZipFile zip, ZipEntry entry) {
+      this(zip, entry, new PathOrigin(Paths.get(zip.getName())));
+    }
+
+    private ZipDataDirectoryResource(ZipFile zip, ZipEntry entry, Origin zipOrigin) {
       assert zip != null;
       assert entry != null;
-      this.zip = zip;
       this.entry = entry;
+      this.zipOrigin = zipOrigin;
     }
 
     @Override
     public Origin getOrigin() {
-      return new ArchiveEntryOrigin(entry.getName(), new PathOrigin(Paths.get(zip.getName())));
+      return new ArchiveEntryOrigin(entry.getName(), zipOrigin);
     }
 
     @Override

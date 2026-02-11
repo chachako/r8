@@ -120,9 +120,9 @@ public class ArchiveResourceProviderUtils {
         ZipEntry entry = entries.nextElement();
         if (predicate.test(entry)) {
           if (entry.isDirectory()) {
-            visitor.visit(DataDirectoryResource.fromZip(zipFile, entry));
+            visitor.visit(DataDirectoryResource.fromZip(zipFile, entry, origin));
           } else {
-            visitor.visit(DataEntryResource.fromZip(zipFile, entry));
+            visitor.visit(DataEntryResource.fromZip(zipFile, entry, origin));
           }
         }
       }

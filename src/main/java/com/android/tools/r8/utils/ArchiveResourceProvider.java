@@ -41,7 +41,13 @@ public class ArchiveResourceProvider implements ProgramResourceProvider, DataRes
   final boolean ignoreDexInArchive;
 
   public static ArchiveResourceProvider fromArchive(Path archive, boolean ignoreDexInArchive) {
-    return new ArchiveResourceProvider(FilteredClassPath.unfiltered(archive), ignoreDexInArchive);
+    return fromArchive(archive, ignoreDexInArchive, new PathOrigin(archive));
+  }
+
+  public static ArchiveResourceProvider fromArchive(
+      Path archive, boolean ignoreDexInArchive, Origin origin) {
+    return new ArchiveResourceProvider(
+        FilteredClassPath.unfiltered(archive), ignoreDexInArchive, origin);
   }
 
   ArchiveResourceProvider(FilteredClassPath archive, boolean ignoreDexInArchive) {

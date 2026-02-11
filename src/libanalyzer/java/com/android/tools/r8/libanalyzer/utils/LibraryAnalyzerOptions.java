@@ -10,6 +10,7 @@ import java.nio.file.Path;
 
 public class LibraryAnalyzerOptions {
 
+  public final Path blastRadiusOutputPath;
   public final AndroidApiLevel minApiLevel;
   public final Path outputPath;
   public final Reporter reporter;
@@ -18,7 +19,12 @@ public class LibraryAnalyzerOptions {
   private ThreadingModule lazyThreadingModule = null;
 
   public LibraryAnalyzerOptions(
-      AndroidApiLevel minApiLevel, Path outputPath, Reporter reporter, int threadCount) {
+      Path blastRadiusOutputPath,
+      AndroidApiLevel minApiLevel,
+      Path outputPath,
+      Reporter reporter,
+      int threadCount) {
+    this.blastRadiusOutputPath = blastRadiusOutputPath;
     this.minApiLevel = minApiLevel;
     this.outputPath = outputPath;
     this.reporter = reporter;

@@ -12,34 +12,52 @@ import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArg
 import com.android.tools.r8.CompilerCommandParserUtils;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.origin.PathBasedMavenOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.ArrayUtils;
+import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableSet;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 
 @KeepForApi
 public class LibraryAnalyzerCommandParser {
 
   private static final String AAR_FLAG = "--aar";
+  private static final String BLAST_RADIUS_OUTPUT_FLAG = "--blast-radius-output";
+  private static final String JAR_FLAG = "--jar";
 
   private static final Set<String> OPTIONS_WITH_ONE_PARAMETER =
-      ImmutableSet.of(AAR_FLAG, LIB_FLAG, MIN_API_FLAG, OUTPUT_FLAG, THREAD_COUNT_FLAG);
+      ImmutableSet.of(
+          AAR_FLAG,
+          BLAST_RADIUS_OUTPUT_FLAG,
+          JAR_FLAG,
+          LIB_FLAG,
+          MIN_API_FLAG,
+          OUTPUT_FLAG,
+          THREAD_COUNT_FLAG);
 
   private static final String USAGE_MESSAGE =
       StringUtils.lines(
           "Usage: libanalyzer [options]",
           "where options are:",
-          "  --aar <path>            # Path to Android Archive (AAR) that should be analyzed.",
-          "  --lib <path>            # Path to file or JDK home to use as a library resource.",
-          "  --min-api <major.minor> # Minimum API level to use for analysis.",
-          "  --output <path>         # Path where to write the analysis result (protobuf).",
-          "  --thread-count <int>    # Number of threads to use.",
-          "  --help                  # Print this message.",
-          "  --version               # Print the version.");
+          "  --aar <path>                 # Path to Android Archive (AAR) that should be analyzed.",
+          "  --blast-radius-output <path> # Path where to write blast radius result (protobuf).",
+          "  --jar <path>                 # Path to Java Archive (JAR) that should be analyzed.",
+          "  --lib <path>                 # Path to file or JDK home to use as a library resource.",
+          "  --maven-coord <x:y:z>        # Set the Maven coordinate of the previous --aar/--jar.",
+          "                               # Only allowed after --aar <path> or --jar <path>.",
+          "  --min-api <major.minor>      # Minimum API level to use for analysis.",
+          "  --output <path>              # Path where to write analysis result (protobuf).",
+          "  --thread-count <int>         # Number of threads to use.",
+          "  --help                       # Print this message.",
+          "  --version                    # Print the version.");
 
   public static String getUsageMessage() {
     return USAGE_MESSAGE;
@@ -68,7 +86,43 @@ public class LibraryAnalyzerCommandParser {
       } else if (arg.equals("--version")) {
         builder.setPrintVersion(true);
       } else if (arg.equals(AAR_FLAG)) {
-        builder.setAarPath(Paths.get(nextArg));
+        Path aarPath = Paths.get(nextArg);
+        if (!FileUtils.isAarFile(aarPath)) {
+          throw new IllegalArgumentException("Expected AAR, got: " + nextArg);
+        }
+        if ("--maven-coord".equals(peekArg(expandedArgs, i + 1))) {
+          if (peekArg(expandedArgs, i + 2) == null) {
+            throw new IllegalArgumentException("Missing parameter for --maven-coord");
+          }
+          List<String> mavenCoordinate = StringUtils.split(expandedArgs[i + 2], ':');
+          builder.addAarPath(
+              aarPath,
+              new PathBasedMavenOrigin(
+                  aarPath, mavenCoordinate.get(0), mavenCoordinate.get(1), mavenCoordinate.get(2)));
+          i += 2;
+        } else {
+          builder.addAarPath(aarPath);
+        }
+      } else if (arg.equals(BLAST_RADIUS_OUTPUT_FLAG)) {
+        builder.setBlastRadiusOutputPath(Paths.get(nextArg));
+      } else if (arg.equals(JAR_FLAG)) {
+        Path jarPath = Paths.get(nextArg);
+        if (!FileUtils.isJarFile(jarPath)) {
+          throw new IllegalArgumentException("Expected JAR, got: " + nextArg);
+        }
+        if ("--maven-coord".equals(peekArg(expandedArgs, i + 1))) {
+          if (peekArg(expandedArgs, i + 2) == null) {
+            throw new IllegalArgumentException("Missing parameter for --maven-coord");
+          }
+          List<String> mavenCoordinate = StringUtils.split(expandedArgs[i + 2], ':');
+          builder.addJarPath(
+              jarPath,
+              new PathBasedMavenOrigin(
+                  jarPath, mavenCoordinate.get(0), mavenCoordinate.get(1), mavenCoordinate.get(2)));
+          i += 2;
+        } else {
+          builder.addJarPath(jarPath);
+        }
       } else if (arg.equals(LIB_FLAG)) {
         CompilerCommandParserUtils.addLibraryArgument(
             builder.getAppBuilder(), nextArg, origin, reporter);
@@ -84,5 +138,9 @@ public class LibraryAnalyzerCommandParser {
       }
     }
     return builder;
+  }
+
+  private static String peekArg(String[] expandedArgs, int index) {
+    return ArrayUtils.getOrDefault(expandedArgs, index, null);
   }
 }

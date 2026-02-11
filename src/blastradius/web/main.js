@@ -235,6 +235,7 @@ function processData() {
       if (!tables.files.has(fileName)) {
         tables.files.set(fileName, {
           name: fileName,
+          origin: r.origin,
           rules: [],
           classIds: new Set(),
           methodIds: new Set(),
@@ -389,7 +390,7 @@ function renderFileList() {
     const div = document.createElement('div');
     div.className = 'rule-item';
     div.innerHTML = `
-            <span class="rule-name">${escapeHtml(file.name)}</span>
+            <span class="rule-name">${escapeHtml(getOriginString(file.origin))}</span>
             <div class="rule-stats">
                 Total radius: ${file.totalRadius} across ${file.rules.length} rules
                 <br>(${file.classes} classes, ${file.methods} methods, ${file.fields} fields)
@@ -650,8 +651,22 @@ function getFileName(origin) {
   return fileOrigin ? fileOrigin.filename : "Unknown";
 }
 
+function getMavenCoordinate(origin) {
+  if (!origin) return null;
+  const fileOrigin = tables.origins.get(origin.fileOriginId);
+  return fileOrigin?.mavenCoordinate;
+}
+
+function getMavenCoordinateString(mavenCoordinate) {
+  return mavenCoordinate.groupId + ":" + mavenCoordinate.artifactId + ":" + mavenCoordinate.version;
+}
+
 function getOriginString(origin) {
   if (!origin) return "Unknown";
+  const mavenCoordinate = getMavenCoordinate(origin);
+  if (mavenCoordinate) {
+    return getMavenCoordinateString(mavenCoordinate);
+  }
   const name = getFileName(origin);
   let res = name;
   if (origin.lineNumber) {
