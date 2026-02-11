@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.optimize;
 
+import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -13,9 +14,10 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
@@ -51,7 +53,6 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
   @Test
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
-    boolean optimization = parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
     testForR8(parameters)
         .addOptionsModification(
             options -> {
@@ -80,35 +81,24 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
               diagnostic = diagnostics.getInfos().get(1);
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
-                if (optimization) {
-                  assertTrue(
-                      "Does not contain 'Can optimize': " + message,
-                      message.contains("Can optimize"));
-                } else {
-                  assertTrue(
-                      "Does not contain 'Cannot optimize': " + message,
-                      message.contains("Cannot optimize"));
-                }
+                assertTrue(
+                    "Does not contain 'Can optimize': " + message,
+                    message.contains("Can optimize"));
               }
               assertEquals(1, diagnosticLines.size());
               diagnostic = diagnostics.getInfos().get(2);
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
-                if (optimization) {
-                  assertTrue(
-                      "Does not contain 'Can remove': " + message, message.contains("Can remove"));
-                } else {
-                  assertTrue(
-                      "Does not contain 'Cannot remove': " + message,
-                      message.contains("Cannot remove"));
-                }
+                assertTrue(
+                    "Does not contain 'Can remove': " + message, message.contains("Can remove"));
               }
               assertEquals(1, diagnosticLines.size());
             })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              if (optimization) {
+              boolean isGetAndSetDefined = parameters.canUseUnsafeGetAndSet();
+              if (isGetAndSetDefined) {
                 assertThat(
                     method,
                     CodeMatchers.invokesMethod(
@@ -117,13 +107,13 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
                         "getAndSetObject",
                         ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
               } else {
+                ClassSubject helper =
+                    inspector.clazz(
+                        SyntheticItemsTestUtils.syntheticAtomicFieldUpdaterHelper(TestClass.class));
+                assertThat(helper, isPresent());
                 assertThat(
                     method,
-                    CodeMatchers.invokesMethod(
-                        "java.lang.Object",
-                        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater",
-                        "getAndSet",
-                        ImmutableList.of("java.lang.Object", "java.lang.Object")));
+                    CodeMatchers.invokesMethod(helper.uniqueMethodWithOriginalName("getAndSet")));
               }
             })
         .run(parameters.getRuntime(), testClass)

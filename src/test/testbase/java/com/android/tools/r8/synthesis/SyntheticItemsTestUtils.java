@@ -55,6 +55,11 @@ public abstract class SyntheticItemsTestUtils {
     return SyntheticNaming.INTERNAL_SYNTHETIC_METHOD_NAME;
   }
 
+  public static ClassReference syntheticAtomicFieldUpdaterHelper(Class<?> clazz) {
+    return Reference.classFromTypeName(
+        clazz.getTypeName() + naming.ATOMIC_FIELD_UPDATER_HELPER.getDescriptor());
+  }
+
   public static ClassReference syntheticCompanionClass(Class<?> clazz) {
     return syntheticCompanionClass(Reference.classFromClass(clazz));
   }

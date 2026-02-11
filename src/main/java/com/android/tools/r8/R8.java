@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
 import static com.android.tools.r8.utils.AssertionUtils.forTesting;
 import static com.android.tools.r8.utils.ExceptionUtils.unwrapExecutionException;
@@ -551,14 +552,19 @@ public class R8 {
       Set<DexType> prunedClasspathTypes =
           appView.withLiveness().appInfo().getClasspathTypesIncludingPruned();
 
-      assert ArtProfileCompletenessChecker.verify(appView);
+      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
+      assert ArtProfileCompletenessChecker.verify(
+          appView, ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
 
       new PrimaryR8IRConverter(appViewWithLiveness, timing, enableListIterationRewriter)
           .optimize(appViewWithLiveness, executorService);
       assert LirConverter.verifyLirOnly(appView);
 
+      // AtomicFieldUpdaterInstrumentor adds a method not yet used.
       assert ArtProfileCompletenessChecker.verify(
-          appView, ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS);
+          appView,
+          ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,
+          ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS);
 
       // Clear the reference type lattice element cache to reduce memory pressure.
       appView.getTypeElementFactory().clearTypeElementsCache();

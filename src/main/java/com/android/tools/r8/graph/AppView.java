@@ -143,8 +143,7 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
   private final LibraryMemberOptimizer libraryMemberOptimizer;
   private final ProtoShrinker protoShrinker;
   // TODO(b/453628974): Clear info after first optimization pass.
-  private final AtomicFieldUpdaterInstrumentorInfo atomicFieldUpdaterInstrumentorInfo =
-      AtomicFieldUpdaterInstrumentorInfo.empty();
+  private AtomicFieldUpdaterInstrumentorInfo atomicFieldUpdaterInstrumentorInfo = null;
 
   // Optimization results.
   private boolean allCodeProcessed = false;
@@ -697,6 +696,11 @@ public class AppView<T extends AppInfo> implements DexDefinitionSupplier, Librar
 
   public AtomicFieldUpdaterInstrumentorInfo getAtomicFieldUpdaterInstrumentorInfo() {
     return atomicFieldUpdaterInstrumentorInfo;
+  }
+
+  public void setAtomicFieldUpdaterInstrumentorInfo(AtomicFieldUpdaterInstrumentorInfo info) {
+    assert atomicFieldUpdaterInstrumentorInfo == null;
+    atomicFieldUpdaterInstrumentorInfo = info;
   }
 
   public GraphLens codeLens() {

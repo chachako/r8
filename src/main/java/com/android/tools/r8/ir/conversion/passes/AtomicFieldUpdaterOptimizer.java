@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFieldUpdaterInstrumentorInfo;
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations;
+import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     return !isDebugMode(code.context())
         && methodProcessor.isPrimaryMethodProcessor()
         // TODO(b/453628974): Consider running in second pass (must maintain appView data).
-        && appView.getAtomicFieldUpdaterInstrumentorInfo().hasUnsafe()
+        && appView.getAtomicFieldUpdaterInstrumentorInfo() != null
         && appView
             .getAtomicFieldUpdaterInstrumentorInfo()
             .getInstrumentations()
@@ -332,12 +333,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       AtomicFieldUpdaterInstrumentorInfo info,
       Value outValue) {
-    if (appView.options().isGeneratingDex()
-        && appView.options().getMinApiLevel().isLessThan(AndroidApiLevel.N)) {
-      reportFailure(position, "android api level < N");
-      return false;
-    }
-
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
     var resolvedUpdater =
@@ -518,7 +513,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
                 updateValue));
     unsafeCompareAndSet.setPosition(position);
     it.replaceCurrentInstruction(unsafeCompareAndSet);
-    // TODO(b/453628974): Does profiling need to be updated?
   }
 
   /**
@@ -577,7 +571,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
             ImmutableList.of(unsafeInstance.outValue(), holderValue, offset.outValue()));
     unsafeGet.setPosition(position);
     it.replaceCurrentInstruction(unsafeGet);
-    // TODO(b/453628974): Does profiling need to be updated?
   }
 
   /**
@@ -642,7 +635,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
                 unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
     unsafeSet.setPosition(position);
     it.replaceCurrentInstruction(unsafeSet);
-    // TODO(b/453628974): Does profiling need to be updated?
   }
 
   /**
@@ -664,6 +656,10 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Value holderValue,
       Value newValueValue,
       Value outValue) {
+    boolean isGetAndSetDefined =
+        !appView.options().isGeneratingDex()
+            || appView.options().getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+
     var instructions = new ArrayList<Instruction>(4);
 
     // Null-check for updater.
@@ -690,24 +686,38 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     insertInstructionsBeforeCurrentInstruction(it, instructions);
 
     // Call underlying unsafe method.
-    DexMethod unsafeGetAndSetMethod =
-        dexItemFactory.createMethod(
-            dexItemFactory.unsafeType,
-            dexItemFactory.createProto(
-                dexItemFactory.objectType,
-                dexItemFactory.objectType,
-                dexItemFactory.longType,
-                dexItemFactory.objectType),
-            "getAndSetObject");
-    Instruction unsafeGetAndSet =
-        new InvokeVirtual(
-            unsafeGetAndSetMethod,
-            outValue,
-            ImmutableList.of(
-                unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
-    unsafeGetAndSet.setPosition(position);
-    it.replaceCurrentInstruction(unsafeGetAndSet);
-    // TODO(b/453628974): Does profiling need to be updated?
+    Instruction getAndSet;
+    if (isGetAndSetDefined) {
+      DexMethod unsafeGetAndSetMethod =
+          dexItemFactory.createMethod(
+              dexItemFactory.unsafeType,
+              dexItemFactory.createProto(
+                  dexItemFactory.objectType,
+                  dexItemFactory.objectType,
+                  dexItemFactory.longType,
+                  dexItemFactory.objectType),
+              "getAndSetObject");
+      getAndSet =
+          new InvokeVirtual(
+              unsafeGetAndSetMethod,
+              outValue,
+              ImmutableList.of(
+                  unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
+    } else {
+      DexMethod backportedGetAndSet = info.getGetAndSetMethod();
+      getAndSet =
+          new InvokeStatic(
+              backportedGetAndSet,
+              outValue,
+              ImmutableList.of(
+                  unsafeInstance.outValue(), holderValue, offset.outValue(), newValueValue));
+      var profiling = ProfileCollectionAdditions.create(appView);
+      profiling.applyIfContextIsInProfile(
+          code.context().getReference(), builder -> builder.addMethodRule(backportedGetAndSet));
+      profiling.commit(appView);
+    }
+    getAndSet.setPosition(position);
+    it.replaceCurrentInstruction(getAndSet);
   }
 
   private Instruction createOffsetGet(IRCode code, Position position, DexField offsetField) {

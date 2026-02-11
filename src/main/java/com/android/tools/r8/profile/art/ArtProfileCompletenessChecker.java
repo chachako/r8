@@ -4,6 +4,7 @@
 
 package com.android.tools.r8.profile.art;
 
+import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS;
 import static com.android.tools.r8.profile.art.ArtProfileCompletenessChecker.CompletenessExceptions.ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS;
 
 import com.android.tools.r8.graph.AppView;
@@ -37,7 +38,8 @@ import java.util.Set;
 public class ArtProfileCompletenessChecker {
 
   public enum CompletenessExceptions {
-    ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS
+    ALLOW_MISSING_ENUM_UNBOXING_UTILITY_METHODS,
+    ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS
   }
 
   public static boolean verify(
@@ -95,6 +97,16 @@ public class ArtProfileCompletenessChecker {
                 contextType, naming -> naming.ENUM_UNBOXING_LOCAL_UTILITY_CLASS)
             || syntheticItems.isSyntheticOfKind(
                 contextType, naming -> naming.ENUM_UNBOXING_SHARED_UTILITY_CLASS)) {
+          return;
+        }
+      }
+    }
+    if (completenessExceptions.contains(ALLOW_MISSING_ATOMIC_FIELD_UPDATER_METHODS)) {
+      DexType contextType = definition.getContextType();
+      SyntheticItems syntheticItems = appView.getSyntheticItems();
+      if (syntheticItems.isSynthetic(contextType)) {
+        if (syntheticItems.isSyntheticOfKind(
+            contextType, naming -> naming.ATOMIC_FIELD_UPDATER_HELPER)) {
           return;
         }
       }

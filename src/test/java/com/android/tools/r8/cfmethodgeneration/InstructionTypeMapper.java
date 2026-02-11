@@ -53,16 +53,17 @@ public class InstructionTypeMapper {
     DexMethod method = invoke.getMethod();
     String name = method.getName().toString();
     DexType holderType = invoke.getMethod().getHolderType();
+    DexProto proto = invoke.getMethod().getProto();
     DexType rewrittenType = typeMap.getOrDefault(holderType, holderType);
     String rewrittenName =
         rewrittenType == factory.varHandleType ? methodNameMap.apply(name) : name;
-    if (rewrittenType != holderType) {
+    DexProto rewrittenProto = rewriteProto(proto);
+    if (!rewrittenType.isIdenticalTo(holderType)
+        || !rewrittenProto.isIdenticalTo(proto)
+        || !rewrittenName.equals(name)) {
       return new CfInvoke(
           invoke.getOpcode(),
-          factory.createMethod(
-              rewrittenType,
-              rewriteProto(invoke.getMethod().getProto()),
-              factory.createString(rewrittenName)),
+          factory.createMethod(rewrittenType, rewrittenProto, factory.createString(rewrittenName)),
           invoke.isInterface());
     }
     return instruction;

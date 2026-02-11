@@ -32,7 +32,7 @@ import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.IRToLirFinalizer;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer;
 import com.android.tools.r8.ir.conversion.passes.AtomicFieldUpdaterOptimizer.AtomicFieldUpdaterInfo;
-import com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaringMethods;
+import com.android.tools.r8.ir.synthetic.AtomicFieldUpdaterOptimizationMethods;
 import com.android.tools.r8.lightir.LirCode;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
@@ -126,6 +126,7 @@ public class AtomicFieldUpdaterInstrumentor {
   private final DebugLogs logs;
   private static final String unsafeFieldName = "unsafe";
   private static final String getUnsafeMethodName = "getUnsafe";
+  private static final String getAndSetMethodName = "getAndSet";
 
   public static void run(
       AppView<AppInfoWithLiveness> appView, ExecutorService service, Timing timing)
@@ -161,10 +162,13 @@ public class AtomicFieldUpdaterInstrumentor {
       var profiling = ProfileCollectionAdditions.create(appView);
       var unsafeClass = synthesizeUnsafeClass(classesWithAtomics.keySet(), profiling);
       var unsafeInstanceField = unsafeClass.unsafeInstanceField.getReference();
+      var getAndSetMethod = unsafeClass.getAndSetMethod.getReference();
       var instrumentations = addOffsetFields(classesWithAtomics, unsafeClass, profiling, timing);
 
       profiling.commit(appView);
-      appView.getAtomicFieldUpdaterInstrumentorInfo().set(instrumentations, unsafeInstanceField);
+      appView.setAtomicFieldUpdaterInstrumentorInfo(
+          new AtomicFieldUpdaterInstrumentorInfo(
+              instrumentations, unsafeInstanceField, getAndSetMethod));
     }
 
     logs.outputLogs();
@@ -397,6 +401,18 @@ public class AtomicFieldUpdaterInstrumentor {
                 itemFactory.createProto(itemFactory.unsafeType),
                 getUnsafeMethodName));
     assert getUnsafeMethod != null;
+    var getAndSetMethod =
+        unsafeClass.lookupProgramMethod(
+            itemFactory.createMethod(
+                unsafeClass.getType(),
+                itemFactory.createProto(
+                    itemFactory.objectType,
+                    itemFactory.unsafeType,
+                    itemFactory.objectType,
+                    itemFactory.longType,
+                    itemFactory.objectType),
+                getAndSetMethodName));
+    assert getAndSetMethod != null;
     if (!profiling.isNop()) {
       for (var clazz : classesWithAtomics) {
         // TODO(b/453628974): Break after first callback trigger.
@@ -405,7 +421,7 @@ public class AtomicFieldUpdaterInstrumentor {
       }
     }
     appView.rebuildAppInfo();
-    return new UnsafeClassInfo(classInitializer, unsafeField, getUnsafeMethod);
+    return new UnsafeClassInfo(classInitializer, unsafeField, getUnsafeMethod, getAndSetMethod);
   }
 
   private static DexProgramClass getDeterministicContext(
@@ -446,12 +462,35 @@ public class AtomicFieldUpdaterInstrumentor {
               .setApiLevelForCode(appView.computedMinApiLevel())
               .setCode(
                   method ->
-                      VarHandleDesugaringMethods.DesugarVarHandle_getUnsafe(itemFactory, method));
+                      AtomicFieldUpdaterOptimizationMethods
+                          .AtomicFieldUpdaterOptimizationMethods_getUnsafe(itemFactory, method));
           if (appView.options().isGeneratingClassFiles()) {
             methodBuilder.setClassFileVersion(
                 appView.options().requiredCfVersionForConstClassInstructions());
           }
         });
+    DexMethod getAndSetMethod =
+        itemFactory.createMethod(
+            builder.getType(),
+            itemFactory.createProto(
+                itemFactory.objectType,
+                itemFactory.unsafeType,
+                itemFactory.objectType,
+                itemFactory.longType,
+                itemFactory.objectType),
+            getAndSetMethodName);
+    builder.addMethod(
+        methodBuilder ->
+            methodBuilder
+                .setName(getAndSetMethod.name)
+                .setProto(getAndSetMethod.proto)
+                .setAccessFlags(MethodAccessFlags.createPublicStaticSynthetic())
+                .setApiLevelForDefinition(appView.computedMinApiLevel())
+                .setApiLevelForCode(appView.computedMinApiLevel())
+                .setCode(
+                    method ->
+                        AtomicFieldUpdaterOptimizationMethods
+                            .AtomicFieldUpdaterOptimizationMethods_getAndSet(itemFactory, method)));
     DexMethod clinit = itemFactory.createClassInitializer(builder.getType());
     builder.addMethod(
         methodBuilder ->
@@ -636,9 +675,7 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   public static void registerSynthesizedCodeReferences(DexItemFactory factory) {
-    // TODO(b/453628974): List all used (novel) types and avoid the full set of var handle
-    //                    desugaring.
-    VarHandleDesugaringMethods.registerSynthesizedCodeReferences(factory);
+    AtomicFieldUpdaterOptimizationMethods.registerSynthesizedCodeReferences(factory);
   }
 
   private static class UnsafeClassInfo {
@@ -646,14 +683,17 @@ public class AtomicFieldUpdaterInstrumentor {
     public final ProgramMethod classInitializer;
     public final ProgramField unsafeInstanceField;
     public final ProgramMethod getUnsafeMethod;
+    public final ProgramMethod getAndSetMethod;
 
     private UnsafeClassInfo(
         ProgramMethod classInitializer,
         ProgramField unsafeInstanceField,
-        ProgramMethod getUnsafeMethod) {
+        ProgramMethod getUnsafeMethod,
+        ProgramMethod getAndSetMethod) {
       this.classInitializer = classInitializer;
       this.unsafeInstanceField = unsafeInstanceField;
       this.getUnsafeMethod = getUnsafeMethod;
+      this.getAndSetMethod = getAndSetMethod;
     }
   }
 
@@ -751,43 +791,33 @@ public class AtomicFieldUpdaterInstrumentor {
   }
 
   public static class AtomicFieldUpdaterInstrumentorInfo {
-    private Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations;
-    private DexField unsafeInstanceField;
+
+    private final Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations;
+    private final DexField unsafeInstanceField;
+    private final DexMethod getAndSetMethod;
 
     public AtomicFieldUpdaterInstrumentorInfo(
         Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations,
-        DexField unsafeInstanceField) {
+        DexField unsafeInstanceField,
+        DexMethod getAndSetMethod) {
       assert instrumentations != null;
+      assert unsafeInstanceField != null;
+      assert getAndSetMethod != null;
       this.instrumentations = instrumentations;
       this.unsafeInstanceField = unsafeInstanceField;
-    }
-
-    public static AtomicFieldUpdaterInstrumentorInfo empty() {
-      return new AtomicFieldUpdaterInstrumentorInfo(Collections.emptyMap(), null);
-    }
-
-    public boolean hasUnsafe() {
-      return unsafeInstanceField != null;
+      this.getAndSetMethod = getAndSetMethod;
     }
 
     public Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> getInstrumentations() {
       return instrumentations;
     }
 
-    /** {@code instrumentations} and {@code unsafeInstanceField} must both be non-null. */
-    public void set(
-        Map<DexType, Map<DexField, AtomicFieldUpdaterInfo>> instrumentations,
-        DexField unsafeInstanceField) {
-      assert instrumentations != null;
-      assert unsafeInstanceField != null;
-      this.instrumentations = instrumentations;
-      this.unsafeInstanceField = unsafeInstanceField;
+    public DexField getUnsafeInstanceField() {
+      return unsafeInstanceField;
     }
 
-    /** {@code hasUnsafe} must be checked first. */
-    public DexField getUnsafeInstanceField() {
-      assert unsafeInstanceField != null;
-      return unsafeInstanceField;
+    public DexMethod getGetAndSetMethod() {
+      return getAndSetMethod;
     }
   }
 }

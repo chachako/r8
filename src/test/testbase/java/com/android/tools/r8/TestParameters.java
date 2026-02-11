@@ -139,6 +139,10 @@ public class TestParameters {
     return isDexRuntime() && getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
   }
 
+  public boolean canUseUnsafeGetAndSet() {
+    return isDexRuntime() && getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.N);
+  }
+
   public boolean canUseSubTypesInFilledNewArray() {
     return isDexRuntime() && getApiLevel().isGreaterThan(AndroidApiLevel.U);
   }
