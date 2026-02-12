@@ -51,6 +51,7 @@ import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -3382,5 +3383,26 @@ public class ProguardConfigurationParserTest extends TestBase {
               diagnosticPosition(
                   positionColumn(48 + BooleanUtils.intValue(ToolHelper.isWindows())))));
     }
+  }
+
+  @Test
+  public void testSourceOfKeepRuleWithoutMemberRules() {
+    Set<String> sources =
+        Sets.newHashSet(
+            "-keep class *",
+            "-keep class *,*",
+            "-keep class * extends T",
+            "-keep class * implements T");
+    String configuration =
+        StringUtils.lines(sources.stream().map(l -> l + " #suffix").collect(Collectors.toList()));
+    parser.parse(createConfigurationForTesting(configuration));
+    verifyParserEndsCleanly();
+
+    ProguardConfiguration config = builder.build();
+    for (int i = 0; i < config.getRules().size(); i++) {
+      ProguardConfigurationRule rule = config.getRules().get(i);
+      assertTrue(rule.getSource(), sources.remove(rule.getSource()));
+    }
+    assertTrue(sources.isEmpty());
   }
 }
