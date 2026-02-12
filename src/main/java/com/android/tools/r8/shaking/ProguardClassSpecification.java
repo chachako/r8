@@ -332,6 +332,10 @@ public abstract class ProguardClassSpecification {
     return negatedClassAccessFlags;
   }
 
+  public boolean hasClassAnnotations() {
+    return classAnnotations != null && !classAnnotations.isEmpty();
+  }
+
   public List<ProguardTypeMatcher> getClassAnnotations() {
     return classAnnotations;
   }
