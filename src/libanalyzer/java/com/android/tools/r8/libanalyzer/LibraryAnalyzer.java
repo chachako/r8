@@ -45,6 +45,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
@@ -148,14 +149,15 @@ public class LibraryAnalyzer {
                   options.blastRadiusOutputPath.toString();
             }
             r8Options.blastRadiusConsumer =
-                (appView, appInfo, blastRadius) -> {
-                  resultBuilder.setNumItems(getNumberOfItems(appView));
-                  resultBuilder.setNumItemsKept(getNumberOfKeptItems(appInfo));
-                  resultBuilder.setNumKeepRules(getNumberOfKeepRules(appView));
-                  resultBuilder.setNumKeepRulesPackageWide(
-                      getNumberOfPackageWideKeepRules(appView));
-                  resultBuilder.addAllKeepRuleBlastRadius(getTopBlastRadiusKeepRules(blastRadius));
-                };
+                (appView, appInfo, blastRadius) ->
+                    resultBuilder
+                        .setNumItems(getNumberOfItems(appView))
+                        .setNumItemsKept(getNumberOfKeptItems(appInfo))
+                        .setNumKeepRules(getNumberOfKeepRules(appView))
+                        .setNumKeepRulesPackageWide(getNumberOfPackageWideKeepRules(appView))
+                        .addAllKeepRuleBlastRadius(getTopBlastRadiusKeepRules(blastRadius))
+                        .addAllUnusedPackageWideKeepRules(
+                            getUnusedPackageWideKeepRules(blastRadius));
           });
     } catch (CompilationFailedException e) {
       options.reporter.warning(new ExceptionDiagnostic(e));
@@ -255,6 +257,26 @@ public class LibraryAnalyzer {
             KeepRuleBlastRadius.newBuilder()
                 .setSource(rule.getSource())
                 .setNumItemsKept(rule.getNumberOfItems())
+                .build());
+  }
+
+  private static List<KeepRuleBlastRadius> getUnusedPackageWideKeepRules(
+      RootSetBlastRadius blastRadius) {
+    List<RootSetBlastRadiusForRule> unusedPackageWideKeepRules =
+        ListUtils.filter(
+            blastRadius.getBlastRadius(),
+            rule ->
+                rule.getNumberOfItems() == 0
+                    && BlastRadiusKeepRuleClassifier.isPackageWideKeepRule(rule.getRule()));
+    List<RootSetBlastRadiusForRule> unusedPackageWideKeepRulesSorted =
+        ListUtils.sort(
+            unusedPackageWideKeepRules, Comparator.comparing(RootSetBlastRadiusForRule::getSource));
+    return ListUtils.map(
+        unusedPackageWideKeepRulesSorted,
+        rule ->
+            KeepRuleBlastRadius.newBuilder()
+                .setSource(rule.getSource())
+                .setNumItemsKept(0)
                 .build());
   }
 

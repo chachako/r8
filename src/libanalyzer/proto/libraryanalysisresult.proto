@@ -31,6 +31,7 @@ message R8CompileResult {
   uint32 num_keep_rules = 4;
   uint32 num_keep_rules_package_wide = 5;
   repeated KeepRuleBlastRadius keep_rule_blast_radius = 6;
+  repeated KeepRuleBlastRadius unused_package_wide_keep_rules = 7;
 }
 
 message KeepRuleBlastRadius {
