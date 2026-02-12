@@ -784,9 +784,9 @@ function escapeHtml(text) {
 
 function formatStatsBreakdown(classes, methods, fields) {
   const parts = [];
-  if (classes > 0) parts.push(`${classes} classes`);
-  if (methods > 0) parts.push(`${methods} methods`);
-  if (fields > 0) parts.push(`${fields} fields`);
+  if (classes > 0) parts.push(`${classes} class${classes !== 1 ? 'es' : ''}`);
+  if (methods > 0) parts.push(`${methods} method${methods !== 1 ? 's' : ''}`);
+  if (fields > 0) parts.push(`${fields} field${fields !== 1 ? 's' : ''}`);
   return parts.length > 0 ? `(${parts.join(', ')})` : '';
 }
 
