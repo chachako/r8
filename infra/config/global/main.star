@@ -227,6 +227,7 @@ def r8_builder(
         triggered_by = triggered,
         triggering_policy = triggering_policy,
         executable = "rex",
+        resultdb_settings = resultdb.settings(enable = True, bq_exports = None, history_options = None),
         **kwargs
     )
     category = category if category else "R8"
