@@ -34,6 +34,7 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.startup.profile.ExternalStartupClass;
 import com.android.tools.r8.startup.profile.ExternalStartupItem;
 import com.android.tools.r8.startup.utils.StartupTestingUtils;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -230,7 +231,9 @@ public class R8BuildMetadataTest extends TestBase {
       assertTrue(partialCompilationStatsMetadata.getDexCodeSizeOfExcludedClassesInBytes() > 50);
       assertEquals(0, partialCompilationStatsMetadata.getDexCodeSizeOfIncludedClassesInBytes());
       assertEquals(4, partialCompilationStatsMetadata.getNumberOfExcludedClassesInInput());
-      assertEquals(934, partialCompilationStatsMetadata.getNumberOfIncludedClassesInInput());
+      assertEquals(
+          parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.L) ? 969 : 934,
+          partialCompilationStatsMetadata.getNumberOfIncludedClassesInInput());
       assertEquals(0, partialCompilationStatsMetadata.getNumberOfIncludedClassesInOutput());
     } else {
       assertNull(partialCompilationMetadata);
