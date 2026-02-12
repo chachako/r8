@@ -9,6 +9,7 @@ import static com.android.tools.r8.utils.FileUtils.isDexFile;
 import static com.android.tools.r8.utils.InternalOptions.ASM_VERSION;
 
 import com.android.tools.r8.ArchiveClassFileProvider;
+import com.android.tools.r8.ClassConflictResolver;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.Diagnostic;
@@ -26,6 +27,7 @@ import com.android.tools.r8.utils.Box;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ProgramClassCollection;
 import com.android.tools.r8.utils.ProgramResourceProviderUtils;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringDiagnostic;
@@ -53,6 +55,7 @@ public class TraceReferencesCommand {
   private final ImmutableList<ClassFileResourceProvider> traceTarget;
   private final ImmutableList<ProgramResourceProvider> traceSource;
   private final TraceReferencesConsumer consumer;
+  private final ClassConflictResolver classConflictResolver;
 
   TraceReferencesCommand(
       boolean printHelp,
@@ -61,7 +64,8 @@ public class TraceReferencesCommand {
       ImmutableList<ClassFileResourceProvider> library,
       ImmutableList<ClassFileResourceProvider> traceTarget,
       ImmutableList<ProgramResourceProvider> traceSource,
-      TraceReferencesConsumer consumer) {
+      TraceReferencesConsumer consumer,
+      ClassConflictResolver classConflictResolver) {
     this.printHelp = printHelp;
     this.printVersion = printVersion;
     this.reporter = reporter;
@@ -69,6 +73,7 @@ public class TraceReferencesCommand {
     this.traceTarget = traceTarget;
     this.traceSource = traceSource;
     this.consumer = consumer;
+    this.classConflictResolver = classConflictResolver;
   }
 
   TraceReferencesCommand(boolean printHelp, boolean printVersion) {
@@ -79,6 +84,7 @@ public class TraceReferencesCommand {
     this.traceTarget = null;
     this.traceSource = null;
     this.consumer = null;
+    this.classConflictResolver = null;
   }
 
   /**
@@ -131,6 +137,7 @@ public class TraceReferencesCommand {
     private final ImmutableList.Builder<ProgramResourceProvider> traceSourceBuilder =
         ImmutableList.builder();
     private TraceReferencesConsumer consumer;
+    private ClassConflictResolver classConflictResolver;
 
     private Builder() {
       this(new DiagnosticsHandler() {});
@@ -346,6 +353,18 @@ public class TraceReferencesCommand {
       return this;
     }
 
+    /**
+     * Set a conflict resolver to determine which class definition to use in case of duplicates.
+     *
+     * <p>If no resolver is set, the compiler will fail compilation in case of duplicates.
+     *
+     * @param classConflictResolver Resolver for choosing between duplicate classes.
+     */
+    public Builder setClassConflictResolver(ClassConflictResolver classConflictResolver) {
+      this.classConflictResolver = classConflictResolver;
+      return this;
+    }
+
     TraceReferencesCommand makeCommand() {
       if (isPrintHelp() || isPrintVersion()) {
         return new TraceReferencesCommand(isPrintHelp(), isPrintVersion());
@@ -368,7 +387,14 @@ public class TraceReferencesCommand {
         error(new StringDiagnostic("No consumer specified"));
       }
       return new TraceReferencesCommand(
-          printHelp, printVersion, reporter, library, traceTarget, traceSource, consumer);
+          printHelp,
+          printVersion,
+          reporter,
+          library,
+          traceTarget,
+          traceSource,
+          consumer,
+          classConflictResolver);
     }
 
     public final TraceReferencesCommand build() throws CompilationFailedException {
@@ -422,6 +448,8 @@ public class TraceReferencesCommand {
       builder.setMinification(((TraceReferencesKeepRules) consumer).allowObfuscation());
     }
     options.dumpOptions = builder.build();
+    options.programClassConflictResolver =
+        ProgramClassCollection.wrappedConflictResolver(classConflictResolver, options.reporter);
     return options;
   }
 }

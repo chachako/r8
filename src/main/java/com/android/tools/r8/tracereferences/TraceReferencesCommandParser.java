@@ -6,6 +6,7 @@ package com.android.tools.r8.tracereferences;
 import static com.android.tools.r8.BaseCompilerCommandParser.LIB_FLAG;
 
 import com.android.tools.r8.BaseCompilerCommandParser;
+import com.android.tools.r8.ClassConflictResolver;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.JdkClassFileProvider;
 import com.android.tools.r8.ParseFlagInfo;
@@ -14,18 +15,25 @@ import com.android.tools.r8.ParseFlagPrinter;
 import com.android.tools.r8.StringConsumer.FileConsumer;
 import com.android.tools.r8.StringConsumer.WriterConsumer;
 import com.android.tools.r8.errors.Unreachable;
+import com.android.tools.r8.origin.ArchiveEntryOrigin;
 import com.android.tools.r8.origin.Origin;
+import com.android.tools.r8.origin.PathOrigin;
+import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.StringDiagnostic;
 import com.android.tools.r8.utils.StringUtils;
+import com.android.tools.r8.utils.ZipUtils;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -190,6 +198,8 @@ class TraceReferencesCommandParser {
         } else {
           output = Paths.get(nextArg);
         }
+      } else if (arg.equals("--resolve-trivial-conflicts")) {
+        builder.setClassConflictResolver(new TrivialClassConflictResolver());
       } else if (arg.startsWith("@")) {
         builder.error(new StringDiagnostic("Recursive @argfiles are not supported: ", origin));
       } else {
@@ -279,6 +289,43 @@ class TraceReferencesCommandParser {
       }
     } else {
       builder.addLibraryFiles(path);
+    }
+  }
+
+  private static class TrivialClassConflictResolver implements ClassConflictResolver {
+
+    @Override
+    public Origin resolveDuplicateClass(
+        ClassReference reference, Collection<Origin> origins, DiagnosticsHandler handler) {
+      byte[] previousClassBytes = null;
+      for (Origin origin : origins) {
+        byte[] classBytes = readClassBytes(origin);
+        if (previousClassBytes == null) {
+          previousClassBytes = classBytes;
+        } else if (!Arrays.equals(previousClassBytes, classBytes)) {
+          // Not a trivial conflict, do not resolve.
+          return null;
+        }
+      }
+      // All duplicate classes are identical.
+      return origins.iterator().next();
+    }
+
+    private static byte[] readClassBytes(Origin origin) {
+      if (origin instanceof ArchiveEntryOrigin) {
+        ArchiveEntryOrigin archiveEntryOrigin = (ArchiveEntryOrigin) origin;
+        Origin archiveOrigin = archiveEntryOrigin.parent();
+        if (archiveOrigin instanceof PathOrigin) {
+          PathOrigin archivePathOrigin = (PathOrigin) archiveOrigin;
+          Path archivePath = archivePathOrigin.getPath();
+          try {
+            return ZipUtils.readSingleEntry(archivePath, archiveEntryOrigin.getEntryName());
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        }
+      }
+      throw new RuntimeException("Unhandled origin: " + origin);
     }
   }
 }
