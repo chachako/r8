@@ -25,8 +25,11 @@
 # TODO(b/176783536): Avoid need to use -dontwarn.
 -include dontwarn.txt
 
-# Test in this class is using the class name to fing the original .java file.
+# These files are generated using reflection to compute the file path.
+# The tests that assert that the generated code is up to date will fail if the
+# path has an obfuscated name.
 -keep class com.android.tools.r8.ir.desugar.varhandle.VarHandleDesugaringMethods
+-keep class com.android.tools.r8.ir.synthetic.AtomicFieldUpdaterOptimizationMethods
 
 # The protobuf library uses reflection for toString printing.
 # Note that this is keeping the relocated package location.
