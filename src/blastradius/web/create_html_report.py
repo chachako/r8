@@ -18,11 +18,13 @@ proto_path = os.path.join(web_dir, 'blastradius.proto')
 def ParseOptions():
     parser = argparse.ArgumentParser(
         description='Create a standalone Blast Radius report.')
-    parser.add_argument('input', help='Input .pb file')
-    parser.add_argument('--output',
-                        help='Output .html file',
-                        default='blastradius.html')
-    return parser.parse_args()
+    parser.add_argument('input',
+                        help='Input .pb file or directory containing .pb files')
+    parser.add_argument('--output', help='Output .html file')
+    options = parser.parse_args()
+    if os.path.isdir(options.input) and options.output:
+        raise Exception('Argument --output is not supported when passing a dir')
+    return options
 
 
 def readTextFile(path):
@@ -35,17 +37,7 @@ def readBinaryFile(path):
         return base64.b64encode(f.read()).decode('utf-8')
 
 
-def main():
-    options = ParseOptions()
-
-    # Check if files exist
-    for path in [
-            index_path, style_path, main_js_path, proto_path
-    ]:
-        if not os.path.exists(path):
-            print(f"Error: Required file not found: {path}")
-            return 1
-
+def writeHtml(input, output):
     # Read HTML.
     html = readTextFile(index_path)
 
@@ -59,19 +51,38 @@ def main():
 {readTextFile(proto_path)}
 </script>
 <script id="blastradius-data" type="application/octet-stream">
-{readBinaryFile(options.input)}
+{readBinaryFile(input)}
 </script>
 <script>
 {readTextFile(main_js_path)}
 </script>
 """
-    html = html.replace(
-        '<script src="main.js"></script>',
-        embedded_data)
+    html = html.replace('<script src="main.js"></script>', embedded_data)
 
     # Write output.
-    with open(options.output, 'w') as f:
+    with open(output, 'w') as f:
         f.write(html)
+
+
+def main():
+    options = ParseOptions()
+
+    # Check if files exist
+    for path in [index_path, style_path, main_js_path, proto_path]:
+        if not os.path.exists(path):
+            print(f'Error: Required file not found: {path}')
+            return 1
+
+    if os.path.isdir(options.input):
+        for root, dirs, files in os.walk(options.input):
+            for file in files:
+                if file.endswith('.pb') and 'blastradius' in os.path.basename(
+                        file):
+                    pb_path = os.path.join(root, file)
+                    html_path = pb_path.replace('.pb', '.html')
+                    writeHtml(pb_path, html_path)
+    else:
+        writeHtml(options.input, options.output or 'blastradius.html')
     return 0
 
 
