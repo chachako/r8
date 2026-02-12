@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.ir.conversion.passes;
 
+import static com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reporter.reportInfo;
+
 import com.android.tools.r8.contexts.CompilationContext.MethodProcessingContext;
 import com.android.tools.r8.graph.AppInfoWithClassHierarchy;
 import com.android.tools.r8.graph.AppView;
@@ -13,6 +15,7 @@ import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.IRCode;
 import com.android.tools.r8.ir.code.IRCodeInstructionListIterator;
 import com.android.tools.r8.ir.code.Instruction;
+import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Position;
@@ -22,6 +25,8 @@ import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
 import com.android.tools.r8.ir.optimize.AtomicFieldUpdaterInstrumentor.AtomicFieldUpdaterInstrumentorInfo;
 import com.android.tools.r8.ir.optimize.UtilityMethodsForCodeOptimizations;
+import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
+import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;
 import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.google.common.collect.ImmutableList;
@@ -173,8 +178,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
           changed = true;
         }
       } else {
-        reportFailure(
-            next.getPosition(), "not implemented: " + invokedMethod.name.toSourceString());
+        reportInfo(appView, new Event.CannotOptimize(invoke), Reason.NOT_SUPPORTED);
       }
     }
     return CodeRewriterResult.hasChanged(changed);
@@ -191,9 +195,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Value outValue) {
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
-    var resolvedUpdater =
-        resolveUpdater(
-            code, invoke.getPosition(), atomicUpdaterFields, updaterValue, "compareAndSet");
+    var resolvedUpdater = resolveUpdater(code, atomicUpdaterFields, updaterValue, invoke);
     if (resolvedUpdater == null) {
       return false;
     }
@@ -201,8 +203,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    var resolvedHolder =
-        resolveHolder(invoke.getPosition(), holderValue, expectedHolder, "compareAndSet");
+    var resolvedHolder = resolveHolder(holderValue, expectedHolder, invoke);
     if (resolvedHolder == null) {
       return false;
     }
@@ -212,11 +213,13 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
     // Resolve update.
     var updateValue = invoke.getThirdNonReceiverArgument();
-    if (!isNewValueValid(invoke.getPosition(), resolvedUpdater, updateValue, "compareAndSet")) {
+    if (!isNewValueValid(resolvedUpdater, updateValue, invoke)) {
       return false;
     }
 
-    reportSuccess(invoke.getPosition(), resolvedUpdater.isNullable);
+    reportInfo(
+        appView,
+        new Event.CanOptimize(invoke, resolvedUpdater.isNullable, resolvedHolder.isNullable));
     rewriteCompareAndSet(
         code,
         it,
@@ -245,8 +248,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Value outValue) {
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
-    var resolvedUpdater =
-        resolveUpdater(code, invoke.getPosition(), atomicUpdaterFields, updaterValue, "get");
+    var resolvedUpdater = resolveUpdater(code, atomicUpdaterFields, updaterValue, invoke);
     if (resolvedUpdater == null) {
       return false;
     }
@@ -254,12 +256,14 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    var resolvedHolder = resolveHolder(invoke.getPosition(), holderValue, expectedHolder, "get");
+    var resolvedHolder = resolveHolder(holderValue, expectedHolder, invoke);
     if (resolvedHolder == null) {
       return false;
     }
 
-    reportSuccess(invoke.getPosition(), resolvedUpdater.isNullable);
+    reportInfo(
+        appView,
+        new Event.CanOptimize(invoke, resolvedUpdater.isNullable, resolvedHolder.isNullable));
     rewriteGet(
         code,
         it,
@@ -286,8 +290,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Value outValue) {
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
-    var resolvedUpdater =
-        resolveUpdater(code, invoke.getPosition(), atomicUpdaterFields, updaterValue, "set");
+    var resolvedUpdater = resolveUpdater(code, atomicUpdaterFields, updaterValue, invoke);
     if (resolvedUpdater == null) {
       return false;
     }
@@ -295,18 +298,20 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    var resolvedHolder = resolveHolder(invoke.getPosition(), holderValue, expectedHolder, "set");
+    var resolvedHolder = resolveHolder(holderValue, expectedHolder, invoke);
     if (resolvedHolder == null) {
       return false;
     }
 
     // Resolve newValue.
     var newValueValue = invoke.getSecondNonReceiverArgument();
-    if (!isNewValueValid(invoke.getPosition(), resolvedUpdater, newValueValue, "set")) {
+    if (!isNewValueValid(resolvedUpdater, newValueValue, invoke)) {
       return false;
     }
 
-    reportSuccess(invoke.getPosition(), resolvedUpdater.isNullable);
+    reportInfo(
+        appView,
+        new Event.CanOptimize(invoke, resolvedUpdater.isNullable, resolvedHolder.isNullable));
     rewriteSet(
         code,
         it,
@@ -335,8 +340,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       Value outValue) {
     // Resolve updater.
     var updaterValue = invoke.getReceiver();
-    var resolvedUpdater =
-        resolveUpdater(code, position, atomicUpdaterFields, updaterValue, "getAndSet");
+    var resolvedUpdater = resolveUpdater(code, atomicUpdaterFields, updaterValue, invoke);
     if (resolvedUpdater == null) {
       return false;
     }
@@ -344,19 +348,20 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // Resolve holder.
     var holderValue = invoke.getFirstNonReceiverArgument();
     var expectedHolder = resolvedUpdater.updaterFieldInfo.holder;
-    var resolvedHolder =
-        resolveHolder(invoke.getPosition(), holderValue, expectedHolder, "getAndSet");
+    var resolvedHolder = resolveHolder(holderValue, expectedHolder, invoke);
     if (resolvedHolder == null) {
       return false;
     }
 
     // Resolve newValue.
     var newValueValue = invoke.getSecondNonReceiverArgument();
-    if (!isNewValueValid(position, resolvedUpdater, newValueValue, "getAndSet")) {
+    if (!isNewValueValid(resolvedUpdater, newValueValue, invoke)) {
       return false;
     }
 
-    reportSuccess(position, resolvedUpdater.isNullable);
+    reportInfo(
+        appView,
+        new Event.CanOptimize(invoke, resolvedUpdater.isNullable, resolvedHolder.isNullable));
     rewriteGetAndSet(
         code,
         it,
@@ -375,10 +380,9 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
 
   private ResolvedUpdater resolveUpdater(
       IRCode code,
-      Position position,
       Map<DexField, AtomicFieldUpdaterInfo> atomicUpdaterFields,
       Value updaterValue,
-      String methodNameForLogging) {
+      InvokeMethod invokeForLogging) {
     var unusedUpdaterMightBeNull = updaterValue.getType().isNullable();
     DexField updaterField;
     var updaterAbstractValue =
@@ -386,19 +390,16 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     if (updaterAbstractValue.isSingleFieldValue()) {
       updaterField = updaterAbstractValue.asSingleFieldValue().getField();
     } else {
-      reportFailure(
-          position,
-          "HERE."
-              + methodNameForLogging
-              + "(..) is statically unclear or unhelpful: "
-              + updaterAbstractValue);
+      reportInfo(
+          appView,
+          new Event.CannotOptimize(invokeForLogging),
+          new Reason.StaticallyUnclearUpdater(updaterAbstractValue));
       return null;
     }
     var updaterInfo = atomicUpdaterFields.get(updaterField);
     if (updaterInfo == null) {
-      reportFailure(
-          position,
-          "HERE." + methodNameForLogging + "(..) refers to an un-instrumented updater field");
+      reportInfo(
+          appView, new Event.CannotOptimize(invokeForLogging), Reason.UPDATER_NOT_INSTRUMENTED);
       return null;
     }
     // TODO(b/453628974): stop assuming non-null for all updaters.
@@ -417,10 +418,14 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   }
 
   private ResolvedHolder resolveHolder(
-      Position position, Value holderValue, DexType expectedHolder, String methodNameForLogging) {
+      Value holderValue, DexType expectedHolder, InvokeMethod invokeForLogging) {
     TypeElement holderType = holderValue.getType();
-    if (!holderType.lessThanOrEqual(expectedHolder.toTypeElement(appView), appView)) {
-      reportFailure(position, "_." + methodNameForLogging + "(HERE, ..) is a wrong type");
+    TypeElement expectedHolderType = expectedHolder.toTypeElement(appView);
+    if (!holderType.lessThanOrEqual(expectedHolderType, appView)) {
+      reportInfo(
+          appView,
+          new Event.CannotOptimize(invokeForLogging),
+          new Reason.WrongHolderType(holderType, expectedHolderType));
       return null;
     }
     var isNullable = holderType.isNullable();
@@ -436,13 +441,14 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   }
 
   private boolean isNewValueValid(
-      Position position,
-      ResolvedUpdater resolvedUpdater,
-      Value newValueValue,
-      String methodNameForLogging) {
-    var expectedType = resolvedUpdater.updaterFieldInfo.reflectedFieldType;
-    if (!newValueValue.getType().lessThanOrEqual(expectedType.toTypeElement(appView), appView)) {
-      reportFailure(position, "_." + methodNameForLogging + "(_, HERE, ..) is of unexpected type");
+      ResolvedUpdater resolvedUpdater, Value newValueValue, InvokeMethod invokeForLogging) {
+    var expectedType = resolvedUpdater.updaterFieldInfo.reflectedFieldType.toTypeElement(appView);
+    TypeElement newValueValueType = newValueValue.getType();
+    if (!newValueValueType.lessThanOrEqual(expectedType, appView)) {
+      reportInfo(
+          appView,
+          new Event.CannotOptimize(invokeForLogging),
+          new Reason.WrongValueType(newValueValueType, expectedType));
       return false;
     }
     return true;
@@ -771,35 +777,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     // TODO(b/453628974): Test with a local exception handler.
     it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(instructions, appView.options());
     it.next();
-  }
-
-  private void reportFailure(Position position, String reason) {
-    if (!appView.testing().enableAtomicFieldUpdaterLogs) {
-      return;
-    }
-    appView
-        .reporter()
-        .info(
-            "Cannot optimize AtomicFieldUpdater use: "
-                + reason
-                + " ("
-                + position.getMethod().toSourceString()
-                + ")");
-  }
-
-  private void reportSuccess(Position position, boolean mightBeNull) {
-    if (!appView.testing().enableAtomicFieldUpdaterLogs) {
-      return;
-    }
-    appView
-        .reporter()
-        .info(
-            "Can optimize AtomicFieldUpdater use:    "
-                + (mightBeNull ? "with   " : "without")
-                + " null-check"
-                + " ("
-                + position.getMethod().toSourceString()
-                + ")");
   }
 
   /**

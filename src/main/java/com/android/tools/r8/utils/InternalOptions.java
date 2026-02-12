@@ -497,7 +497,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public boolean enableEnumSwitchMapRemoval = true;
   // TODO(b/453628974): enabling this will unsafely disable compareAndSet
   //                    bug-fix backports for Android Sv2 and before.
-  public boolean enableAtomicFieldUpdaterOptimization = false;
+  public boolean enableAtomicFieldUpdaterOptimization =
+      SystemPropertyUtils.parseSystemPropertyOrDefault(
+          "com.android.tools.r8.enableAtomicFieldUpdaterOptimization", false);
   public final OutlineOptions outline = new OutlineOptions();
   public boolean enableInitializedClassesInInstanceMethodsAnalysis = true;
   public boolean enableRedundantFieldLoadElimination = true;
@@ -2466,7 +2468,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean enableEnumUnboxingDebugLogs =
         System.getProperty("com.android.tools.r8.enableEnumUnboxingDebugLogs") != null;
     public boolean enableAtomicFieldUpdaterLogs =
-        System.getProperty("com.android.tools.r8.enableAtomicFieldUpdaterExtenderLogs") != null;
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.enableAtomicFieldUpdaterExtenderLogs", false);
     public boolean enableVerticalClassMergerLensAssertion = false;
     public boolean forceRedundantConstNumberRemoval = false;
     public boolean forceSplitReturnRewriter = false;

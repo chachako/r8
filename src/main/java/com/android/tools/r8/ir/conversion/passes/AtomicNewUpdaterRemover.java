@@ -4,6 +4,8 @@
 
 package com.android.tools.r8.ir.conversion.passes;
 
+import static com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reporter.reportInfo;
+
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.ir.code.IRCode;
@@ -11,6 +13,8 @@ import com.android.tools.r8.ir.code.IRCodeUtils;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.StaticPut;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
+import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Event;
+import com.android.tools.r8.ir.optimize.info.atomicupdaters.eligibility.Reason;
 
 public class AtomicNewUpdaterRemover {
 
@@ -40,33 +44,11 @@ public class AtomicNewUpdaterRemover {
         continue;
       }
       if (!staticPut.canBeDeadCode(appView, code).isDeadIfOutValueIsDead()) {
-        reportFailure(appView, method);
+        reportInfo(appView, new Event.CannotRemove(staticPut.getField()), Reason.NOT_UNUSED);
         continue;
       }
       IRCodeUtils.removeInstructionAndTransitiveInputsIfNotUsed(staticPut);
-      reportSuccess(appView, method);
-    }
-  }
-
-  private static void reportSuccess(AppView<?> appView, DexEncodedMethod method) {
-    if (appView.testing().enableAtomicFieldUpdaterLogs) {
-      appView
-          .reporter()
-          .info(
-              "Can remove AtomicFieldUpdater initialization ("
-                  + method.getReference().toSourceString()
-                  + ")");
-    }
-  }
-
-  private static void reportFailure(AppView<?> appView, DexEncodedMethod method) {
-    if (appView.testing().enableAtomicFieldUpdaterLogs) {
-      appView
-          .reporter()
-          .info(
-              "Cannot remove AtomicFieldUpdater initialization ("
-                  + method.getReference().toSourceString()
-                  + ")");
+      reportInfo(appView, new Event.CanRemove(staticPut.getField()));
     }
   }
 }
