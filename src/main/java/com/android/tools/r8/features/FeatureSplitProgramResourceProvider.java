@@ -76,9 +76,11 @@ public class FeatureSplitProgramResourceProvider implements ProgramResourceProvi
     this.factory = factory;
   }
 
-  public Set<DexType> unsetTypes() {
-    Set<DexType> result = types;
+  public void unsetTypes() {
     types = null;
-    return result;
+  }
+
+  public Set<DexType> getTypes() {
+    return types;
   }
 }

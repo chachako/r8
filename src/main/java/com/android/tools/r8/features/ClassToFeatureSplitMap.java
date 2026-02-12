@@ -41,7 +41,10 @@ public class ClassToFeatureSplitMap {
 
   public static ClassToFeatureSplitMap createInitialD8ClassToFeatureSplitMap(
       InternalOptions options) {
-    return createInitialClassToFeatureSplitMap(options.getFeatureSplitConfiguration());
+    ClassToFeatureSplitMap initialClassToFeatureSplitMap =
+        createInitialClassToFeatureSplitMap(options.getFeatureSplitConfiguration());
+    unsetTypes(options.getFeatureSplitConfiguration());
+    return initialClassToFeatureSplitMap;
   }
 
   public static ClassToFeatureSplitMap createInitialR8ClassToFeatureSplitMap(
@@ -51,7 +54,23 @@ public class ClassToFeatureSplitMap {
           options.partialSubCompilationConfiguration.asR8();
       return subCompilationConfiguration.getClassToFeatureSplitMap();
     }
-    return createInitialClassToFeatureSplitMap(options.getFeatureSplitConfiguration());
+    ClassToFeatureSplitMap initialClassToFeatureSplitMap =
+        createInitialClassToFeatureSplitMap(options.getFeatureSplitConfiguration());
+    unsetTypes(options.getFeatureSplitConfiguration());
+    return initialClassToFeatureSplitMap;
+  }
+
+  private static void unsetTypes(FeatureSplitConfiguration featureSplitConfiguration) {
+    // The feature split providers are loaded from the resource providers. Once we have loaded the
+    // map we can release the types in the providers to reduce memory usage.
+    if (featureSplitConfiguration != null) {
+      for (FeatureSplit featureSplit : featureSplitConfiguration.getFeatureSplits()) {
+        for (FeatureSplitProgramResourceProvider provider :
+            featureSplitConfiguration.getFeatureSplitProgramResourceProviders(featureSplit)) {
+          provider.unsetTypes();
+        }
+      }
+    }
   }
 
   public static ClassToFeatureSplitMap createInitialClassToFeatureSplitMap(
@@ -66,7 +85,7 @@ public class ClassToFeatureSplitMap {
       DexType representativeType = null;
       for (FeatureSplitProgramResourceProvider programResourceProvider :
           featureSplitConfiguration.getFeatureSplitProgramResourceProviders(featureSplit)) {
-        for (DexType type : programResourceProvider.unsetTypes()) {
+        for (DexType type : programResourceProvider.getTypes()) {
           classToFeatureSplitMap.put(type, featureSplit);
           if (representativeType == null || type.compareTo(representativeType) > 0) {
             representativeType = type;
