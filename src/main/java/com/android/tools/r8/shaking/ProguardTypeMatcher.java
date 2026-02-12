@@ -496,7 +496,7 @@ public abstract class ProguardTypeMatcher {
     }
   }
 
-  private static class MatchTypePattern extends ProguardTypeMatcher {
+  public static class MatchTypePattern extends ProguardTypeMatcher {
 
     private final String pattern;
     private final List<ProguardWildcard> wildcards;
@@ -507,6 +507,10 @@ public abstract class ProguardTypeMatcher {
       this.pattern = identifierPatternWithWildcards.pattern;
       this.wildcards = identifierPatternWithWildcards.wildcards;
       this.kind = kind;
+    }
+
+    public String getPattern() {
+      return pattern;
     }
 
     @Override

@@ -26,6 +26,12 @@ message KeepRuleBlastRadius {
   TextFileOrigin origin = 4;
   // Blast radius information.
   BlastRadius blast_radius = 5;
+  // Keep rule tags.
+  repeated KeepRuleTag tags = 6;
+}
+
+enum KeepRuleTag {
+  PACKAGE_WIDE = 0;
 }
 
 message BlastRadius {

@@ -14,6 +14,7 @@ import com.android.tools.r8.blastradius.proto.GlobalKeepRuleBlastRadius;
 import com.android.tools.r8.blastradius.proto.KeepConstraint;
 import com.android.tools.r8.blastradius.proto.KeepConstraints;
 import com.android.tools.r8.blastradius.proto.KeepRuleBlastRadius;
+import com.android.tools.r8.blastradius.proto.KeepRuleTag;
 import com.android.tools.r8.blastradius.proto.KeptClassInfo;
 import com.android.tools.r8.blastradius.proto.KeptFieldInfo;
 import com.android.tools.r8.blastradius.proto.KeptMethodInfo;
@@ -107,6 +108,9 @@ public class RootSetBlastRadiusSerializer {
               .setConstraintsId(serializeConstraints(blastRadiusForRule).getId())
               .setOrigin(serializeTextFileOrigin(blastRadiusForRule.getRule()))
               .setSource(blastRadiusForRule.getSource());
+      if (BlastRadiusKeepRuleClassifier.isPackageWideKeepRule(blastRadiusForRule.getRule())) {
+        ruleProto.addTags(KeepRuleTag.PACKAGE_WIDE);
+      }
       container.addKeepRuleBlastRadiusTable(ruleProto);
     }
     serializeGlobalKeepRuleBlastRadii(ruleIds.size());
