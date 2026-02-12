@@ -44,12 +44,17 @@ public class RootSetBlastRadius {
 
   public static Builder builder(
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer.Mode mode) {
-    InternalOptions options = appView.options();
-    return options.hasProguardConfiguration()
-            && options.getProguardConfiguration().isPrintBlastRadius(options)
-            && mode.isFinalTreeShaking()
-        ? new Builder()
-        : null;
+    if (mode.isInitialTreeShaking()) {
+      InternalOptions options = appView.options();
+      if (appView.options().blastRadiusConsumer != null) {
+        return new Builder();
+      }
+      if (options.hasProguardConfiguration()
+          && options.getProguardConfiguration().isPrintBlastRadius(options)) {
+        return new Builder();
+      }
+    }
+    return null;
   }
 
   public Collection<RootSetBlastRadiusForRule> getBlastRadius() {

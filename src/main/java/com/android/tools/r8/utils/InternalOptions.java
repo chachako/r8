@@ -28,6 +28,7 @@ import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.AndroidApiModelingOptions;
 import com.android.tools.r8.blastradius.BlastRadiusOptions;
+import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.Policy;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
@@ -1105,6 +1106,8 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final SyntheticItemsOptions syntheticItemsOptions = new SyntheticItemsOptions();
   private final TraceReferencesOptions traceReferencesOptions = new TraceReferencesOptions();
   private final InstrumentationOptions instrumentationOptions;
+  public TriConsumer<AppView<AppInfoWithClassHierarchy>, AppInfoWithLiveness, RootSetBlastRadius>
+      blastRadiusConsumer;
   public R8PartialCompilationConfiguration partialCompilationConfiguration =
       R8PartialCompilationConfiguration.disabledConfiguration();
   public R8PartialSubCompilationConfiguration partialSubCompilationConfiguration = null;

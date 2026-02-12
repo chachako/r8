@@ -260,7 +260,7 @@ public class Enqueuer {
   // thread."
   private ReentrantReadWriteLock appReadWriteLock = new ReentrantReadWriteLock(true);
   private final AppView<AppInfoWithClassHierarchy> appView;
-  private final RootSetBlastRadius.Builder blastRadius;
+  private final RootSetBlastRadius.Builder blastRadiusBuilder;
   private final EnqueuerDeferredTracing deferredTracing;
   private final EnqueuerDeferredAnnotationTracing deferredAnnotationTracing;
   private final ExecutorService executorService;
@@ -497,7 +497,7 @@ public class Enqueuer {
     InternalOptions options = appView.options();
     this.appInfo = appView.appInfo();
     this.appView = appView.withClassHierarchy();
-    this.blastRadius = RootSetBlastRadius.builder(appView, mode);
+    this.blastRadiusBuilder = RootSetBlastRadius.builder(appView, mode);
     this.mode = mode;
     this.profileCollectionAdditions = profileCollectionAdditions;
     this.deferredTracing = EnqueuerDeferredTracing.create(appView, this, mode);
@@ -512,7 +512,7 @@ public class Enqueuer {
         new EnqueuerTaskCollection(this, options.getThreadingModule(), executorService);
     this.keepInfo =
         new MutableKeepInfoCollection(
-            appView, this, KeepInfoCollectionEventConsumer.create(blastRadius));
+            appView, this, KeepInfoCollectionEventConsumer.create(blastRadiusBuilder));
     this.reflectiveIdentification = new EnqueuerReflectiveIdentification(appView, this);
     this.useRegistryFactory = createUseRegistryFactory();
     this.worklist = EnqueuerWorklist.createWorklist(this, options.getThreadingModule());
@@ -4617,13 +4617,19 @@ public class Enqueuer {
   }
 
   private void reportBlastRadius(EnqueuerResult result) {
-    if (blastRadius != null) {
-      Path printBlastRadiusFile =
-          options.getProguardConfiguration().getPrintBlastRadiusFile(options);
-      if (printBlastRadiusFile != null) {
-        blastRadius.build(appView).writeToFile(appView, result, printBlastRadiusFile);
-      } else {
-        BlastRadiusReporter.create().report(blastRadius.build(appView).getBlastRadius());
+    if (blastRadiusBuilder != null) {
+      RootSetBlastRadius blastRadius = blastRadiusBuilder.build(appView);
+      if (options.blastRadiusConsumer != null) {
+        options.blastRadiusConsumer.accept(appView, result.getAppInfo(), blastRadius);
+      }
+      if (options.getProguardConfiguration().isPrintBlastRadius(options)) {
+        Path printBlastRadiusFile =
+            options.getProguardConfiguration().getPrintBlastRadiusFile(options);
+        if (printBlastRadiusFile != null) {
+          blastRadius.writeToFile(appView, result, printBlastRadiusFile);
+        } else {
+          BlastRadiusReporter.create().report(blastRadius.getBlastRadius());
+        }
       }
     }
   }

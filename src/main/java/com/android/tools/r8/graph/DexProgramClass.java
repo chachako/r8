@@ -285,6 +285,10 @@ public class DexProgramClass extends DexClass
         predicate, method -> consumer.accept(new ProgramMethod(this, method)));
   }
 
+  public Iterable<ProgramField> programFields() {
+    return Iterables.transform(fields(), field -> new ProgramField(this, field));
+  }
+
   public Iterable<ProgramMethod> programMethods() {
     return Iterables.concat(directProgramMethods(), virtualProgramMethods());
   }

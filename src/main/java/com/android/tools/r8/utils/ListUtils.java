@@ -344,8 +344,8 @@ public class ListUtils {
     return sorted;
   }
 
-  public static <T> List<T> sort(Collection<T> items, Comparator<T> comparator) {
-    List<T> sorted = new ArrayList<>(items);
+  public static <T> ArrayList<T> sort(Collection<T> items, Comparator<T> comparator) {
+    ArrayList<T> sorted = new ArrayList<>(items);
     sorted.sort(comparator);
     return sorted;
   }

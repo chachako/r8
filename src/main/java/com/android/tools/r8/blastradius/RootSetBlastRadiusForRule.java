@@ -60,7 +60,7 @@ public class RootSetBlastRadiusForRule {
     return ListUtils.sort(matchedMethods, DexMethod::compareTo);
   }
 
-  int getNumberOfItems() {
+  public int getNumberOfItems() {
     return matchedClasses.size() + matchedFields.size() + matchedMethods.size();
   }
 
@@ -68,7 +68,7 @@ public class RootSetBlastRadiusForRule {
     return rule;
   }
 
-  String getSource() {
+  public String getSource() {
     return rule.getSource();
   }
 

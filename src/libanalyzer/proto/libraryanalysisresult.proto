@@ -26,4 +26,14 @@ message D8CompileResult {
 
 message R8CompileResult {
   uint32 size_bytes = 1;
+  uint32 num_items = 2;
+  uint32 num_items_kept = 3;
+  uint32 num_keep_rules = 4;
+  uint32 num_keep_rules_package_wide = 5;
+  repeated KeepRuleBlastRadius keep_rule_blast_radius = 6;
+}
+
+message KeepRuleBlastRadius {
+  string source = 1;
+  uint32 num_items_kept = 2;
 }
