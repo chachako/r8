@@ -1927,8 +1927,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 3, 1,
-          "Wildcard", "<4>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 2, 19, "Wildcard", "<4>", "invalid");
     }
   }
 
@@ -1943,8 +1942,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 3, 1,
-          "Wildcard", "<2>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 2, 19, "Wildcard", "<2>", "invalid");
     }
   }
 
@@ -1981,8 +1979,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       fail();
     } catch (RuntimeException e) {
       assertTrue(e.getCause() instanceof AbortException);
-      checkDiagnostics(handler.errors, proguardConfig, 5, 1,
-          "Wildcard", "<3>", "invalid");
+      checkDiagnostics(handler.errors, proguardConfig, 4, 28, "Wildcard", "<3>", "invalid");
     }
   }
 
@@ -3390,7 +3387,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     Set<String> sources =
         Sets.newHashSet(
             "-keep class *",
-            "-keep class *,*",
+            "-keep class S,T",
             "-keep class * extends T",
             "-keep class * implements T");
     String configuration =
