@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.ClassFileConsumer;
+import com.android.tools.r8.D8TestRunResult;
 import com.android.tools.r8.DexIndexedConsumer.ArchiveConsumer;
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion;
@@ -44,6 +45,35 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
               + ".Outer.<init>(kotlin.Int): "
               + PKG_NESTED_REFLECT
               + ".Outer.Inner");
+
+  private static final String EXPECTED_ALL_RENAMED =
+      StringUtils.lines(
+          "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.b",
+          "fun " + PKG_NESTED_REFLECT + ".a.a.<init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.a");
+
+  private static final String EXPECTED_ALL_RENAMED_DEV =
+      StringUtils.lines(
+          "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.b",
+          "fun " + PKG_NESTED_REFLECT + ".a.<init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.a");
+
+  private static final String EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION =
+      StringUtils.lines(
+          "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".Outer.Nested",
+          "fun "
+              + PKG_NESTED_REFLECT
+              + ".Outer.Inner.<init>(kotlin.Int): "
+              + PKG_NESTED_REFLECT
+              + ".Outer.Inner");
+
+  private static final String EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION_DEV =
+      StringUtils.lines(
+          "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".Outer.Nested",
+          "fun "
+              + PKG_NESTED_REFLECT
+              + ".Outer.<init>(kotlin.Int): "
+              + PKG_NESTED_REFLECT
+              + ".Outer.Inner");
+
   private static final String EXPECTED_OUTER_RENAMED =
       StringUtils.lines(
           "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".`Outer$Nested`",
@@ -54,6 +84,18 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
   private String getExpected() {
     return replaceInitNameInExpectedBasedOnKotlinVersion(
         kotlinParameters.isKotlinDev() ? EXPECTED_DEV : EXPECTED);
+  }
+
+  private String getExpectedAllRenamed() {
+    return replaceInitNameInExpectedBasedOnKotlinVersion(
+        kotlinParameters.isKotlinDev() ? EXPECTED_ALL_RENAMED_DEV : EXPECTED_ALL_RENAMED);
+  }
+
+  private String getExpectedOuterKeepAllowObfuscation() {
+    return replaceInitNameInExpectedBasedOnKotlinVersion(
+        kotlinParameters.isKotlinDev()
+            ? EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION_DEV
+            : EXPECTED_OUTER_KEEP_ALLOW_OBFUSCATION);
   }
 
   private String getExpectedOuterRenamed() {
@@ -93,6 +135,55 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
   }
 
   @Test
+  public void testMetadataAllRenamed() throws Exception {
+    parameters.assumeR8TestParameters();
+    Path mainJar =
+        testForR8(parameters.getBackend())
+            .addClasspathFiles(kotlinc.getKotlinStdlibJar())
+            .addClasspathFiles(kotlinc.getKotlinReflectJar())
+            .addClasspathFiles(kotlinc.getKotlinAnnotationJar())
+            .addProgramFiles(jarMap.getForConfiguration(kotlinParameters))
+            .addKeepAttributeInnerClassesAndEnclosingMethod()
+            .addKeepRules(
+                "-keep,allowobfuscation public class " + PKG_NESTED_REFLECT + ".Outer { *; }")
+            .addKeepRules(
+                "-keep,allowobfuscation public class "
+                    + PKG_NESTED_REFLECT
+                    + ".Outer$Nested { *; }")
+            .addKeepRules(
+                "-keep,allowobfuscation public class " + PKG_NESTED_REFLECT + ".Outer$Inner { *; }")
+            .addKeepMainRule(PKG_NESTED_REFLECT + ".MainKt")
+            .addKeepAttributes(ProguardKeepAttributes.RUNTIME_VISIBLE_ANNOTATIONS)
+            .setMinApi(parameters)
+            .compile()
+            .inspect(inspector -> inspectPruned(inspector, true))
+            .writeToZip();
+    runD8(mainJar, getExpectedAllRenamed());
+  }
+
+  @Test
+  public void testMetadataOuterKeepAllowObfuscation() throws Exception {
+    parameters.assumeR8TestParameters();
+    Path mainJar =
+        testForR8(parameters.getBackend())
+            .addClasspathFiles(kotlinc.getKotlinStdlibJar())
+            .addClasspathFiles(kotlinc.getKotlinReflectJar())
+            .addClasspathFiles(kotlinc.getKotlinAnnotationJar())
+            .addProgramFiles(jarMap.getForConfiguration(kotlinParameters))
+            .addKeepAttributeInnerClassesAndEnclosingMethod()
+            .addKeepRules("-keep,allowobfuscation public class " + PKG_NESTED_REFLECT + ".Outer")
+            .addKeepRules("-keep public class " + PKG_NESTED_REFLECT + ".Outer$Nested { *; }")
+            .addKeepRules("-keep public class " + PKG_NESTED_REFLECT + ".Outer$Inner { *; }")
+            .addKeepMainRule(PKG_NESTED_REFLECT + ".MainKt")
+            .addKeepAttributes(ProguardKeepAttributes.RUNTIME_VISIBLE_ANNOTATIONS)
+            .setMinApi(parameters)
+            .compile()
+            .inspect(inspector -> inspectPruned(inspector, false))
+            .writeToZip();
+    runD8(mainJar, getExpectedOuterKeepAllowObfuscation());
+  }
+
+  @Test
   public void testMetadataOuterRenamed() throws Exception {
     parameters.assumeR8TestParameters();
     Path mainJar =
@@ -109,7 +200,16 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
             .compile()
             .inspect(inspector -> inspectPruned(inspector, true))
             .writeToZip();
-    runD8(mainJar, getExpectedOuterRenamed());
+    if (kotlinParameters.isKotlinDev()) {
+      // NullPointerException inside kotlin-reflect, as it started using getDeclaringClass on the
+      // inner class which returns null as the InnerClasses attributes is not kept. The exception
+      // message is "getDeclaringClass(...) must not be null"));
+      // kotlin-reflect change
+      // https://github.com/JetBrains/kotlin/commit/80bbc4b61da455daa8a65b30afb127da5870b2a9#diff-4325b547e9e493515824b06293f8175180ff71819746c84f4537580f898e7dd0
+      runD8(mainJar).assertFailureWithErrorThatThrows(NullPointerException.class);
+    } else {
+      runD8(mainJar, getExpectedOuterRenamed());
+    }
   }
 
   @Test
@@ -134,19 +234,22 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
     runD8(mainJar, getExpected());
   }
 
-  private void runD8(Path jar, String expected) throws Exception {
+  private D8TestRunResult runD8(Path jar) throws Exception {
     Path output = temp.newFile("output.zip").toPath();
     ProgramConsumer programConsumer =
         parameters.isCfRuntime()
             ? new ClassFileConsumer.ArchiveConsumer(output, true)
             : new ArchiveConsumer(output, true);
-    testForD8(parameters.getBackend())
+    return testForD8(parameters.getBackend())
         .addProgramFiles(kotlinc.getKotlinStdlibJar(), kotlinc.getKotlinReflectJar(), jar)
         .setMinApi(parameters)
         .setProgramConsumer(programConsumer)
         .enableServiceLoader()
-        .run(parameters.getRuntime(), PKG_NESTED_REFLECT + ".MainKt")
-        .assertSuccessWithOutput(expected);
+        .run(parameters.getRuntime(), PKG_NESTED_REFLECT + ".MainKt");
+  }
+
+  private void runD8(Path jar, String expected) throws Exception {
+    runD8(jar).assertSuccessWithOutput(expected);
   }
 
   private void inspectPruned(CodeInspector inspector, boolean outerRenamed) {

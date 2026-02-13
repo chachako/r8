@@ -60,7 +60,15 @@ public class KotlinStdLibCompilationTest extends TestBase {
                 diagnostics.assertWarningsCount(
                     kotlinTestParameters.isOlderThanOrEqualTo(KotlinCompilerVersion.KOTLINC_1_9_21)
                         ? 2
-                        : (parameters.getApiLevel().isLessThan(AndroidApiLevel.K)) ? 4 : 3);
+                        : (parameters.getApiLevel().isLessThan(AndroidApiLevel.K))
+                            ? (kotlinTestParameters.isOlderThanOrEqualTo(
+                                    KotlinCompilerVersion.KOTLINC_2_3_10)
+                                ? 4
+                                : 5)
+                            : (kotlinTestParameters.isOlderThanOrEqualTo(
+                                    KotlinCompilerVersion.KOTLINC_2_3_10)
+                                ? 3
+                                : 4));
                 diagnostics.assertAllWarningsMatch(
                     DiagnosticsMatcher.diagnosticType(InterfaceDesugarMissingTypeDiagnostic.class));
               } else {
