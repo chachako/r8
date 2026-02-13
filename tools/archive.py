@@ -16,11 +16,9 @@ try:
 except ImportError:
     # Not a Unix system. Do what Gandalf tells you not to.
     pass
-import resultdb
 import shutil
 import subprocess
 import sys
-import traceback
 import utils
 import zipfile
 
@@ -411,21 +409,6 @@ def Run(options):
                     print('Dry run, not actually uploading')
                 else:
                     utils.upload_file_to_cloud_storage(tagged_jar, latest_dst)
-
-            # TESTING: Upload to ResultDB
-            if file == utils.MAVEN_ZIP_LIB:
-                print('Trying ResultDB upload')
-                try:
-                    resultdb.upload_artifact('r8lib.zip', tagged_jar)
-                except Exception as e:
-                    print('ResultDB upload FAILED')
-                    print(f"Exception Name: {type(e).__name__}")
-                    print(f"Exception Message: {e}")
-                    traceback.print_exc()
-                else:
-                    print('ResultDB upload SUCCEEDED')
-                finally:
-                    print('Trying ResultDB upload DONE')
 
             # Upload desugar_jdk_libs configuration to a maven compatible location.
             if file == utils.DESUGAR_CONFIGURATION:
