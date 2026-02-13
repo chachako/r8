@@ -50,6 +50,7 @@ import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.SemanticVersion;
 import com.android.tools.r8.utils.SourceFileTemplateProvider;
+import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.Matchers;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -1019,6 +1020,8 @@ public abstract class R8TestBuilder<
   public T addFeatureSplitAndroidResources(AndroidTestResource testResource, String featureName)
       throws IOException {
     Path outputFile = getState().getNewTempFile("resourceshrinkeroutput_" + featureName + ".zip");
+    Path emptyProgramResource = getState().getNewTempFile(featureName + ".jar");
+    ZipUtils.ZipBuilder.builder(emptyProgramResource).build();
     resourceShrinkerOutputForFeatures.put(featureName, outputFile);
     getBuilder()
         .addFeatureSplit(
@@ -1027,6 +1030,8 @@ public abstract class R8TestBuilder<
               featureSplitGenerator
                   .setAndroidResourceConsumer(new ArchiveProtoAndroidResourceConsumer(outputFile))
                   .setAndroidResourceProvider(new ArchiveProtoAndroidResourceProvider(resourceZip))
+                  .addProgramResourceProvider(
+                      ArchiveResourceProvider.fromArchive(emptyProgramResource, true))
                   .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
 
               return featureSplitGenerator.build();

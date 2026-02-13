@@ -3,6 +3,8 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.androidresources;
 
+import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.junit.Test;
@@ -47,6 +50,7 @@ public class AndroidResourcesDumpTest extends TestBase {
   public static AndroidTestResource getTestResources(TemporaryFolder temp) throws Exception {
     return new AndroidTestResourceBuilder()
         .withSimpleManifestAndAppNameString()
+        .setPackageName("example")
         .addStringValue("foo", "the foobar string")
         .addXmlWithStringReference("file.xml", "foo")
         .build(temp);
@@ -56,13 +60,14 @@ public class AndroidResourcesDumpTest extends TestBase {
       throws IOException {
     return new AndroidTestResourceBuilder()
         .withSimpleManifestAndAppNameString()
+        .setPackageName("feature_foo")
         .addStringValue("feature_foo", "the feature string")
         .addXmlWithStringReference("feature.xml", "feature_foo")
         .build(temp);
   }
 
   @Test
-  public void testR8() throws Exception {
+  public void testR8WithDumpToFile() throws Exception {
     Path dump = temp.newFile("with_resources.zip").toPath();
     AndroidTestResource testResources = getTestResources(temp);
     TemporaryFolder featureSplitTemp = ToolHelper.getTemporaryFolderForTest();
@@ -82,6 +87,45 @@ public class AndroidResourcesDumpTest extends TestBase {
     } catch (CompilationFailedException ignored) {
     }
     CompilerDump compilerDump = CompilerDump.fromArchive(dump, temp.newFolder().toPath());
+    validateResourceEquality(
+        testResources,
+        ImmutableList.of("res/xml/file.xml", "AndroidManifest.xml", "resources.pb"),
+        compilerDump.getAndroidResources());
+    validateResourceEquality(
+        featureTestResources,
+        ImmutableList.of("res/xml/feature.xml", "AndroidManifest.xml", "resources.pb"),
+        compilerDump.getAndroidResourcesForFeature(1));
+  }
+
+  @Test
+  public void testR8WithDumpToDirectory() throws Exception {
+    Path dump = temp.newFolder("with_resources").toPath();
+    AndroidTestResource testResources = getTestResources(temp);
+    TemporaryFolder featureSplitTemp = ToolHelper.getTemporaryFolderForTest();
+    featureSplitTemp.create();
+    AndroidTestResource featureTestResources = getFeatureTestResources(featureSplitTemp);
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .addAndroidResources(testResources)
+        .addFeatureSplitAndroidResources(featureTestResources, "thefeature")
+        .addOptionsModification(
+            options -> options.setDumpInputFlags(DumpInputFlags.dumpToDirectory(dump)))
+        .setMinApi(parameters)
+        .allowDiagnosticInfoMessages()
+        .compileWithExpectedDiagnostics(
+            diagnostics ->
+                diagnostics
+                    .assertInfosMatch(
+                        diagnosticMessage(startsWith("Dumped compilation inputs to:")))
+                    .assertNoWarnings()
+                    .assertNoErrors());
+    // Verify that only one archive was dumped.
+    List<Path> dumpArchives = Files.list(dump).collect(Collectors.toList());
+    assertEquals(1, dumpArchives.size());
+
+    Path dumpArchive = dumpArchives.iterator().next();
+    CompilerDump compilerDump = CompilerDump.fromArchive(dumpArchive);
     validateResourceEquality(
         testResources,
         ImmutableList.of("res/xml/file.xml", "AndroidManifest.xml", "resources.pb"),

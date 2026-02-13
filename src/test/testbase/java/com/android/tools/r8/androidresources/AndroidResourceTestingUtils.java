@@ -828,6 +828,8 @@ public class AndroidResourceTestingUtils {
             "--no-auto-version",
             "--rename-resources-package",
             packageName,
+            "--custom-package",
+            packageName,
             compileOutput.toString());
     if (!aaptBinaryRoundtrip) {
       args.add("--proto-format");
