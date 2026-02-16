@@ -80,11 +80,8 @@ if (embeddedProtoSchemaSource) {
 if (embeddedProtoDataSource) {
   setTimeout(() => {
     try {
-      const binary = atob(embeddedProtoDataSource.textContent.trim());
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
-      }
+      const data = embeddedProtoDataSource.textContent.trim();
+      const bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0));
       const BlastRadiusContainer = protobufRoot.lookupType("com.android.tools.r8.blastradius.proto.BlastRadiusContainer");
       const message = BlastRadiusContainer.decode(bytes);
       containerData = BlastRadiusContainer.toObject(message, {

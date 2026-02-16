@@ -215,6 +215,9 @@ public class ToolHelper {
   public static final String TESTS_BUILD_DIR = BUILD_DIR + "test/";
   public static final String EXAMPLES_JAVA9_BUILD_DIR = TESTS_BUILD_DIR + "examplesJava9/";
   public static final String SMALI_BUILD_DIR = THIRD_PARTY_DIR + "smali/";
+  public static final String BLAST_RADIUS_PROTO_DIR = getProjectRoot() + "src/blastradius/proto/";
+  public static final String BLAST_RADIUS_SOURCE_DIR = getProjectRoot() + "src/blastradius/java/";
+  public static final String BLAST_RADIUS_WEB_DIR = getProjectRoot() + "src/blastradius/web/";
 
   public static final Path CHECKED_IN_R8_17_WITH_DEPS =
       Paths.get(THIRD_PARTY_DIR).resolve("r8").resolve("r8_with_deps_17.jar");
