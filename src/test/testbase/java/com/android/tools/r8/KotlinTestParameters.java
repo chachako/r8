@@ -203,12 +203,6 @@ public class KotlinTestParameters {
       return this;
     }
 
-    public Builder withCompilersBetweenIncluding(
-        KotlinCompilerVersion from, KotlinCompilerVersion to) {
-      withCompilerFilter(c -> c.isGreaterThanOrEqualTo(from) && c.isLessThanOrEqualTo(to));
-      return this;
-    }
-
     public KotlinTestParametersCollection build() {
       List<KotlinTestParameters> testParameters = new ArrayList<>();
       int index = 0;

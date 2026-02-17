@@ -5,10 +5,12 @@
 package com.android.tools.r8.kotlin.metadata;
 
 import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_1_8_0;
-import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_2_0;
+import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.KOTLINC_2_3_10;
+import static com.android.tools.r8.KotlinCompilerTool.KotlinCompilerVersion.MIN_SUPPORTED_VERSION;
 import static com.android.tools.r8.KotlinCompilerTool.KotlinTargetVersion.JAVA_8;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresentAndRenamed;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 import com.android.tools.r8.KotlinCompileMemoizer;
 import com.android.tools.r8.KotlinTestParameters;
@@ -55,8 +57,8 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
     return buildParameters(
         getTestParameters().withCfRuntimes().build(),
         getKotlinTestParameters()
-            .withCompilersBetweenIncluding(KOTLINC_1_8_0, KOTLINC_2_2_0)
             .withOldCompilersStartingFrom(KOTLINC_1_8_0)
+            .withCompilersStartingFromIncluding(MIN_SUPPORTED_VERSION)
             .withAllLambdaGenerations()
             .withTargetVersion(JAVA_8)
             .build());
@@ -78,6 +80,9 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
 
   @Test
   public void smokeTest() throws Exception {
+    assumeTrue(
+        "Context receiver only supported until Kotlin 2.3",
+        kotlinParameters.getCompiler().getCompilerVersion().isLessThanOrEqualTo(KOTLINC_2_3_10));
     Path output =
         kotlinc(parameters.getRuntime().asCf(), kotlinParameters)
             .addClasspathFiles(libJars.getForConfiguration(kotlinParameters))
@@ -97,6 +102,9 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
 
   @Test
   public void testMetadataForCompilationWithKeepAll() throws Exception {
+    assumeTrue(
+        "Context receiver only supported until Kotlin 2.3",
+        kotlinParameters.getCompiler().getCompilerVersion().isLessThanOrEqualTo(KOTLINC_2_3_10));
     Path libJar =
         testForR8(parameters.getBackend())
             .addClasspathFiles(kotlinc.getKotlinAnnotationJar())
@@ -135,6 +143,9 @@ public class MetadataRewriteContextReceiverTest extends KotlinMetadataTestBase {
 
   @Test
   public void testMetadataInExtensionFunction_renamedKotlinSources() throws Exception {
+    assumeTrue(
+        "Context receiver only supported until Kotlin 2.3",
+        kotlinParameters.getCompiler().getCompilerVersion().isLessThanOrEqualTo(KOTLINC_2_3_10));
     R8TestCompileResult r8LibraryResult =
         testForR8(parameters.getBackend())
             .addClasspathFiles(kotlinc.getKotlinStdlibJar(), kotlinc.getKotlinAnnotationJar())
