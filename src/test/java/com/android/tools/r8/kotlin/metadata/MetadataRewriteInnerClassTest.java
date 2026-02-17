@@ -46,6 +46,10 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
               + PKG_NESTED_REFLECT
               + ".Outer.Inner");
 
+  // fun <init>(kotlin.Int): a.b\nfun a.a.<init>(kotlin.Int): a.a\n
+  private static final String EXPECTED_ALL_RENAMED_UNTIL_1_7 =
+      StringUtils.lines("fun <init>(kotlin.Int): a.b", "fun a.a.<init>(kotlin.Int): a.a");
+
   private static final String EXPECTED_ALL_RENAMED =
       StringUtils.lines(
           "fun <init>(kotlin.Int): " + PKG_NESTED_REFLECT + ".a.b",
@@ -88,7 +92,11 @@ public class MetadataRewriteInnerClassTest extends KotlinMetadataTestBase {
 
   private String getExpectedAllRenamed() {
     return replaceInitNameInExpectedBasedOnKotlinVersion(
-        kotlinParameters.isKotlinDev() ? EXPECTED_ALL_RENAMED_DEV : EXPECTED_ALL_RENAMED);
+        kotlinParameters.isKotlinDev()
+            ? EXPECTED_ALL_RENAMED_DEV
+            : (kotlinParameters.isOlderThanOrEqualTo(KotlinCompilerVersion.KOTLINC_1_7_0)
+                ? EXPECTED_ALL_RENAMED_UNTIL_1_7
+                : EXPECTED_ALL_RENAMED));
   }
 
   private String getExpectedOuterKeepAllowObfuscation() {
