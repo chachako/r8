@@ -1,0 +1,52 @@
+// Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
+// for details. All rights reserved. Use of this source code is governed by a
+// BSD-style license that can be found in the LICENSE file.
+syntax = "proto3";
+
+package com.android.tools.r8.blastradius.proto;
+
+// Don't put all messages under the outer class.
+option java_multiple_files = true;
+
+// Camel-case the outer class name (default is `Blastradiussummary`).
+option java_outer_classname = "BlastRadiusSummaryProtos";
+
+// Java package consistent with R8 convention.
+option java_package = "com.android.tools.r8.blastradius.proto";
+
+message BlastRadiusSummary {
+  // Name that identifies the build.
+  string name = 1;
+
+  // Link to the full report.
+  string link = 2;
+
+  // Info about number of items.
+  uint32 class_count = 3;
+  uint32 field_count = 4;
+  uint32 method_count = 5;
+
+  // Info about number of keep rules.
+  uint32 keep_rule_count = 6;
+  uint32 keep_rule_package_wide_count = 7;
+
+  // Info about number of kept items.
+  KeepInfoCollectionSummary kept_classes = 8;
+  KeepInfoCollectionSummary kept_fields = 9;
+  KeepInfoCollectionSummary kept_methods = 10;
+
+  // Info about problematic rules.
+  repeated KeepRuleBlastRadiusSummary keep_rule_blast_radius = 11;
+}
+
+message KeepInfoCollectionSummary {
+  uint32 item_count = 1;
+  uint32 no_obfuscation_count = 2;
+  uint32 no_optimization_count = 3;
+  uint32 no_shrinking_count = 4;
+}
+
+message KeepRuleBlastRadiusSummary {
+  string source = 1;
+  uint32 item_count = 2;
+}

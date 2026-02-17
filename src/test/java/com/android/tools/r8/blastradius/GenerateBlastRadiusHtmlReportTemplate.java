@@ -42,9 +42,34 @@ public class GenerateBlastRadiusHtmlReportTemplate extends TestBase {
     assertEquals(
         FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8),
         generateBlastRadiusHtmlReportTemplate());
+    assertEquals(
+        FileUtils.readTextFile(getGeneratedFile(), StandardCharsets.UTF_8),
+        generateBlastRadiusHtmlReportTemplate());
   }
 
   private static String generateBlastRadiusHtmlReportTemplate() throws IOException {
+    String java =
+        StringUtils.lines(
+            MethodGenerationBase.getHeaderString(
+                2026, GenerateBlastRadiusHtmlReportTemplate.class.getSimpleName()),
+            "package com.android.tools.r8.blastradius;",
+            "import java.nio.charset.StandardCharsets;",
+            "import java.util.Base64;",
+            "public class BlastRadiusHtmlReportTemplate {",
+            "  public static String getHtmlTemplate() {",
+            "    return decodeBase64(\"" + encodeToString(getHtml()) + "\");",
+            "  }",
+            "  public static String getSummaryHtmlTemplate() {",
+            "    return decodeBase64(\"" + encodeToString(getSummaryHtml()) + "\");",
+            "  }",
+            "  private static String decodeBase64(String string) {",
+            "    return new String(Base64.getDecoder().decode(string), StandardCharsets.UTF_8);",
+            "  }",
+            "}");
+    return javaFormatRawOutput(java);
+  }
+
+  private static String getHtml() throws IOException {
     String html = FileUtils.readTextFile(getHtmlFile());
 
     // Embed stylesheet.
@@ -67,22 +92,35 @@ public class GenerateBlastRadiusHtmlReportTemplate extends TestBase {
                 FileUtils.readTextFile(getJsFile()),
                 "</script>"));
 
-    String java =
-        StringUtils.lines(
-            MethodGenerationBase.getHeaderString(
-                2026, GenerateBlastRadiusHtmlReportTemplate.class.getSimpleName()),
-            "package com.android.tools.r8.blastradius;",
-            "import java.nio.charset.StandardCharsets;",
-            "import java.util.Base64;",
-            "public class BlastRadiusHtmlReportTemplate {",
-            "  public static String getHtmlTemplate() {",
-            "    return decodeBase64(\"" + encodeToString(html) + "\");",
-            "  }",
-            "  private static String decodeBase64(String string) {",
-            "    return new String(Base64.getDecoder().decode(string), StandardCharsets.UTF_8);",
-            "  }",
-            "}");
-    return javaFormatRawOutput(java);
+    return html;
+  }
+
+  private static String getSummaryHtml() throws IOException {
+    String html = FileUtils.readTextFile(getSummaryHtmlFile());
+
+    // Embed stylesheet.
+    html =
+        html.replace(
+            "<link rel=\"stylesheet\" href=\"style.css\">",
+            String.join("", "<style>", FileUtils.readTextFile(getSummaryCssFile()), "</style>"));
+
+    // Embed proto schema.
+    html =
+        html.replace(
+            "<script id=\"blastradius-proto\" type=\"text/plain\"></script>",
+            String.join(
+                "",
+                "<script id=\"blastradius-proto\" type=\"text/plain\">",
+                FileUtils.readTextFile(getSummaryProtoFile()),
+                "</script>"));
+
+    // Embed JavaScript.
+    html =
+        html.replace(
+            "<script src=\"main.js\"></script>",
+            String.join("", "<script>", FileUtils.readTextFile(getSummaryJsFile()), "</script>"));
+
+    return html;
   }
 
   private static String encodeToString(String string) {
@@ -113,6 +151,22 @@ public class GenerateBlastRadiusHtmlReportTemplate extends TestBase {
 
   private static Path getProtoFile() {
     return Paths.get(ToolHelper.BLAST_RADIUS_PROTO_DIR, "blastradius.proto");
+  }
+
+  private static Path getSummaryHtmlFile() {
+    return Paths.get(ToolHelper.BLAST_RADIUS_WEB_DIR, "templates/summary/index.html");
+  }
+
+  private static Path getSummaryJsFile() {
+    return Paths.get(ToolHelper.BLAST_RADIUS_WEB_DIR, "templates/summary/main.js");
+  }
+
+  private static Path getSummaryCssFile() {
+    return Paths.get(ToolHelper.BLAST_RADIUS_WEB_DIR, "templates/summary/style.css");
+  }
+
+  private static Path getSummaryProtoFile() {
+    return Paths.get(ToolHelper.BLAST_RADIUS_PROTO_DIR, "blastradiussummary.proto");
   }
 
   public static void main(String[] args) throws IOException {

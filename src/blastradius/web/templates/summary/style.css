@@ -1,0 +1,83 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    padding: 2rem;
+    background-color: #f5f5f5;
+    margin: 0;
+    color: #333;
+}
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+h1 {
+    color: #3f51b5;
+    margin-top: 0;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    user-select: none;
+}
+th:last-child {
+    cursor: default;
+}
+th:hover {
+    background-color: #f0f1f2;
+}
+tr:hover {
+    background-color: #fcfcfc;
+}
+.report-link {
+    color: #1a73e8;
+    text-decoration: none;
+    font-weight: 500;
+}
+.report-link:hover {
+    text-decoration: underline;
+}
+.stat-badge {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: inline-block;
+    margin-right: 4px;
+}
+.stat-badge.warn {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+.stat-badge.error {
+    background-color: #ffebee;
+    color: #c62828;
+}
+.name-row td {
+    background-color: #f8f9fa;
+    font-weight: 500;
+    color: #3f51b5;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: none;
+}
+.data-row td {
+    padding-bottom: 1rem;
+    border-top: none;
+}

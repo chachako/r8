@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blast Radius Summary Reports</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.4/dist/protobuf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Blast Radius Reports</h1>
+        <div id="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-sort="rules">Keep Rules</th>
+                        <th data-sort="items">Kept Items</th>
+                        <th data-sort="classes">Kept Classes</th>
+                        <th data-sort="methods">Kept Methods</th>
+                        <th data-sort="fields">Kept Fields</th>
+                        <th>Problematic Rules</th>
+                    </tr>
+                </thead>
+                <tbody id="summary-table-body">
+                    <!-- JavaScript will populate this -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script id="blastradius-proto" type="text/plain"></script>
+    <script id="blastradius-data" type="application/json"></script>
+    <script src="main.js"></script>
+</body>
+</html>
