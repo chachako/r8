@@ -35,6 +35,7 @@ val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
+val blastRadiusJarTask = projectTask("blastradius", "jar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val assistantCompileTask = projectTask("assistant", "compileJava")
@@ -47,6 +48,7 @@ val resourceShrinkerKotlinCompileTask = projectTask("resourceshrinker", "compile
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 
 dependencies {
+  implementation(blastRadiusJarTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
   implementation(mainTurboCompileTask.outputs.files)
   implementation(mainCompileTask.outputs.files)

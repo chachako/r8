@@ -25,7 +25,6 @@ java {
 
 kotlin { explicitApi() }
 
-val blastRadiusJarTask = projectTask("blastradius", "jar")
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val keepAnnoJarTask = projectTask("keepanno", "jar")
@@ -38,7 +37,6 @@ val resourceShrinkerKotlinCompileTask = projectTask("resourceshrinker", "compile
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 
 dependencies {
-  implementation(blastRadiusJarTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
   implementation(mainTurboCompileTask.outputs.files)
   implementation(mainCompileTask.outputs.files)
@@ -114,7 +112,6 @@ tasks {
       dependsOn(gradle.includedBuild("resourceshrinker").task(":depsJar"))
       from(testDependencies().map(::zipTree))
       from(resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree))
-      from(blastRadiusJarTask.outputs.getFiles().map(::zipTree))
       from(keepAnnoJarTask.outputs.getFiles().map(::zipTree))
       exclude("com/android/tools/r8/keepanno/annotations/**")
       exclude("androidx/annotation/keep/**")

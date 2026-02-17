@@ -17,8 +17,6 @@ rootProject.name = "testbase"
 
 val root = rootProject.projectDir.parentFile.parentFile
 
-includeBuild(root.resolve("blastradius"))
-
 includeBuild(root.resolve("shared"))
 
 includeBuild(root.resolve("keepanno"))
