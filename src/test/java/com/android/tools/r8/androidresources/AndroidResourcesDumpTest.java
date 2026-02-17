@@ -8,9 +8,7 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
@@ -73,19 +71,22 @@ public class AndroidResourcesDumpTest extends TestBase {
     TemporaryFolder featureSplitTemp = ToolHelper.getTemporaryFolderForTest();
     featureSplitTemp.create();
     AndroidTestResource featureTestResources = getFeatureTestResources(featureSplitTemp);
-    try {
-      testForR8(parameters.getBackend())
-          .addProgramClasses(Main.class)
-          .addKeepMainRule(Main.class)
-          .addAndroidResources(testResources)
-          .addFeatureSplitAndroidResources(featureTestResources, "thefeature")
-          .addOptionsModification(
-              options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
-          .setMinApi(parameters)
-          .compile();
-      fail("Expected to fail compilation");
-    } catch (CompilationFailedException ignored) {
-    }
+    testForR8(parameters.getBackend())
+        .addProgramClasses(Main.class)
+        .addKeepMainRule(Main.class)
+        .addAndroidResources(testResources)
+        .addFeatureSplitAndroidResources(featureTestResources, "thefeature")
+        .addOptionsModification(
+            options -> options.setDumpInputFlags(DumpInputFlags.dumpToFile(dump)))
+        .setMinApi(parameters)
+        .allowDiagnosticInfoMessages()
+        .compileWithExpectedDiagnostics(
+            diagnostics ->
+                diagnostics
+                    .assertInfosMatch(
+                        diagnosticMessage(startsWith("Dumped compilation inputs to:")))
+                    .assertNoWarnings()
+                    .assertNoErrors());
     CompilerDump compilerDump = CompilerDump.fromArchive(dump, temp.newFolder().toPath());
     validateResourceEquality(
         testResources,
