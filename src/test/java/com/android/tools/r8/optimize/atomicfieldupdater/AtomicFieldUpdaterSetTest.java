@@ -1,9 +1,8 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize;
+package com.android.tools.r8.optimize.atomicfieldupdater;
 
-import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -14,10 +13,8 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestShrinkerBuilder;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.codeinspector.ClassSubject;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
@@ -30,7 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
+public class AtomicFieldUpdaterSetTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -68,7 +65,7 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
         .compile()
         .inspectDiagnosticMessages(
             diagnostics -> {
-              assertEquals(3, diagnostics.getInfos().size());
+              assertEquals(4, diagnostics.getInfos().size());
               Diagnostic diagnostic = diagnostics.getInfos().get(0);
               List<String> diagnosticLines =
                   StringUtils.splitLines(diagnostic.getDiagnosticMessage());
@@ -90,6 +87,14 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
                 assertTrue(
+                    "Does not contain 'Can optimize': " + message,
+                    message.contains("Can optimize"));
+              }
+              assertEquals(1, diagnosticLines.size());
+              diagnostic = diagnostics.getInfos().get(3);
+              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
+              for (String message : diagnosticLines) {
+                assertTrue(
                     "Does not contain 'Can remove': " + message, message.contains("Can remove"));
               }
               assertEquals(1, diagnosticLines.size());
@@ -97,27 +102,16 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              boolean isGetAndSetDefined = parameters.canUseUnsafeGetAndSet();
-              if (isGetAndSetDefined) {
-                assertThat(
-                    method,
-                    CodeMatchers.invokesMethod(
-                        "java.lang.Object",
-                        "sun.misc.Unsafe",
-                        "getAndSetObject",
-                        ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
-              } else {
-                ClassSubject helper =
-                    inspector.clazz(
-                        SyntheticItemsTestUtils.syntheticAtomicFieldUpdaterHelper(TestClass.class));
-                assertThat(helper, isPresent());
-                assertThat(
-                    method,
-                    CodeMatchers.invokesMethod(helper.uniqueMethodWithOriginalName("getAndSet")));
-              }
+              assertThat(
+                  method,
+                  CodeMatchers.invokesMethod(
+                      "void",
+                      "sun.misc.Unsafe",
+                      "putObjectVolatile",
+                      ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello");
+        .assertSuccessWithOutputLines("World!");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -138,7 +132,9 @@ public class AtomicFieldUpdaterGetAndSetTest extends TestBase {
     }
 
     public static void main(String[] args) {
-      System.out.println(myString$FU.getAndSet(new TestClass(), "World!"));
+      TestClass instance = new TestClass();
+      myString$FU.set(instance, "World!");
+      System.out.println(myString$FU.get(instance));
     }
   }
 }

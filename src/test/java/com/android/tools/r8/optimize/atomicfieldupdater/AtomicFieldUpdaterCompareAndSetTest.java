@@ -1,7 +1,7 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.optimize;
+package com.android.tools.r8.optimize.atomicfieldupdater;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterSetTest extends TestBase {
+public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
 
   @Parameter(0)
   public TestParameters parameters;
@@ -65,7 +65,7 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
         .compile()
         .inspectDiagnosticMessages(
             diagnostics -> {
-              assertEquals(4, diagnostics.getInfos().size());
+              assertEquals(3, diagnostics.getInfos().size());
               Diagnostic diagnostic = diagnostics.getInfos().get(0);
               List<String> diagnosticLines =
                   StringUtils.splitLines(diagnostic.getDiagnosticMessage());
@@ -87,14 +87,6 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
               diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
               for (String message : diagnosticLines) {
                 assertTrue(
-                    "Does not contain 'Can optimize': " + message,
-                    message.contains("Can optimize"));
-              }
-              assertEquals(1, diagnosticLines.size());
-              diagnostic = diagnostics.getInfos().get(3);
-              diagnosticLines = StringUtils.splitLines(diagnostic.getDiagnosticMessage());
-              for (String message : diagnosticLines) {
-                assertTrue(
                     "Does not contain 'Can remove': " + message, message.contains("Can remove"));
               }
               assertEquals(1, diagnosticLines.size());
@@ -105,13 +97,14 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
               assertThat(
                   method,
                   CodeMatchers.invokesMethod(
-                      "void",
+                      "boolean",
                       "sun.misc.Unsafe",
-                      "putObjectVolatile",
-                      ImmutableList.of("java.lang.Object", "long", "java.lang.Object")));
+                      "compareAndSwapObject",
+                      ImmutableList.of(
+                          "java.lang.Object", "long", "java.lang.Object", "java.lang.Object")));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("World!");
+        .assertSuccessWithOutputLines("true");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -132,9 +125,7 @@ public class AtomicFieldUpdaterSetTest extends TestBase {
     }
 
     public static void main(String[] args) {
-      TestClass instance = new TestClass();
-      myString$FU.set(instance, "World!");
-      System.out.println(myString$FU.get(instance));
+      System.out.println(myString$FU.compareAndSet(new TestClass(), "Hello", "World!"));
     }
   }
 }
