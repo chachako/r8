@@ -181,7 +181,7 @@ public class AtomicFieldUpdaterInstrumentor {
     ThreadUtils.processItemsThatMatches(
         appView.appInfo().classes(),
         AtomicFieldUpdaterInstrumentor::mightHaveUpdaterFields,
-        (clazz, threadTiming) -> findOffsetFields(clazz, updaterClassesConcurrent, threadTiming),
+        (clazz, threadTiming) -> findUpdaterFields(clazz, updaterClassesConcurrent, threadTiming),
         appView.options(),
         service,
         timing,
@@ -194,7 +194,7 @@ public class AtomicFieldUpdaterInstrumentor {
     return clazz.hasClassInitializer() && clazz.hasStaticFields();
   }
 
-  private void findOffsetFields(
+  private void findUpdaterFields(
       DexProgramClass clazz,
       ConcurrentHashMap<DexProgramClass, ClassWithAtomicsInfo> updaterClasses,
       Timing timing) {
