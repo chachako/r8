@@ -148,7 +148,7 @@ public class LibraryAnalyzer {
               r8Options.getBlastRadiusOptions().outputPath =
                   options.blastRadiusOutputPath.toString();
             }
-            r8Options.blastRadiusConsumer =
+            r8Options.getBlastRadiusOptions().blastRadiusConsumer =
                 (appView, appInfo, blastRadius) ->
                     resultBuilder
                         .setNumItems(getNumberOfItems(appView))

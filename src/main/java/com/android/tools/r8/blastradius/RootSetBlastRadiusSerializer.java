@@ -181,7 +181,7 @@ public class RootSetBlastRadiusSerializer {
   private BuildInfo serializeBuildInfo() {
     int classCount = 0, fieldCount = 0, methodCount = 0;
     int liveClassCount = 0, liveFieldCount = 0, liveMethodCount = 0;
-    for (DexProgramClass clazz : appView.appInfo().classes()) {
+    for (DexProgramClass clazz : appInfo.classes()) {
       classCount++;
       fieldCount += clazz.getFieldCollection().size();
       methodCount += clazz.getMethodCollection().size();

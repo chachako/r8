@@ -5,7 +5,6 @@ package com.android.tools.r8.shaking;
 
 import static com.android.tools.r8.shaking.ProguardKeepAttributes.RUNTIME_VISIBLE_ANNOTATIONS;
 
-import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.errors.dontwarn.DontWarnConfiguration;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.naming.DictionaryReader;
@@ -14,7 +13,6 @@ import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextPosition;
 import com.android.tools.r8.shaking.ProguardConfigurationParser.IncludeWorkItem;
 import com.android.tools.r8.shaking.ProguardConfigurationParser.ProguardConfigurationSourceParser;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.InternalOptions.PackageObfuscationMode;
 import com.android.tools.r8.utils.Reporter;
 import com.android.tools.r8.utils.StringUtils;
@@ -22,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -772,26 +769,13 @@ public class ProguardConfiguration {
     return dontShrinkRules.isEmpty();
   }
 
-  public boolean isPrintBlastRadius(InternalOptions options) {
-    if (printBlastRadius) {
-      return true;
-    }
-    BlastRadiusOptions blastRadiusOptions = options.getBlastRadiusOptions();
-    return blastRadiusOptions.outputDirectory != null || blastRadiusOptions.outputPath != null;
+  public boolean isPrintBlastRadius() {
+    return printBlastRadius;
   }
 
-  public Path getPrintBlastRadiusFile(InternalOptions options) {
-    assert isPrintBlastRadius(options);
-    if (printBlastRadius) {
-      return printBlastRadiusFile;
-    }
-    BlastRadiusOptions blastRadiusOptions = options.getBlastRadiusOptions();
-    if (blastRadiusOptions.outputDirectory != null) {
-      return Paths.get(blastRadiusOptions.outputDirectory)
-          .resolve("blastradius" + System.nanoTime() + ".pb");
-    }
-    assert blastRadiusOptions.outputPath != null;
-    return Paths.get(blastRadiusOptions.outputPath);
+  public Path getPrintBlastRadiusFile() {
+    assert isPrintBlastRadius();
+    return printBlastRadiusFile;
   }
 
   public boolean isPrintConfiguration() {

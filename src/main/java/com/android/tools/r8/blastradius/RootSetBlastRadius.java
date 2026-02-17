@@ -20,7 +20,6 @@ import com.android.tools.r8.shaking.KeepInfoCollectionEventConsumer;
 import com.android.tools.r8.shaking.KeepMethodInfo;
 import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.shaking.rules.KeepAnnotationFakeProguardRule;
-import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -44,17 +43,9 @@ public class RootSetBlastRadius {
 
   public static Builder builder(
       AppView<? extends AppInfoWithClassHierarchy> appView, Enqueuer.Mode mode) {
-    if (mode.isInitialTreeShaking()) {
-      InternalOptions options = appView.options();
-      if (appView.options().blastRadiusConsumer != null) {
-        return new Builder();
-      }
-      if (options.hasProguardConfiguration()
-          && options.getProguardConfiguration().isPrintBlastRadius(options)) {
-        return new Builder();
-      }
-    }
-    return null;
+    return mode.isInitialTreeShaking() && appView.options().getBlastRadiusOptions().isEnabled()
+        ? new Builder()
+        : null;
   }
 
   public Collection<RootSetBlastRadiusForRule> getBlastRadius() {
