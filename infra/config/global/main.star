@@ -123,6 +123,14 @@ luci.gitiles_poller(
 )
 
 luci.gitiles_poller(
+    name = "branch-gitiles-9.2-forward",
+    bucket = "ci",
+    repo = "https://r8.googlesource.com/r8",
+    refs = ["refs/heads/([9]\\.([2-9]|[1-9][0-9])+(\\.[0-9]+)?|[9]\\.[0-9]+(\\.[0-9]+)?)"],
+    path_regexps = ["src/main/java/com/android/tools/r8/Version.java"],
+)
+
+luci.gitiles_poller(
     name = "branch-gitiles-8.5-forward",
     bucket = "ci",
     repo = "https://r8.googlesource.com/r8",
@@ -357,6 +365,25 @@ def perf():
             execution_timeout = time.hour * 6,
             expiration_timeout = time.hour * 35,
         )
+
+    r8_builder(
+        "perf-gm_release",
+        category = "perf",
+        dimensions = get_dimensions(),
+        triggering_policy = scheduler.policy(
+            kind = scheduler.GREEDY_BATCHING_KIND,
+            max_batch_size = 1,
+            max_concurrent_invocations = 3,
+        ),
+        release_trigger = ["branch-gitiles-9.2-forward"],
+        priority = 25,
+        properties = {
+            "test_wrapper": "tools/analyze_gmaven.py",
+            "builder_group": "internal.client.r8",
+        },
+        execution_timeout = time.hour * 6,
+        expiration_timeout = time.hour * 35,
+    )
 
 perf()
 
