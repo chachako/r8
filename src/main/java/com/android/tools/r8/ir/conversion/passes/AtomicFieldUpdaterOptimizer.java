@@ -244,7 +244,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   /** Returns null if the updater cannot be resolved. */
   private ResolvedUpdater resolveUpdater(OptimizationContext context, InvokeVirtual invoke) {
     var updaterValue = invoke.getReceiver();
-    var unusedUpdaterMightBeNull = updaterValue.getType().isNullable();
+    var updaterMightBeNull = updaterValue.getType().isNullable();
     DexField updaterField;
     var updaterAbstractValue =
         updaterValue.getAbstractValue(appView, context.code.context()).removeNullOrAbstractValue();
@@ -262,8 +262,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
       reportInfo(appView, new Event.CannotOptimize(invoke), Reason.UPDATER_NOT_INSTRUMENTED);
       return null;
     }
-    // TODO(b/453628974): stop assuming non-null for all updaters.
-    return new ResolvedUpdater(false, updaterInfo, updaterValue);
+    return new ResolvedUpdater(updaterMightBeNull, updaterInfo, updaterValue);
   }
 
   private static class ResolvedUpdater {
