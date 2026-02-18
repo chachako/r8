@@ -16,6 +16,7 @@ try:
 except ImportError:
     # Not a Unix system. Do what Gandalf tells you not to.
     pass
+import json
 import shutil
 import subprocess
 import sys
@@ -43,6 +44,12 @@ def ParseOptions():
         help='Skip Gradle build. Can only be used for local testing.',
         default=False,
         action='store_true')
+    result.add_option('--archive-details',
+                      '--archive_details',
+                      help='File to store JSON with archive details.',
+                      type="string",
+                      default=utils.ARCHIVE_DETAILS,
+                      action="store")
     return result.parse_args()
 
 
@@ -86,6 +93,11 @@ def IsMain(version):
     return True
 
 
+def GetStoragePath(version_or_path, is_main):
+    archive_dir = 'raw/main' if is_main else 'raw'
+    return '%s/%s' % (archive_dir, version_or_path)
+
+
 def GetStorageDestination(storage_prefix, version_or_path, file_name, is_main):
     # We archive main commits under raw/main instead of directly under raw
     version_dir = GetVersionDestination(storage_prefix, version_or_path,
@@ -94,9 +106,8 @@ def GetStorageDestination(storage_prefix, version_or_path, file_name, is_main):
 
 
 def GetVersionDestination(storage_prefix, version_or_path, is_main):
-    archive_dir = 'raw/main' if is_main else 'raw'
-    return '%s%s/%s/%s' % (storage_prefix, ARCHIVE_BUCKET, archive_dir,
-                           version_or_path)
+    storage_path = GetStoragePath(version_or_path, is_main)
+    return '%s%s/%s' % (storage_prefix, ARCHIVE_BUCKET, storage_path)
 
 
 def GetUploadDestination(version_or_path, file_name, is_main):
@@ -482,6 +493,16 @@ def Run(options):
                             version, jar_basename, is_main)
                         utils.upload_file_to_cloud_storage(
                             desugar_jdk_libs_configuration_jar, jar_destination)
+
+        # Write the archive details JSON (for the LUCI recipie to read).
+        archive_details = {
+            'is_main': is_main,
+            'version': version,
+            'bucket': ARCHIVE_BUCKET,
+            'bucket_path': GetStoragePath(version, is_main)
+        }
+        with open(options.archive_details, "w") as f:
+            json.dump(archive_details, f, indent=4)
 
         timing.end()
         timing.report()

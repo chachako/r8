@@ -163,6 +163,7 @@ USER_HOME = os.path.expanduser('~')
 R8_TEST_RESULTS_BUCKET = 'r8-test-results'
 R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
+ARCHIVE_DETAILS = os.path.join(BUILD, 'archive_details.json')
 
 def archive_file(name, gs_dir, src_file):
     gs_file = '%s/%s' % (gs_dir, name)
