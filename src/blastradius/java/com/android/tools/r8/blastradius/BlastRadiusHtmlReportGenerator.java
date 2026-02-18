@@ -41,7 +41,7 @@ public class BlastRadiusHtmlReportGenerator {
    * <blastradius.pb> <blastradius.html>}.
    *
    * <p>Convert all {@code blastradius.pb} files in a given directory to HTML and create a summary
-   * using {@code BlastRadiusHtmlReportGenerator <blastradius dir> <summary.html>}. </code>
+   * using {@code BlastRadiusHtmlReportGenerator <blastradius dir> <out dir>}. </code>
    */
   public static void main(String[] args) throws IOException {
     Path input = Paths.get(args[0]);
@@ -52,6 +52,9 @@ public class BlastRadiusHtmlReportGenerator {
     // If the first argument is a directory, find all *blastradius*.pb files inside the directory.
     boolean summarize = false;
     if (Files.isDirectory(input)) {
+      if (Files.exists(output) && !Files.isDirectory(output)) {
+        throw new IllegalArgumentException("Expected directory, but was: " + output);
+      }
       try (var stream = Files.walk(input)) {
         stream
             .filter(Files::isRegularFile)
@@ -61,7 +64,8 @@ public class BlastRadiusHtmlReportGenerator {
                   if (name.endsWith(".pb") && name.contains("blastradius")) {
                     String htmlName = name.substring(0, name.lastIndexOf('.')) + ".html";
                     blastRadiusFiles.add(path);
-                    blastRadiusOutputFiles.add(path.resolveSibling(htmlName));
+                    blastRadiusOutputFiles.add(
+                        output.resolve(input.relativize(path.resolveSibling(htmlName))));
                   }
                 });
       }
@@ -80,6 +84,7 @@ public class BlastRadiusHtmlReportGenerator {
       try (InputStream is = Files.newInputStream(blastRadiusFile)) {
         blastRadius = BlastRadiusContainer.parseFrom(is);
       }
+      Files.createDirectories(blastRadiusOutputFile.getParent());
       Files.write(blastRadiusOutputFile, generate(blastRadius).getBytes(StandardCharsets.UTF_8));
       if (summarize) {
         Path relPath = input.relativize(blastRadiusFile);
@@ -91,7 +96,9 @@ public class BlastRadiusHtmlReportGenerator {
 
     // Output summary.
     if (summarize) {
-      Files.write(output, generateSummary(blastRadiusSummaries).getBytes(StandardCharsets.UTF_8));
+      Files.write(
+          output.resolve("blastradius.html"),
+          generateSummary(blastRadiusSummaries).getBytes(StandardCharsets.UTF_8));
     }
   }
 
