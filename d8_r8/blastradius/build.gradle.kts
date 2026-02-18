@@ -55,6 +55,7 @@ dependencies {
 
 tasks.named<Jar>("jar") {
   exclude("blastradius.proto")
+  exclude("blastradiussummary.proto")
   archiveFileName.set("blastradius-exclude-deps.jar")
 }
 
