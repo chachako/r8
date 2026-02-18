@@ -72,7 +72,19 @@ public class RootSetBlastRadiusForRule {
     return rule.getSource();
   }
 
-  boolean isEmpty() {
+  public boolean isEmpty() {
     return matchedClasses.isEmpty() && matchedFields.isEmpty() && matchedMethods.isEmpty();
+  }
+
+  public boolean isNoObfuscationSet() {
+    return !rule.getModifiers().allowsObfuscation;
+  }
+
+  public boolean isNoOptimizationSet() {
+    return !rule.getModifiers().allowsOptimization;
+  }
+
+  public boolean isNoShrinkingSet() {
+    return !rule.getModifiers().allowsShrinking;
   }
 }

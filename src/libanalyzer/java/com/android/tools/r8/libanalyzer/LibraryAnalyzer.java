@@ -3,8 +3,6 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
-import static com.google.common.base.Predicates.alwaysTrue;
-
 import com.android.tools.r8.BaseCompilerCommand;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
@@ -16,13 +14,12 @@ import com.android.tools.r8.Version;
 import com.android.tools.r8.blastradius.BlastRadiusKeepRuleClassifier;
 import com.android.tools.r8.blastradius.RootSetBlastRadius;
 import com.android.tools.r8.blastradius.RootSetBlastRadiusForRule;
-import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexProgramClass;
-import com.android.tools.r8.graph.ProgramField;
-import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
+import com.android.tools.r8.libanalyzer.proto.ConfigurationSummary;
 import com.android.tools.r8.libanalyzer.proto.D8CompileResult;
-import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadius;
+import com.android.tools.r8.libanalyzer.proto.ItemCollectionSummary;
+import com.android.tools.r8.libanalyzer.proto.KeepRuleBlastRadiusSummary;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalysisResult;
 import com.android.tools.r8.libanalyzer.proto.R8CompileResult;
 import com.android.tools.r8.libanalyzer.utils.DexIndexedSizeConsumer;
@@ -31,13 +28,11 @@ import com.android.tools.r8.origin.CommandLineOrigin;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.KeepInfo;
-import com.android.tools.r8.shaking.KeepInfoCollection;
-import com.android.tools.r8.shaking.ProguardConfiguration;
-import com.android.tools.r8.shaking.ProguardKeepRuleBase;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.ThreadUtils;
 import java.io.IOException;
@@ -48,13 +43,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
-// TODO(b/479726064): Extend SanityCheck test to verify that the libanalyzer jar does not contain
-//  any entries outside com/android/tools/r8/libanalyzer/.
 // TODO(b/479726064): Add support for writing LibraryAnalyzer tests.
-// TODO(b/479726064): If this ends up not being bundled into r8.jar, do we need this to have its own
-//  Version.java or a --version?
 @KeepForApi
 public class LibraryAnalyzer {
 
@@ -151,88 +143,78 @@ public class LibraryAnalyzer {
             r8Options.getBlastRadiusOptions().blastRadiusConsumer =
                 (appView, appInfo, blastRadius) ->
                     resultBuilder
-                        .setNumItems(getNumberOfItems(appView))
-                        .setNumItemsKept(getNumberOfKeptItems(appInfo))
-                        .setNumKeepRules(getNumberOfKeepRules(appView))
-                        .setNumKeepRulesPackageWide(getNumberOfPackageWideKeepRules(appView))
-                        .addAllKeepRuleBlastRadius(getTopBlastRadiusKeepRules(blastRadius))
-                        .addAllUnusedPackageWideKeepRules(
-                            getUnusedPackageWideKeepRules(blastRadius));
+                        .setConfiguration(
+                            ConfigurationSummary.newBuilder()
+                                .addAllKeepRules(getTopBlastRadiusKeepRules(blastRadius))
+                                .addAllUsedPackageWideKeepRules(
+                                    getPackageWideKeepRules(blastRadius, r -> !r.isEmpty()))
+                                .addAllUnusedPackageWideKeepRules(
+                                    getPackageWideKeepRules(blastRadius, r -> r.isEmpty())))
+                        .setClasses(
+                            getItemCollectionSummary(
+                                appInfo,
+                                IterableUtils::singleton,
+                                appInfo.getKeepInfo()::getClassInfo))
+                        .setFields(
+                            getItemCollectionSummary(
+                                appInfo,
+                                DexProgramClass::programFields,
+                                appInfo.getKeepInfo()::getFieldInfo))
+                        .setMethods(
+                            getItemCollectionSummary(
+                                appInfo,
+                                DexProgramClass::programMethods,
+                                appInfo.getKeepInfo()::getMethodInfo));
           });
     } catch (CompilationFailedException e) {
       options.reporter.warning(new ExceptionDiagnostic(e));
       options.reporter.clearAbort();
       return null;
     }
-    return resultBuilder.setSizeBytes(sizeConsumer.size()).build();
+    return resultBuilder.setDexSizeBytes(sizeConsumer.size()).build();
   }
 
-  private static int getNumberOfItems(AppView<?> appView) {
-    int items = appView.appInfo().classes().size();
-    for (DexProgramClass clazz : appView.appInfo().classes()) {
-      items += clazz.getFieldCollection().size();
-      items += clazz.getMethodCollection().size();
-    }
-    return items;
-  }
-
-  private static int getNumberOfKeptItems(AppInfoWithLiveness appInfo) {
-    int items = 0;
-    KeepInfoCollection keepInfoCollection = appInfo.getKeepInfo();
+  private static <T> ItemCollectionSummary getItemCollectionSummary(
+      AppInfoWithLiveness appInfo, Function<DexProgramClass, Iterable<T>> getItems,
+      Function<T, KeepInfo<?, ?>> getKeepInfo) {
+    int itemCount = 0;
+    int keptItemCount = 0;
+    int noObfuscationCount = 0;
+    int noOptimizationCount = 0;
+    int noShrinkingCount = 0;
     InternalOptions options = appInfo.options();
     for (DexProgramClass clazz : appInfo.classes()) {
-      if (appInfo.isLiveProgramClass(clazz)) {
-        if (isKept(keepInfoCollection.getInfo(clazz), options)) {
-          items++;
+      for (T item : getItems.apply(clazz)) {
+        KeepInfo<?, ?> keepInfo = getKeepInfo.apply(item);
+        itemCount++;
+        boolean isKept = false;
+        if (!keepInfo.isMinificationAllowed(options)) {
+          noObfuscationCount++;
+          isKept = true;
         }
-        for (ProgramField field : clazz.programFields()) {
-          if (appInfo.isReachableOrReferencedField(field.getDefinition())) {
-            if (isKept(keepInfoCollection.getInfo(field), options)) {
-              items++;
-            }
-          }
+        if (!keepInfo.isOptimizationAllowed(options)) {
+          noOptimizationCount++;
+          isKept = true;
         }
-        for (ProgramMethod method : clazz.programMethods()) {
-          if (appInfo.isLiveOrTargetedMethod(method.getDefinition())) {
-            if (isKept(keepInfoCollection.getInfo(method), options)) {
-              items++;
-            }
-          }
+        if (!keepInfo.isShrinkingAllowed(options)) {
+          noShrinkingCount++;
+          isKept = true;
+        }
+        if (isKept) {
+          keptItemCount++;
         }
       }
     }
-    return items;
+    return ItemCollectionSummary.newBuilder()
+        .setItemCount(itemCount)
+        .setKeptItemCount(keptItemCount)
+        .setNoObfuscationCount(noObfuscationCount)
+        .setNoOptimizationCount(noOptimizationCount)
+        .setNoShrinkingCount(noShrinkingCount)
+        .build();
   }
 
-  private static boolean isKept(KeepInfo<?, ?> keepInfo, InternalOptions options) {
-    return !keepInfo.isMinificationAllowed(options)
-        || !keepInfo.isOptimizationAllowed(options)
-        || !keepInfo.isShrinkingAllowed(options);
-  }
-
-  private static int getNumberOfKeepRules(AppView<?> appView) {
-    return getNumberOfKeepRules(appView, alwaysTrue());
-  }
-
-  private static int getNumberOfKeepRules(
-      AppView<?> appView, Predicate<ProguardKeepRuleBase> predicate) {
-    ProguardConfiguration configuration = appView.options().getProguardConfiguration();
-    if (configuration != null) {
-      long count =
-          configuration.getRules().stream()
-              .filter(r -> r.isProguardKeepRule() || r.isProguardIfRule())
-              .filter(r -> predicate.test((ProguardKeepRuleBase) r))
-              .count();
-      return (int) count;
-    }
-    return 0;
-  }
-
-  private static int getNumberOfPackageWideKeepRules(AppView<?> appView) {
-    return getNumberOfKeepRules(appView, BlastRadiusKeepRuleClassifier::isPackageWideKeepRule);
-  }
-
-  private static List<KeepRuleBlastRadius> getTopBlastRadiusKeepRules(
+  private static List<KeepRuleBlastRadiusSummary> getTopBlastRadiusKeepRules(
       RootSetBlastRadius blastRadius) {
     ArrayList<RootSetBlastRadiusForRule> keepRulesSorted =
         ListUtils.sort(
@@ -248,35 +230,38 @@ public class LibraryAnalyzer {
     while (keepRulesSorted.size() >= 5) {
       ListUtils.removeLast(keepRulesSorted);
     }
-    while (!keepRulesSorted.isEmpty() && ListUtils.last(keepRulesSorted).getNumberOfItems() == 0) {
+    while (!keepRulesSorted.isEmpty() && ListUtils.last(keepRulesSorted).isEmpty()) {
       ListUtils.removeLast(keepRulesSorted);
     }
     return ListUtils.map(
         keepRulesSorted,
         rule ->
-            KeepRuleBlastRadius.newBuilder()
+            KeepRuleBlastRadiusSummary.newBuilder()
                 .setSource(rule.getSource())
-                .setNumItemsKept(rule.getNumberOfItems())
+                .setKeptItemCount(rule.getNumberOfItems())
                 .build());
   }
 
-  private static List<KeepRuleBlastRadius> getUnusedPackageWideKeepRules(
-      RootSetBlastRadius blastRadius) {
+  private static List<KeepRuleBlastRadiusSummary> getPackageWideKeepRules(
+      RootSetBlastRadius blastRadius, Predicate<RootSetBlastRadiusForRule> predicate) {
     List<RootSetBlastRadiusForRule> unusedPackageWideKeepRules =
         ListUtils.filter(
             blastRadius.getBlastRadius(),
             rule ->
-                rule.getNumberOfItems() == 0
-                    && BlastRadiusKeepRuleClassifier.isPackageWideKeepRule(rule.getRule()));
+                BlastRadiusKeepRuleClassifier.isPackageWideKeepRule(rule.getRule())
+                    && predicate.test(rule));
     List<RootSetBlastRadiusForRule> unusedPackageWideKeepRulesSorted =
         ListUtils.sort(
             unusedPackageWideKeepRules, Comparator.comparing(RootSetBlastRadiusForRule::getSource));
     return ListUtils.map(
         unusedPackageWideKeepRulesSorted,
         rule ->
-            KeepRuleBlastRadius.newBuilder()
+            KeepRuleBlastRadiusSummary.newBuilder()
                 .setSource(rule.getSource())
-                .setNumItemsKept(0)
+                .setKeptItemCount(rule.getNumberOfItems())
+                .setNoObfuscation(rule.isNoObfuscationSet())
+                .setNoOptimization(rule.isNoOptimizationSet())
+                .setNoShrinking(rule.isNoShrinkingSet())
                 .build());
   }
 
@@ -285,7 +270,7 @@ public class LibraryAnalyzer {
     LibraryAnalysisResult.Builder resultBuilder = LibraryAnalysisResult.newBuilder();
     if (d8CompileResult != null) {
       resultBuilder.setD8CompileResult(
-          D8CompileResult.newBuilder().setSizeBytes(d8CompileResult.size).build());
+          D8CompileResult.newBuilder().setDexSizeBytes(d8CompileResult.size).build());
     }
     if (r8CompileResult != null) {
       resultBuilder.setR8CompileResult(r8CompileResult);

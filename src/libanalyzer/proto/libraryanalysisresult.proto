@@ -21,20 +21,48 @@ message LibraryAnalysisResult {
 }
 
 message D8CompileResult {
-  uint32 size_bytes = 1;
+  uint32 dex_size_bytes = 1;
 }
 
 message R8CompileResult {
-  uint32 size_bytes = 1;
-  uint32 num_items = 2;
-  uint32 num_items_kept = 3;
-  uint32 num_keep_rules = 4;
-  uint32 num_keep_rules_package_wide = 5;
-  repeated KeepRuleBlastRadius keep_rule_blast_radius = 6;
-  repeated KeepRuleBlastRadius unused_package_wide_keep_rules = 7;
+  uint32 dex_size_bytes = 1;
+  // Information about the R8 configuration, specifically the keep rules.
+  ConfigurationSummary configuration = 2;
+  // Information about the library's classes and how they are hit by keep rules.
+  ItemCollectionSummary classes = 3;
+  // Ditto, for fields.
+  ItemCollectionSummary fields = 4;
+  // Ditto, for methods.
+  ItemCollectionSummary methods = 5;
 }
 
-message KeepRuleBlastRadius {
+message ConfigurationSummary {
+  // Keep rules and their blast radius. Useful for manual inspection.
+  repeated KeepRuleBlastRadiusSummary keep_rules = 1;
+  // Package wide keep rules and their blast radius.
+  repeated KeepRuleBlastRadiusSummary used_package_wide_keep_rules = 2;
+  // Unused package wide keep rules, i.e., rules with zero blast radius.
+  // These rules likely target packages not part of the current library.
+  repeated KeepRuleBlastRadiusSummary unused_package_wide_keep_rules = 3;
+}
+
+message ItemCollectionSummary {
+  // Total number of items (classes, fields or methods) in the input.
+  uint32 item_count = 1;
+  // Total number of items that are matched by one or more keep rules.
+  uint32 kept_item_count = 2;
+  // Total number of items where obfuscation is prohibited.
+  uint32 no_obfuscation_count = 3;
+  // Total number of items where optimization is prohibited.
+  uint32 no_optimization_count = 4;
+  // Total number of items where shrinking is prohibited.
+  uint32 no_shrinking_count = 5;
+}
+
+message KeepRuleBlastRadiusSummary {
   string source = 1;
-  uint32 num_items_kept = 2;
+  uint32 kept_item_count = 2;
+  bool no_obfuscation = 3;
+  bool no_optimization = 4;
+  bool no_shrinking = 5;
 }
