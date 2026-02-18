@@ -37,6 +37,7 @@ import java.util.Set;
 
 public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Command.Builder> {
 
+  static final String BLAST_RADIUS_OUTPUT_FLAG = "--blast-radius-output";
   static final String ISOLATED_SPLITS_FLAG = "--isolated-splits";
 
   // Note: this must be a super-set of OPTIONS_WITH_TWO_PARAMETERS.
@@ -62,6 +63,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
           ART_PROFILE_FLAG,
           STARTUP_PROFILE_FLAG,
           THREAD_COUNT_FLAG,
+          BLAST_RADIUS_OUTPUT_FLAG,
           BUILD_METADATA_OUTPUT_FLAG);
 
   // Note: this must be a subset of OPTIONS_WITH_ONE_PARAMETER.
@@ -160,6 +162,7 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     CompilationMode mode = null;
     OutputMode outputMode = null;
     Path outputPath = null;
+    boolean hasBlastRadiusOutput = false;
     boolean hasDefinedApiLevel = false;
     private boolean includeDataResources = true;
   }
@@ -197,15 +200,22 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     if (state.mode != null) {
       builder.setMode(state.mode);
     }
-    Path outputPath = state.outputPath != null ? state.outputPath : Paths.get(".");
     OutputMode outputMode = state.outputMode != null ? state.outputMode : OutputMode.DexIndexed;
-    builder.setOutput(outputPath, outputMode, state.includeDataResources);
+    if (state.hasBlastRadiusOutput
+        && state.outputPath == null
+        && outputMode == OutputMode.DexIndexed) {
+      builder.setProgramConsumer(DexIndexedConsumer.emptyConsumer());
+    } else {
+      Path outputPath = state.outputPath != null ? state.outputPath : Paths.get(".");
+      builder.setOutput(outputPath, outputMode, state.includeDataResources);
+    }
     builder.setEnableExperimentalMissingLibraryApiModeling(true);
     return builder;
   }
 
   private void parse(
       String[] args, Origin argsOrigin, R8Command.Builder builder, ParseState state) {
+    Path blastRadiusOutputPath = null;
     Path buildMetadataOutputPath = null;
     String[] expandedArgs = FlagFile.expandFlagFiles(args, builder::error);
     FeatureSplitConfigCollector featureSplitConfigCollector = new FeatureSplitConfigCollector();
@@ -355,6 +365,20 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
         Path startupProfilePath = Paths.get(nextArg);
         builder.addStartupProfileProviders(
             StartupProfileProviderUtils.createFromHumanReadableArtProfile(startupProfilePath));
+      } else if (arg.equals(BLAST_RADIUS_OUTPUT_FLAG)) {
+        if (blastRadiusOutputPath != null) {
+          builder.error(
+              new StringDiagnostic(
+                  "Cannot output blast radius to both '"
+                      + blastRadiusOutputPath
+                      + "' and '"
+                      + nextArg
+                      + "'",
+                  argsOrigin));
+          continue;
+        }
+        blastRadiusOutputPath = Paths.get(nextArg);
+        state.hasBlastRadiusOutput = true;
       } else if (arg.equals(BUILD_METADATA_OUTPUT_FLAG)) {
         if (buildMetadataOutputPath != null) {
           builder.error(
@@ -391,6 +415,9 @@ public class R8CommandParser extends BaseCompilerCommandParser<R8Command, R8Comm
     }
     addFeatureSplitConfigs(
         builder, featureSplitConfigCollector.getConfigs(), state.includeDataResources);
+    if (blastRadiusOutputPath != null) {
+      builder.setBlastRadiusOutputPath(blastRadiusOutputPath);
+    }
     if (buildMetadataOutputPath != null) {
       final Path finalBuildMetadataOutputPath = buildMetadataOutputPath;
       builder.setBuildMetadataConsumer(

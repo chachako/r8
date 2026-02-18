@@ -98,9 +98,11 @@ public class ProguardConfigurationParser {
   private static final List<String> IGNORED_CLASS_DESCRIPTOR_OPTIONS =
       ImmutableList.of("checkenumstringsdiscarded", "isclassnamestring", "whyarenotsimple");
 
-  private static final List<String> WARNED_SINGLE_ARG_OPTIONS = ImmutableList.of(
-      // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
-      "outjars");
+  private static final List<String> WARNED_SINGLE_ARG_OPTIONS =
+      ImmutableList.of(
+          "ar_flag",
+          // TODO(b/37137994): -outjars should be reported as errors, not just as warnings!
+          "outjars");
 
   private static final List<String> WARNED_OPTIONAL_SINGLE_ARG_OPTIONS = ImmutableList.of(
       // TODO(b/121340442): we may support this later.

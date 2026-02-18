@@ -3402,4 +3402,12 @@ public class ProguardConfigurationParserTest extends TestBase {
     }
     assertTrue(sources.isEmpty());
   }
+
+  @Test
+  public void testParseArFlag() {
+    parser.parse(createConfigurationForTesting("-ar_flag \"--foo\""));
+    assertTrue(handler.infos.isEmpty());
+    assertTrue(handler.errors.isEmpty());
+    checkDiagnostics(handler.warnings, null, 1, 1, "Ignoring option: -ar_flag");
+  }
 }
