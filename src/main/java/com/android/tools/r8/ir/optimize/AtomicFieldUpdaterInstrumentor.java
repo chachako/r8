@@ -210,7 +210,13 @@ public class AtomicFieldUpdaterInstrumentor {
           // and valid call to
           // AtomicReferenceFieldUpdater.newUpdater(ThisClass.class, FieldType.class, "fieldName").
           var f = new ProgramField(clazz, field);
-          if (!appView
+          // Keep info must be checked before static write to report the correct reason.
+          if (!appView.getKeepInfo(f).isOptimizationAllowed(appView.options())) {
+            reportInfo(
+                appView,
+                new Event.CannotInstrument(field.getReference()),
+                Reason.EXISTS_IN_KEEP_RULE);
+          } else if (!appView
               .appInfoWithLiveness()
               .isStaticFieldWrittenOnlyInEnclosingStaticInitializer(f)) {
             reportInfo(

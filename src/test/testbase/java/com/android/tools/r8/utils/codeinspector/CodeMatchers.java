@@ -292,6 +292,10 @@ public class CodeMatchers {
     };
   }
 
+  public static Matcher<MethodSubject> invokesMethodWithHolder(String holderType) {
+    return invokesMethod(null, holderType, null, null);
+  }
+
   public static Matcher<MethodSubject> invokesMethodWithHolderAndName(
       String holderType, String name) {
     return invokesMethod(null, holderType, name, null);

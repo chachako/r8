@@ -20,6 +20,8 @@ public abstract class Reason {
   public static final Reason WRITTEN_OUTSIDE_CLASS_INITIALIZER =
       new GenericReason("written outside class initializer");
 
+  public static final Reason EXISTS_IN_KEEP_RULE = new GenericReason("disallowed by keep rules");
+
   public static final Reason MULTIPLE_WRITES = new GenericReason("multiple writes");
 
   public static final Reason UPDATER_INITIALIZED_BY_PHI =
