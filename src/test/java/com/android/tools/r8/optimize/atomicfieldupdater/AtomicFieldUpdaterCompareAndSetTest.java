@@ -65,6 +65,7 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
               diagnostics.assertInfosMatch(
                   diagnosticMessage(containsString("Can instrument")),
                   diagnosticMessage(containsString("Can optimize")),
+                  diagnosticMessage(containsString("Can optimize")),
                   // TODO(b/453628974): The field should be removed once nullability analysis is
                   // more precise.
                   diagnosticMessage(containsString("Cannot remove")));

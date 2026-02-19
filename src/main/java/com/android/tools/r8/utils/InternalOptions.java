@@ -495,8 +495,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public int minimumStringSwitchSize = 3;
   public boolean enableEnumValueOptimization = true;
   public boolean enableEnumSwitchMapRemoval = true;
-  // TODO(b/453628974): enabling this will unsafely disable compareAndSet
-  //                    bug-fix backports for Android Sv2 and before.
   public boolean enableAtomicFieldUpdaterOptimization =
       SystemPropertyUtils.parseSystemPropertyOrDefault(
           "com.android.tools.r8.enableAtomicFieldUpdaterOptimization", false);
