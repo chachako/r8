@@ -453,7 +453,7 @@ private object Versions {
   public const val kotlinMetadataVersion = "2.3.10"
   public const val mockito = "2.10.0"
   public const val smaliVersion = "3.0.3"
-  public const val protobufVersion = "3.19.3"
+  public const val protobufVersion = "4.33.5"
   public const val zipflingerVersion = "9.0.0"
 }
 

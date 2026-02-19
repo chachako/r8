@@ -38,10 +38,10 @@ TESTNG_VERSION = '6.10'
 ZIPFLINGER_VERSION = '9.0.0'
 
 # keepanno & resource shrinker dependencies
-PROTOBUF_VERSION = '3.19.3'
+PROTOBUF_VERSION = '4.33.5'
 
 # Resource shrinker dependency versions
-AAPT2_PROTO_VERSION = '8.2.0-alpha10-10154469'
+AAPT2_PROTO_VERSION = '9.1.0-alpha09-14792394'
 STUDIO_SDK_VERSION = '31.5.0-alpha04'
 
 BUILD_DEPENDENCIES = [
