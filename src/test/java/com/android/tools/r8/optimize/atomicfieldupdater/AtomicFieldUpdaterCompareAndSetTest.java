@@ -11,10 +11,9 @@ import static org.junit.Assert.assertFalse;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestShrinkerBuilder;
+import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.AndroidApiLevel;
-import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import com.google.common.collect.ImmutableList;
@@ -34,19 +33,14 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
   @Parameter(0)
   public TestParameters parameters;
 
-  @Parameter(1)
-  public boolean dontObfuscate;
-
-  @Parameters(name = "{0}, dontObfuscate:{1}")
-  public static List<Object[]> data() {
+  @Parameters(name = "{0}")
+  public static TestParametersCollection data() {
     // TODO(b/453628974): test all dex and api levels.
-    return buildParameters(
-        TestParameters.builder()
-            .withDexRuntimesStartingFromIncluding(
-                Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
-            .withAllApiLevels()
-            .build(),
-        BooleanUtils.values());
+    return TestParameters.builder()
+        .withDexRuntimesStartingFromIncluding(
+            Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
+        .withAllApiLevels()
+        .build();
   }
 
   @Test
@@ -64,7 +58,6 @@ public class AtomicFieldUpdaterCompareAndSetTest extends TestBase {
         .addProgramClasses(testClass)
         .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
-        .applyIf(dontObfuscate, TestShrinkerBuilder::addDontObfuscate)
         .compileWithExpectedDiagnostics(
             diagnostics -> {
               List<Matcher<Diagnostic>> matchers = new ArrayList<>(4);
