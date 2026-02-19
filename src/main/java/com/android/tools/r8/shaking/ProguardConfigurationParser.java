@@ -111,13 +111,15 @@ public class ProguardConfigurationParser {
   private static final List<String> WARNED_FLAG_OPTIONS =
       ImmutableList.of("addconfigurationdebugging", "useuniqueclassmembernames");
 
-  private static final List<String> WARNED_CLASS_DESCRIPTOR_OPTIONS = ImmutableList.of(
-      // TODO(b/73708157): add support -assumenoexternalsideeffects <class_spec>
-      "assumenoexternalsideeffects",
-      // TODO(b/73707404): add support -assumenoescapingparameters <class_spec>
-      "assumenoescapingparameters",
-      // TODO(b/73708085): add support -assumenoexternalreturnvalues <class_spec>
-      "assumenoexternalreturnvalues");
+  private static final List<String> WARNED_CLASS_DESCRIPTOR_OPTIONS =
+      ImmutableList.of(
+          // TODO(b/73708157): add support -assumenoexternalsideeffects <class_spec>
+          "assumenoexternalsideeffects",
+          // TODO(b/73707404): add support -assumenoescapingparameters <class_spec>
+          "assumenoescapingparameters",
+          // TODO(b/73708085): add support -assumenoexternalreturnvalues <class_spec>
+          "assumenoexternalreturnvalues",
+          "trace");
 
   // Those options are unsupported and are treated as compilation errors.
   // Just ignoring them would produce outputs incompatible with user expectations.
