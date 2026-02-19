@@ -338,6 +338,11 @@ public class SyntheticItems {
       return;
     }
 
+    if (!appView.options().getTestingOptions().collectSyntheticInputs) {
+      appView.appInfo().classes().forEach(DexProgramClass::stripSyntheticInputMarker);
+      return;
+    }
+
     // Collecting synthetic items must be the very first task after application build.
     SyntheticItems synthetics = appView.getSyntheticItems();
     assert synthetics.committed.isEmpty();

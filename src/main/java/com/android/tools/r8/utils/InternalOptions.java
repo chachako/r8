@@ -2442,6 +2442,13 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     public boolean applyIfRulesToLibrary =
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.applyIfRulesToLibrary", false);
+    // When disabled, input synthetics will be treated as non-synthetic classes.
+    // The primary use case of this is to make blast radius computation more robust in the presence
+    // of input synthetics (e.g., avoid that blast radius cannot be computed due to errors such as
+    // "Attempt at compiling intermediate artifact without its context").
+    public boolean collectSyntheticInputs =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.collectSyntheticInputs", true);
     // TODO(b/374715251): Look into enabling this.
     public boolean enableUseLastLocalRegisterAsMoveExceptionRegister = false;
     public boolean enableKeepInfoCanonicalizer = true;
