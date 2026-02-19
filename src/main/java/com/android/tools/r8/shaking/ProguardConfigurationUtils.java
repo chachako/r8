@@ -8,7 +8,7 @@ import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexClass;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.origin.Origin;
-import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcards;
+import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.LongInterval;
@@ -77,7 +77,7 @@ public class ProguardConfigurationUtils {
                     .setAccessFlags(publicStaticFinalFlags)
                     .setRuleType(ProguardMemberType.FIELD)
                     .setTypeMatcher(ProguardTypeMatcher.create(factory.intType))
-                    .setName(IdentifierPatternWithWildcards.withoutWildcards("SDK_INT"))
+                    .setName(new IdentifierPatternWithWildcardsAndNegation("SDK_INT"))
                     .setReturnValue(
                         new ProguardMemberRuleValue(
                             new LongInterval(apiLevel.getLevel(), Integer.MAX_VALUE)))
@@ -157,7 +157,7 @@ public class ProguardConfigurationUtils {
             Collections.singletonList(
                 ProguardMemberRule.builder()
                     .setRuleType(ProguardMemberType.INIT)
-                    .setName(IdentifierPatternWithWildcards.init())
+                    .setName(new IdentifierPatternWithWildcardsAndNegation("<init>"))
                     .setArguments(Collections.emptyList())
                     .setTypeMatcher(ProguardTypeMatcher.create(factory.voidType))
                     .build()))

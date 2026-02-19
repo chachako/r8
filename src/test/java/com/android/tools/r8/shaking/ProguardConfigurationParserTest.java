@@ -37,7 +37,7 @@ import com.android.tools.r8.position.Position;
 import com.android.tools.r8.position.TextRange;
 import com.android.tools.r8.shaking.ProguardClassNameList.SingleClassNameList;
 import com.android.tools.r8.shaking.ProguardConfiguration.ProcessKotlinNullChecks;
-import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcards;
+import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.shaking.ProguardTypeMatcher.MatchSpecificType;
 import com.android.tools.r8.shaking.constructor.InitMatchingTest;
 import com.android.tools.r8.utils.AbortException;
@@ -234,8 +234,9 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals("some.library.Class", rule.getInheritanceClassName().toString());
     ProguardMemberRule memberRule = rule.getMemberRules().iterator().next();
     assertTrue(memberRule.getAccessFlags().isProtected());
-    assertEquals(ProguardNameMatcher.create(
-        IdentifierPatternWithWildcards.withoutWildcards("getContents")), memberRule.getName());
+    assertEquals(
+        ProguardNameMatcher.create(new IdentifierPatternWithWildcardsAndNegation("getContents")),
+        memberRule.getName());
     assertEquals("java.lang.Object[][]", memberRule.getType().toString());
     assertEquals(ProguardMemberType.METHOD, memberRule.getRuleType());
     assertEquals(0, memberRule.getArguments().size());

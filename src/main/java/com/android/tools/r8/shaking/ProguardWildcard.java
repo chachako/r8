@@ -36,6 +36,10 @@ public abstract class ProguardWildcard {
       this.pattern = pattern;
     }
 
+    static Pattern create(String pattern, boolean isNonReferenceable) {
+      return isNonReferenceable ? new NonReferenceablePattern(pattern) : new Pattern(pattern);
+    }
+
     @Override
     synchronized void setCaptured(String captured) {
       this.captured = captured;
@@ -71,9 +75,25 @@ public abstract class ProguardWildcard {
       return this;
     }
 
+    boolean isNonReferenceable() {
+      return false;
+    }
+
     @Override
     public String toString() {
       return pattern;
+    }
+  }
+
+  static class NonReferenceablePattern extends Pattern {
+
+    NonReferenceablePattern(String pattern) {
+      super(pattern);
+    }
+
+    @Override
+    boolean isNonReferenceable() {
+      return true;
     }
   }
 

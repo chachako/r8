@@ -7,7 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import com.android.tools.r8.graph.DexItemFactory;
-import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcards;
+import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.shaking.ProguardTypeMatcher.ClassOrType;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.ProguardWildcard.Pattern;
@@ -27,7 +27,9 @@ public class ProguardNameMatchingTest {
 
   private static boolean matchTypeName(String typeName, String pattern) {
     return ProguardTypeMatcher.create(
-        toIdentifierPatternWithWildCards(pattern, false), ClassOrType.TYPE, dexItemFactory)
+            toIdentifierPatternWithWildcards(pattern, false).getNonNegatedPattern(),
+            ClassOrType.TYPE,
+            dexItemFactory)
         .matches(dexItemFactory.createType(DescriptorUtils.javaTypeToDescriptor(typeName)));
   }
 
@@ -42,10 +44,12 @@ public class ProguardNameMatchingTest {
       for (String pattern : patterns) {
         boolean isNegated = pattern.startsWith("!");
         String actualPattern = isNegated ? pattern.substring(1) : pattern;
-        listBuilder.addClassName(isNegated,
+        listBuilder.addClassName(
+            isNegated,
             ProguardTypeMatcher.create(
-                toIdentifierPatternWithWildCards(actualPattern, false),
-                ClassOrType.CLASS, dexItemFactory));
+                toIdentifierPatternWithWildcards(actualPattern, false).getNonNegatedPattern(),
+                ClassOrType.CLASS,
+                dexItemFactory));
       }
       builder.addPattern(listBuilder.build());
     }
@@ -55,7 +59,7 @@ public class ProguardNameMatchingTest {
 
   private static boolean matchMemberName(String pattern, String memberName) {
     ProguardNameMatcher nameMatcher =
-        ProguardNameMatcher.create(toIdentifierPatternWithWildCards(pattern, true));
+        ProguardNameMatcher.create(toIdentifierPatternWithWildcards(pattern, true));
     return nameMatcher.matches(memberName);
   }
 
@@ -178,7 +182,7 @@ public class ProguardNameMatchingTest {
     assertFalse(matchMemberName("*foo<1>", "barfoobaz"));
   }
 
-  private static IdentifierPatternWithWildcards toIdentifierPatternWithWildCards(
+  private static IdentifierPatternWithWildcardsAndNegation toIdentifierPatternWithWildcards(
       String pattern, boolean isForNameMatcher) {
     ImmutableList.Builder<ProguardWildcard> builder = ImmutableList.builder();
     String allPattern = "";
@@ -222,7 +226,7 @@ public class ProguardNameMatchingTest {
     }
     List<ProguardWildcard> wildcards = builder.build();
     linkBackReferences(wildcards);
-    return new IdentifierPatternWithWildcards(pattern, wildcards);
+    return new IdentifierPatternWithWildcardsAndNegation(pattern, wildcards);
   }
 
   private static void linkBackReferences(Iterable<ProguardWildcard> wildcards) {

@@ -889,7 +889,7 @@ public class ProguardConfigurationParser {
             Lists.newArrayList(
                 ProguardMemberRule.builder()
                     .setName(
-                        IdentifierPatternWithWildcards.withoutWildcards(
+                        new IdentifierPatternWithWildcardsAndNegation(
                             Constants.INSTANCE_INITIALIZER_NAME))
                     .setRuleType(ProguardMemberType.INIT)
                     .setArguments(Collections.emptyList())
@@ -999,7 +999,19 @@ public class ProguardConfigurationParser {
                     + "(only seen " + patterns.size() + " at this point).",
                 origin, getPosition()));
           }
-          backReference.setReference(patterns.get(backReference.referenceIndex - 1));
+          ProguardWildcard.Pattern referencedPattern =
+              patterns.get(backReference.referenceIndex - 1);
+          if (referencedPattern.isNonReferenceable()) {
+            throw reporter.fatalError(
+                new StringDiagnostic(
+                    "Wildcard <"
+                        + backReference.referenceIndex
+                        + "> is invalid "
+                        + "(cannot reference negated matches).",
+                    origin,
+                    getPosition()));
+          }
+          backReference.setReference(referencedPattern);
         } else {
           assert wildcard.isPattern();
           if (!backReferenceStarted) {
@@ -1367,19 +1379,19 @@ public class ProguardConfigurationParser {
         ruleBuilder.setRuleType(ProguardMemberType.ALL_FIELDS);
       } else if (acceptString("<init>")) {
         ruleBuilder.setRuleType(ProguardMemberType.INIT);
-        ruleBuilder.setName(IdentifierPatternWithWildcards.withoutWildcards("<init>"));
+        ruleBuilder.setName(new IdentifierPatternWithWildcardsAndNegation("<init>"));
         ruleBuilder.setArguments(parseArgumentList(allowValueSpecification, ruleBuilder));
       } else if (acceptString("<clinit>")) {
         ruleBuilder.setRuleType(ProguardMemberType.CLINIT);
-        ruleBuilder.setName(IdentifierPatternWithWildcards.withoutWildcards("<clinit>"));
+        ruleBuilder.setName(new IdentifierPatternWithWildcardsAndNegation("<clinit>"));
         ruleBuilder.setArguments(parseArgumentList(allowValueSpecification, ruleBuilder));
       } else {
         TextPosition firstStart = getPosition();
-        IdentifierPatternWithWildcards first =
-            acceptIdentifierWithBackreference(IdentifierType.ANY);
+        IdentifierPatternWithWildcardsAndNegation first =
+            acceptIdentifierWithBackreference(IdentifierType.ANY, false);
         if (first != null) {
           skipWhitespace();
-          if (first.pattern.equals("*") && hasNextChar(';')) {
+          if (first.getStringPattern().equals("*") && hasNextChar(';')) {
             ruleBuilder.setRuleType(ProguardMemberType.ALL);
           } else {
             // No return type present, only method name, most likely constructors.
@@ -1392,49 +1404,52 @@ public class ProguardConfigurationParser {
             } else {
               if (acceptString("<init>")) {
                 ProguardTypeMatcher typeMatcher =
-                    ProguardTypeMatcher.create(first, ClassOrType.TYPE, dexItemFactory);
+                    ProguardTypeMatcher.create(
+                        first.getNonNegatedPattern(), ClassOrType.TYPE, dexItemFactory);
                 if (!typeMatcher.hasSpecificType() || !typeMatcher.getSpecificType().isVoidType()) {
                   throw parseError("Expected [access-flag]* void <init>");
                 }
                 ruleBuilder.setRuleType(ProguardMemberType.INIT);
-                ruleBuilder.setName(IdentifierPatternWithWildcards.withoutWildcards("<init>"));
+                ruleBuilder.setName(new IdentifierPatternWithWildcardsAndNegation("<init>"));
                 ruleBuilder.setTypeMatcher(typeMatcher);
                 ruleBuilder.setArguments(parseArgumentList(allowValueSpecification, ruleBuilder));
               } else if (acceptString("<clinit>")) {
                 ProguardTypeMatcher typeMatcher =
-                    ProguardTypeMatcher.create(first, ClassOrType.TYPE, dexItemFactory);
+                    ProguardTypeMatcher.create(
+                        first.getNonNegatedPattern(), ClassOrType.TYPE, dexItemFactory);
                 if (!typeMatcher.hasSpecificType() || !typeMatcher.getSpecificType().isVoidType()) {
                   throw parseError("Expected [access-flag]* void <clinit>");
                 }
                 ruleBuilder.setRuleType(ProguardMemberType.CLINIT);
-                ruleBuilder.setName(IdentifierPatternWithWildcards.withoutWildcards("<clinit>"));
+                ruleBuilder.setName(new IdentifierPatternWithWildcardsAndNegation("<clinit>"));
                 ruleBuilder.setTypeMatcher(typeMatcher);
                 ruleBuilder.setArguments(parseArgumentList(allowValueSpecification, ruleBuilder));
               } else {
                 TextPosition secondStart = getPosition();
-                IdentifierPatternWithWildcards second =
-                    acceptIdentifierWithBackreference(IdentifierType.ANY);
+                IdentifierPatternWithWildcardsAndNegation second =
+                    acceptIdentifierWithBackreference(IdentifierType.ANY, true);
                 if (second != null) {
                   skipWhitespace();
                   if (hasNextChar('(')) {
                     // Parsing legitimate constructor patters is already done, so angular brackets
                     // can't appear, except for legitimate back references.
-                    if (!second.hasBackreference() || second.hasUnusualCharacters()) {
+                    if (!second.pattern.hasBackreference()
+                        || second.pattern.hasUnusualCharacters()) {
                       checkConstructorPattern(second, secondStart);
                     }
                     ruleBuilder.setRuleType(ProguardMemberType.METHOD);
                     ruleBuilder.setName(second);
-                    ruleBuilder
-                        .setTypeMatcher(
-                            ProguardTypeMatcher.create(first, ClassOrType.TYPE, dexItemFactory));
+                    ruleBuilder.setTypeMatcher(
+                        ProguardTypeMatcher.create(
+                            first.getNonNegatedPattern(), ClassOrType.TYPE, dexItemFactory));
                     ruleBuilder.setArguments(
                         parseArgumentList(allowValueSpecification, ruleBuilder));
                   } else {
                     ruleBuilder.setRuleType(ProguardMemberType.FIELD);
                     ruleBuilder.setName(second);
-                    ruleBuilder
-                        .setTypeMatcher(
-                            ProguardTypeMatcher.create(first, ClassOrType.TYPE, dexItemFactory));
+                    ruleBuilder.setTypeMatcher(
+                        ProguardTypeMatcher.create(
+                            first.getNonNegatedPattern(), ClassOrType.TYPE, dexItemFactory));
                   }
                   // Parse "return ..." if present.
                   ruleBuilder.setReturnValue(
@@ -1513,16 +1528,16 @@ public class ProguardConfigurationParser {
     }
 
     private void checkConstructorPattern(
-        IdentifierPatternWithWildcards pattern, TextPosition position) {
-      if (pattern.pattern.equals("<clinit>")) {
+        IdentifierPatternWithWildcardsAndNegation pattern, TextPosition position) {
+      if (pattern.getStringPattern().equals("<clinit>")) {
         reporter.warning(
             new StringDiagnostic("Member rule for <clinit> has no effect.", origin, position));
         return;
       }
-      if (pattern.pattern.contains("<")) {
+      if (pattern.getStringPattern().contains("<")) {
         throw parseError("Unexpected character '<' in method name. "
             + "The character '<' is only allowed in the method name '<init>'.", position);
-      } else if (pattern.pattern.contains(">")) {
+      } else if (pattern.getStringPattern().contains(">")) {
         throw parseError("Unexpected character '>' in method name. "
             + "The character '>' is only allowed in the method name '<init>'.", position);
       }
@@ -2016,16 +2031,6 @@ public class ProguardConfigurationParser {
       return acceptString(this::isClassName);
     }
 
-    private IdentifierPatternWithWildcards acceptIdentifierWithBackreference(IdentifierType kind) {
-      IdentifierPatternWithWildcardsAndNegation pattern =
-          acceptIdentifierWithBackreference(kind, false);
-      if (pattern == null) {
-        return null;
-      }
-      assert !pattern.negated;
-      return pattern.patternWithWildcards;
-    }
-
     private IdentifierPatternWithWildcardsAndNegation acceptIdentifierWithBackreference(
         IdentifierType kind, boolean allowNegation) {
       ImmutableList.Builder<ProguardWildcard> wildcardsCollector = ImmutableList.builder();
@@ -2080,7 +2085,8 @@ public class ProguardConfigurationParser {
             // only '*', '**', and '***' are allowed.
             // E.g., '****' should be regarded as two separate wildcards (e.g., '***' and '*')
             if (asteriskCount >= 3) {
-              wildcardsCollector.add(new ProguardWildcard.Pattern(currentAsterisks.toString()));
+              wildcardsCollector.add(
+                  ProguardWildcard.Pattern.create(currentAsterisks.toString(), negated));
               currentAsterisks = new StringBuilder();
               asteriskCount = 0;
             }
@@ -2089,7 +2095,8 @@ public class ProguardConfigurationParser {
             end += Character.charCount(current);
             continue;
           } else {
-            wildcardsCollector.add(new ProguardWildcard.Pattern(currentAsterisks.toString()));
+            wildcardsCollector.add(
+                ProguardWildcard.Pattern.create(currentAsterisks.toString(), negated));
             currentAsterisks = null;
             asteriskCount = 0;
           }
@@ -2104,11 +2111,13 @@ public class ProguardConfigurationParser {
             asteriskCount = 1;
           } else {
             // For member names, regard '**' or '***' as separate single-asterisk wildcards.
-            wildcardsCollector.add(new ProguardWildcard.Pattern(String.valueOf((char) current)));
+            wildcardsCollector.add(
+                ProguardWildcard.Pattern.create(String.valueOf((char) current), negated));
           }
           end += Character.charCount(current);
         } else if (current == '?' || current == '%') {
-          wildcardsCollector.add(new ProguardWildcard.Pattern(String.valueOf((char) current)));
+          wildcardsCollector.add(
+              ProguardWildcard.Pattern.create(String.valueOf((char) current), negated));
           end += Character.charCount(current);
         } else if (kind == IdentifierType.PACKAGE_NAME
             ? isPackageName(current)
@@ -2130,7 +2139,8 @@ public class ProguardConfigurationParser {
       }
       position = quoted ? end + 1 : end;
       if (currentAsterisks != null) {
-        wildcardsCollector.add(new ProguardWildcard.Pattern(currentAsterisks.toString()));
+        wildcardsCollector.add(
+            ProguardWildcard.Pattern.create(currentAsterisks.toString(), negated));
       }
       if (kind == IdentifierType.CLASS_NAME && currentBackreference != null) {
         // Proguard 6 reports this error message, so try to be compatible.
@@ -2266,7 +2276,7 @@ public class ProguardConfigurationParser {
       IdentifierPatternWithWildcardsAndNegation name = parseClassName(true);
       builder.addClassName(
           name.negated,
-          ProguardTypeMatcher.create(name.patternWithWildcards, ClassOrType.CLASS, dexItemFactory));
+          ProguardTypeMatcher.create(name.pattern, ClassOrType.CLASS, dexItemFactory));
     }
 
     private ProguardClassNameList parseClassNames() {
@@ -2292,7 +2302,7 @@ public class ProguardConfigurationParser {
     private IdentifierPatternWithWildcards parseClassName() {
       IdentifierPatternWithWildcardsAndNegation name = parseClassName(false);
       assert !name.negated;
-      return name.patternWithWildcards;
+      return name.pattern;
     }
 
     private IdentifierPatternWithWildcardsAndNegation parseClassName(boolean allowNegation) {
@@ -2442,12 +2452,12 @@ public class ProguardConfigurationParser {
       this.wildcards = wildcards;
     }
 
-    static IdentifierPatternWithWildcards init() {
-      return withoutWildcards("<init>");
-    }
-
     public static IdentifierPatternWithWildcards withoutWildcards(String pattern) {
       return new IdentifierPatternWithWildcards(pattern, ImmutableList.of());
+    }
+
+    public List<ProguardWildcard> getWildcards() {
+      return wildcards;
     }
 
     boolean isMatchAllNames() {
@@ -2482,14 +2492,39 @@ public class ProguardConfigurationParser {
     }
   }
 
-  static class IdentifierPatternWithWildcardsAndNegation {
-    final IdentifierPatternWithWildcards patternWithWildcards;
+  public static class IdentifierPatternWithWildcardsAndNegation {
+    final IdentifierPatternWithWildcards pattern;
     final boolean negated;
+
+    IdentifierPatternWithWildcardsAndNegation(String pattern) {
+      this(pattern, Collections.emptyList());
+    }
+
+    IdentifierPatternWithWildcardsAndNegation(String pattern, List<ProguardWildcard> wildcards) {
+      this(pattern, wildcards, false);
+    }
 
     IdentifierPatternWithWildcardsAndNegation(
         String pattern, List<ProguardWildcard> wildcards, boolean negated) {
-      patternWithWildcards = new IdentifierPatternWithWildcards(pattern, wildcards);
+      this.pattern = new IdentifierPatternWithWildcards(pattern, wildcards);
       this.negated = negated;
+    }
+
+    public IdentifierPatternWithWildcards getNonNegatedPattern() {
+      assert !negated;
+      return pattern;
+    }
+
+    String getStringPattern() {
+      return pattern.pattern;
+    }
+
+    List<ProguardWildcard> getWildcards() {
+      return pattern.getWildcards();
+    }
+
+    boolean isNegated() {
+      return negated;
     }
   }
 

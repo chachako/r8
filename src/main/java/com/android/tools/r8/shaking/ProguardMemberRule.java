@@ -14,7 +14,7 @@ import com.android.tools.r8.graph.DexField;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexType;
-import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcards;
+import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.shaking.rootset.RootSetBuilder;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.ObjectUtils;
@@ -80,8 +80,8 @@ public class ProguardMemberRule {
       return this;
     }
 
-    public Builder setName(IdentifierPatternWithWildcards identifierPatternWithWildcards) {
-      this.name = ProguardNameMatcher.create(identifierPatternWithWildcards);
+    public Builder setName(IdentifierPatternWithWildcardsAndNegation name) {
+      this.name = ProguardNameMatcher.create(name);
       return this;
     }
 

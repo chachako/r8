@@ -6,8 +6,10 @@ package com.android.tools.r8.shaking;
 import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcards;
+import com.android.tools.r8.shaking.ProguardConfigurationParser.IdentifierPatternWithWildcardsAndNegation;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.ProguardWildcard.Pattern;
+import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.IterableUtils;
 import java.util.Collections;
 import java.util.List;
@@ -21,15 +23,17 @@ public abstract class ProguardNameMatcher {
   private ProguardNameMatcher() {
   }
 
-  public static ProguardNameMatcher create(
-      IdentifierPatternWithWildcards identifierPatternWithWildcards) {
-    if (identifierPatternWithWildcards.isMatchAllNames()) {
-      return MATCH_ALL_NAMES;
-    } else if (identifierPatternWithWildcards.wildcards.isEmpty()) {
-      return new MatchSpecificName(identifierPatternWithWildcards.pattern);
-    } else {
-      return new MatchNamePattern(identifierPatternWithWildcards);
+  public static ProguardNameMatcher create(IdentifierPatternWithWildcardsAndNegation pattern) {
+    if (!pattern.isNegated()) {
+      IdentifierPatternWithWildcards nonNegatedPattern = pattern.getNonNegatedPattern();
+      if (nonNegatedPattern.isMatchAllNames()) {
+        return MATCH_ALL_NAMES;
+      }
+      if (nonNegatedPattern.getWildcards().isEmpty()) {
+        return new MatchSpecificName(pattern.getStringPattern());
+      }
     }
+    return new MatchNamePattern(pattern);
   }
 
   private static boolean matchFieldOrMethodNameImpl(
@@ -160,15 +164,21 @@ public abstract class ProguardNameMatcher {
 
     private final String pattern;
     private final List<ProguardWildcard> wildcards;
+    private final boolean negated;
 
-    MatchNamePattern(IdentifierPatternWithWildcards identifierPatternWithWildcards) {
-      this.pattern = identifierPatternWithWildcards.pattern;
-      this.wildcards = identifierPatternWithWildcards.wildcards;
+    MatchNamePattern(IdentifierPatternWithWildcardsAndNegation pattern) {
+      this(pattern.getStringPattern(), pattern.getWildcards(), pattern.isNegated());
+    }
+
+    MatchNamePattern(String pattern, List<ProguardWildcard> wildcards, boolean negated) {
+      this.pattern = pattern;
+      this.wildcards = wildcards;
+      this.negated = negated;
     }
 
     @Override
     public boolean matches(String name) {
-      boolean matched = matchFieldOrMethodNameImpl(pattern, 0, name, 0, wildcards, 0);
+      boolean matched = matchFieldOrMethodNameImpl(pattern, 0, name, 0, wildcards, 0) != negated;
       if (!matched) {
         wildcards.forEach(ProguardWildcard::clearCaptured);
       }
@@ -185,14 +195,12 @@ public abstract class ProguardNameMatcher {
     protected MatchNamePattern materialize() {
       List<ProguardWildcard> materializedWildcards =
           wildcards.stream().map(ProguardWildcard::materialize).collect(Collectors.toList());
-      IdentifierPatternWithWildcards identifierPatternWithMaterializedWildcards =
-          new IdentifierPatternWithWildcards(pattern, materializedWildcards);
-      return new MatchNamePattern(identifierPatternWithMaterializedWildcards);
+      return new MatchNamePattern(pattern, materializedWildcards, negated);
     }
 
     @Override
     public String toString() {
-      return pattern;
+      return (negated ? "!" : "") + pattern;
     }
 
     @Override
@@ -200,12 +208,16 @@ public abstract class ProguardNameMatcher {
       if (this == o) {
         return true;
       }
-      return o instanceof MatchNamePattern && pattern.equals(((MatchNamePattern) o).pattern);
+      if (o == null || !(o instanceof MatchNamePattern)) {
+        return false;
+      }
+      MatchNamePattern other = (MatchNamePattern) o;
+      return pattern.equals(other.pattern) && negated == other.negated;
     }
 
     @Override
     public int hashCode() {
-      return pattern.hashCode();
+      return (pattern.hashCode() << 1) | BooleanUtils.intValue(negated);
     }
   }
 
