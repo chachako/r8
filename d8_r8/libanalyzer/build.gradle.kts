@@ -5,7 +5,6 @@
 import com.google.protobuf.gradle.ProtobufExtension
 import com.google.protobuf.gradle.proto
 import net.ltgt.gradle.errorprone.errorprone
-import org.gradle.api.tasks.bundling.Jar
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
@@ -56,9 +55,11 @@ dependencies {
   errorprone(Deps.errorprone)
 }
 
-tasks.named<Jar>("jar") {
-  exclude("libraryanalysisresult.proto")
-  archiveFileName.set("libanalyzer-exclude-deps.jar")
+tasks {
+  jar {
+    exclude("libraryanalysisresult.proto")
+    archiveFileName.set("libanalyzer-exclude-deps.jar")
+  }
 }
 
 tasks.withType<JavaCompile> {

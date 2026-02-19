@@ -26,6 +26,7 @@ val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
 val assistantJarTask = projectTask("assistant", "jar")
 val mainDepsJarTask = projectTask("main", "depsJar")
+val mainProtoJarTask = projectTask("main", "protoJar")
 val swissArmyKnifeTask = projectTask("main", "swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   projectTask("main", "processKeepRulesLibWithRelocatedDeps")
@@ -251,10 +252,11 @@ tasks {
     registering(Exec::class) {
       dependsOn(mainDepsJarTask)
       val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
+      val mainProtoJar = mainProtoJarTask.getSingleOutputFile()
       assembleR8Lib(
         swissArmyKnifeTask,
         generateKeepRulesForR8LibNoDeps,
-        listOf(mainDepsJar),
+        listOf(mainDepsJar, mainProtoJar),
         "r8lib-exclude-deps.jar",
       )
     }

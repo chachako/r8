@@ -53,10 +53,20 @@ dependencies {
   errorprone(Deps.errorprone)
 }
 
-tasks.named<Jar>("jar") {
-  exclude("blastradius.proto")
-  exclude("blastradiussummary.proto")
-  archiveFileName.set("blastradius-exclude-deps.jar")
+tasks {
+  jar {
+    exclude("blastradius.proto")
+    exclude("blastradiussummary.proto")
+    exclude("com/android/tools/r8/blastradius/proto/**")
+    archiveFileName.set("blastradius-exclude-deps.jar")
+  }
+
+  val protoJar by
+    registering(Jar::class) {
+      from(sourceSets.main.get().output)
+      include("com/android/tools/r8/blastradius/proto/**")
+      archiveFileName.set("blastradius-proto.jar")
+    }
 }
 
 tasks.withType<JavaCompile> {
