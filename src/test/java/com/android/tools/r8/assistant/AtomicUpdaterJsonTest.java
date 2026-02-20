@@ -78,7 +78,7 @@ public class AtomicUpdaterJsonTest extends TestBase {
     testForR8(parameters)
         .addProgramClasses(AtomicUpdaterTestClass.class, Foo.class, Bar.class)
         .addOptionsModification(
-            opt -> opt.testing.finalKeepInfoCollectionConsumer = keepInfoBox::set)
+            opt -> opt.getAssistantOptions().finalKeepInfoCollectionConsumer = keepInfoBox::set)
         .setMinApi(parameters)
         .addKeepMainRule(AtomicUpdaterTestClass.class)
         .run(parameters.getRuntime(), AtomicUpdaterTestClass.class)

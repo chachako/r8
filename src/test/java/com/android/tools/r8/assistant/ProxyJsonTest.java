@@ -67,7 +67,7 @@ public class ProxyJsonTest extends TestBase {
     testForR8(parameters)
         .addProgramClassesAndInnerClasses(ProxyTestClass.class)
         .addOptionsModification(
-            opt -> opt.testing.finalKeepInfoCollectionConsumer = keepInfoBox::set)
+            opt -> opt.getAssistantOptions().finalKeepInfoCollectionConsumer = keepInfoBox::set)
         .setMinApi(parameters)
         .addKeepMainRule(ProxyTestClass.class)
         .run(parameters.getRuntime(), ProxyTestClass.class)

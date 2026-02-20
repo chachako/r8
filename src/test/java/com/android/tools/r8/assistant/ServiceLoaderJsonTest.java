@@ -76,7 +76,7 @@ public class ServiceLoaderJsonTest extends TestBase {
     testForR8(parameters)
         .addProgramClassesAndInnerClasses(ServiceLoaderTestClass.class)
         .addOptionsModification(
-            opt -> opt.testing.finalKeepInfoCollectionConsumer = keepInfoBox::set)
+            opt -> opt.getAssistantOptions().finalKeepInfoCollectionConsumer = keepInfoBox::set)
         .setMinApi(parameters)
         .addKeepMainRule(ServiceLoaderTestClass.class)
         .addKeepRules("-keep class " + ServiceLoaderTestClass.NameService.class.getName())

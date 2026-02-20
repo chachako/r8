@@ -27,6 +27,7 @@ import com.android.tools.r8.StringConsumer;
 import com.android.tools.r8.SyntheticInfoConsumer;
 import com.android.tools.r8.Version;
 import com.android.tools.r8.androidapi.AndroidApiModelingOptions;
+import com.android.tools.r8.assistant.AssistantOptions;
 import com.android.tools.r8.blastradius.BlastRadiusOptions;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.classmerging.Policy;
@@ -102,7 +103,6 @@ import com.android.tools.r8.repackaging.RepackagingLens;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.Enqueuer;
 import com.android.tools.r8.shaking.GlobalKeepInfoConfiguration;
-import com.android.tools.r8.shaking.KeepInfoCollectionExported;
 import com.android.tools.r8.shaking.KeepSpecificationSource;
 import com.android.tools.r8.shaking.ProguardConfiguration;
 import com.android.tools.r8.shaking.ProguardConfigurationRule;
@@ -122,7 +122,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1073,6 +1072,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
   private final BlastRadiusOptions blastRadiusOptions = new BlastRadiusOptions(this);
+
+  private final AssistantOptions assistantOptions = new AssistantOptions();
+
   private final RewriteArrayOptions rewriteArrayOptions = new RewriteArrayOptions();
   private final CallSiteOptimizationOptions callSiteOptimizationOptions =
       new CallSiteOptimizationOptions();
@@ -1204,6 +1206,10 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
 
   public BlastRadiusOptions getBlastRadiusOptions() {
     return blastRadiusOptions;
+  }
+
+  public AssistantOptions getAssistantOptions() {
+    return assistantOptions;
   }
 
   public CfCodeAnalysisOptions getCfCodeAnalysisOptions() {
@@ -2245,12 +2251,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
         SystemPropertyUtils.parseSystemPropertyOrDefault(
             "com.android.tools.r8.enableKeepAnnotations", false);
     public boolean reverseClassSortingForDeterminism = false;
-    public Path exportFinalKeepInfoCollectionToDirectory =
-        System.getProperty("com.android.tools.r8.exportInitialKeepInfoCollection") != null
-            ? Paths.get(System.getProperty("com.android.tools.r8.exportInitialKeepInfoCollection"))
-            : null;
-    public Consumer<KeepInfoCollectionExported> finalKeepInfoCollectionConsumer = null;
-
     public boolean enableAutoCloseableDesugaring = true;
     public boolean enableNumberUnboxer = false;
     public boolean printNumberUnboxed = false;

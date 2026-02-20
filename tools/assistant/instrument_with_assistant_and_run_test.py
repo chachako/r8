@@ -54,7 +54,7 @@ def instrument_dex(options, temp_dir, instrumented_dex):
 def export_keep_info(options, temp_dir):
     with utils.TempDir() as compiledump_temp_dir:
         otherargs = [
-            '-Dcom.android.tools.r8.exportInitialKeepInfoCollection=%s' %
+            '-Dcom.android.tools.r8.assistant.exportFinalKeepInfoCollection=%s' %
             os.path.join(temp_dir, 'keepinfo')
         ]
         args_for_r8 = AttrDict(

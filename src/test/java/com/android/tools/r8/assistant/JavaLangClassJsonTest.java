@@ -173,7 +173,7 @@ public class JavaLangClassJsonTest extends TestBase {
     testForR8(parameters)
         .addProgramClasses(JavaLangClassTestClass.class, Foo.class, Bar.class)
         .addOptionsModification(
-            opt -> opt.testing.finalKeepInfoCollectionConsumer = keepInfoBox::set)
+            opt -> opt.getAssistantOptions().finalKeepInfoCollectionConsumer = keepInfoBox::set)
         .setMinApi(parameters)
         .addKeepMainRule(JavaLangClassTestClass.class)
         .addKeepAttributeInnerClassesAndEnclosingMethod()

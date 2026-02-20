@@ -8,6 +8,8 @@ import static com.google.common.base.Predicates.alwaysTrue;
 
 import com.android.tools.r8.Version;
 import com.android.tools.r8.errors.Unreachable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -26,6 +28,11 @@ public class SystemPropertyUtils {
 
   public static String getSystemPropertyOrDefault(String propertyName, String defaultValue) {
     return System.getProperty(propertyName, defaultValue);
+  }
+
+  public static Path parsePathFromSystemProperty(String propertyName) {
+    String propertyValue = System.getProperty(propertyName);
+    return propertyValue != null ? Paths.get(propertyValue) : null;
   }
 
   public static String getSystemPropertyForDevelopment(String propertyName) {

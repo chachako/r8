@@ -72,7 +72,7 @@ public class ClassForNameJsonTest extends TestBase {
     testForR8(parameters)
         .addProgramClasses(ClassForNameTestClass.class)
         .addOptionsModification(
-            opt -> opt.testing.finalKeepInfoCollectionConsumer = keepInfoBox::set)
+            opt -> opt.getAssistantOptions().finalKeepInfoCollectionConsumer = keepInfoBox::set)
         .setMinApi(parameters)
         .addKeepMainRule(ClassForNameTestClass.class)
         .run(parameters.getRuntime(), ClassForNameTestClass.class)
