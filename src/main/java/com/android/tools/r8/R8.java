@@ -542,9 +542,7 @@ public class R8 {
         appViewWithLiveness.setAppInfo(new SwitchMapCollector(appViewWithLiveness).run());
       }
 
-      if (options.enableAtomicFieldUpdaterOptimization) {
-        AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
-      }
+      AtomicFieldUpdaterInstrumentor.run(appViewWithLiveness, executorService, timing);
 
       // Collect the already pruned types before creating a new app info without liveness.
       // TODO: we should avoid removing liveness.

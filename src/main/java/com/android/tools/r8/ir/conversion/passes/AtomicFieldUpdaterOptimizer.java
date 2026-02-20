@@ -81,7 +81,6 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
     return !isDebugMode(code.context())
         && methodProcessor.isPrimaryMethodProcessor()
         // TODO(b/453628974): Consider running in second pass (must maintain appView data).
-        && appView.getAtomicFieldUpdaterInstrumentorInfo() != null
         && appView
             .getAtomicFieldUpdaterInstrumentorInfo()
             .getInstrumentations()

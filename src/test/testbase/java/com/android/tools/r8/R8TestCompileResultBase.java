@@ -112,12 +112,6 @@ public abstract class R8TestCompileResultBase<CR extends R8TestCompileResultBase
     return state.getDiagnosticsMessages();
   }
 
-  @Override
-  public CR inspectDiagnosticMessages(Consumer<TestDiagnosticMessages> consumer) {
-    consumer.accept(state.getDiagnosticsMessages());
-    return self();
-  }
-
   public Path getFeature(int index) {
     return features.get(index);
   }

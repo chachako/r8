@@ -6,70 +6,61 @@ package com.android.tools.r8.optimize.atomicfieldupdater;
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
-import com.google.common.collect.ImmutableList;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterGetTest extends TestBase {
+public class AtomicFieldUpdaterGetTest extends AtomicFieldUpdaterBase {
 
-  @Parameter(0)
-  public TestParameters parameters;
+  public AtomicFieldUpdaterGetTest(TestParameters parameters) {
+    super(parameters);
+  }
 
   @Parameters(name = "{0}")
   public static TestParametersCollection data() {
-    // TODO(b/453628974): test all dex and api levels.
-    return TestParameters.builder()
-        .withDexRuntimesStartingFromIncluding(
-            Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
-        .withAllApiLevels()
-        .build();
+    return TestParameters.builder().withAllRuntimesAndApiLevels().build();
   }
 
   @Test
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     testForR8(parameters)
-        .addOptionsModification(
-            options -> {
-              assertFalse(options.enableAtomicFieldUpdaterOptimization);
-              options.enableAtomicFieldUpdaterOptimization = true;
-              assertFalse(options.testing.enableAtomicFieldUpdaterLogs);
-              options.testing.enableAtomicFieldUpdaterLogs = true;
-            })
+        .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
-        .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
-        .compileWithExpectedDiagnostics(
-            diagnostics ->
-                diagnostics.assertInfosMatch(
-                    diagnosticMessage(containsString("Can instrument")),
-                    diagnosticMessage(containsString("Can optimize")),
-                    // TODO(b/453628974): The field should be removed once nullability analysis is
-                    // more precise.
-                    diagnosticMessage(containsString("Cannot remove"))))
+        .compile()
+        .inspectDiagnosticMessagesIf(
+            isOptimizationOn(),
+            diagnostics -> {
+              diagnostics.assertInfosMatch(
+                  diagnosticMessage(containsString("Can instrument")),
+                  diagnosticMessage(containsString("Can optimize")),
+                  // TODO(b/453628974): The field should be removed once nullability analysis is
+                  // more precise.
+                  diagnosticMessage(containsString("Cannot remove")));
+            })
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              assertThat(
-                  method,
-                  CodeMatchers.invokesMethod(
-                      "java.lang.Object",
-                      "sun.misc.Unsafe",
-                      "getObjectVolatile",
-                      ImmutableList.of("java.lang.Object", "long")));
+              if (isOptimizationOn()) {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolderAndName(
+                        "sun.misc.Unsafe", "getObjectVolatile"));
+              } else {
+                assertThat(
+                    method,
+                    CodeMatchers.invokesMethodWithHolderAndName(
+                        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater", "get"));
+              }
             })
         .run(parameters.getRuntime(), testClass)
         .assertSuccessWithOutputLines("Hello");

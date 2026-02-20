@@ -20,7 +20,7 @@ public class AtomicNewUpdaterRemover {
 
   public static void run(
       AppView<?> appView, MethodProcessor methodProcessor, DexEncodedMethod method, IRCode code) {
-    if (!appView.options().enableAtomicFieldUpdaterOptimization) {
+    if (appView.getAtomicFieldUpdaterInstrumentorInfo() == null) {
       return;
     }
     if (!methodProcessor.isPostMethodProcessor()) {

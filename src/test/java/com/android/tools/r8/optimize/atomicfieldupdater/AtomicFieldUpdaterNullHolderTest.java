@@ -8,11 +8,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.BooleanUtils;
 import com.android.tools.r8.utils.codeinspector.CodeMatchers;
@@ -23,28 +20,22 @@ import org.hamcrest.core.AnyOf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterNullHolderTest extends TestBase {
+public class AtomicFieldUpdaterNullHolderTest extends AtomicFieldUpdaterBase {
 
-  @Parameter(0)
-  public TestParameters parameters;
+  public final boolean optimize;
 
-  @Parameter(1)
-  public boolean optimize;
+  public AtomicFieldUpdaterNullHolderTest(TestParameters parameters, boolean optimize) {
+    super(parameters);
+    this.optimize = optimize;
+  }
 
   @Parameters(name = "{0}, optimize:{1}")
   public static List<Object[]> data() {
-    // TODO(b/453628974): test all dex and api levels.
     return buildParameters(
-        TestParameters.builder()
-            .withDexRuntimesStartingFromIncluding(
-                Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
-            .withAllApiLevels()
-            .build(),
-        BooleanUtils.values());
+        TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   private static final Class<? extends Throwable> EXPECTED_EXCEPTION = ClassCastException.class;
@@ -63,22 +54,17 @@ public class AtomicFieldUpdaterNullHolderTest extends TestBase {
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     testForR8(parameters)
-        .addOptionsModification(
-            options -> {
-              assertFalse(options.enableAtomicFieldUpdaterOptimization);
-              options.enableAtomicFieldUpdaterOptimization = true;
-              assertFalse(options.testing.enableAtomicFieldUpdaterLogs);
-              options.testing.enableAtomicFieldUpdaterLogs = true;
-            })
+        .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
-        .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
         .applyIf(
             !optimize,
             testing ->
                 testing.addKeepFieldRules(
                     Reference.fieldFromField(testClass.getDeclaredField("myString$FU"))))
-        .compileWithExpectedDiagnostics(
+        .compile()
+        .inspectDiagnosticMessagesIf(
+            isOptimizationOn(),
             diagnostics -> {
               if (optimize) {
                 diagnostics.assertInfoThatMatches(
@@ -95,7 +81,7 @@ public class AtomicFieldUpdaterNullHolderTest extends TestBase {
                   anyOf(
                       CodeMatchers.invokesMethodWithHolder("sun.misc.Unsafe"),
                       CodeMatchers.invokesMethodWithHolder("jdk.internal.misc.Unsafe"));
-              if (optimize) {
+              if (isOptimizationOn() && optimize) {
                 assertThat(method, usesUnsafe);
               } else {
                 assertThat(method, not(usesUnsafe));

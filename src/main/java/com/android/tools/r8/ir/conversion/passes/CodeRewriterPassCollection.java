@@ -70,7 +70,7 @@ public class CodeRewriterPassCollection {
     if (appView.options().enableStringConcatInstruction) {
       passes.add(new StringConcatOptimizer(appView));
     }
-    if (appView.hasClassHierarchy()) {
+    if (appView.hasClassHierarchy() && appView.getAtomicFieldUpdaterInstrumentorInfo() != null) {
       passes.add(new AtomicFieldUpdaterOptimizer(appView.withClassHierarchy()));
     }
     return new CodeRewriterPassCollection(passes);

@@ -5,68 +5,51 @@ package com.android.tools.r8.optimize.atomicfieldupdater;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticMessage;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertFalse;
 
-import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.BooleanUtils;
-import com.android.tools.r8.utils.codeinspector.CodeMatchers;
 import com.android.tools.r8.utils.codeinspector.MethodSubject;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import org.hamcrest.core.AnyOf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterKeepTest extends TestBase {
+public class AtomicFieldUpdaterKeepTest extends AtomicFieldUpdaterBase {
 
-  @Parameter(0)
-  public TestParameters parameters;
+  public final boolean keepRule;
 
-  @Parameter(1)
-  public boolean keepRule;
+  public AtomicFieldUpdaterKeepTest(TestParameters parameters, boolean keepRule) {
+    super(parameters);
+    this.keepRule = keepRule;
+  }
 
   @Parameters(name = "{0}, keeprule:{1}")
   public static List<Object[]> data() {
-    // TODO(b/453628974): test all dex and api levels.
     return buildParameters(
-        TestParameters.builder()
-            .withDexRuntimesStartingFromIncluding(
-                Version.V4_4_4) // Unsafe synthetic doesn't work for 4.0.4.
-            .withAllApiLevels()
-            .build(),
-        BooleanUtils.values());
+        TestParameters.builder().withAllRuntimesAndApiLevels().build(), BooleanUtils.values());
   }
 
   @Test
   public void testR8() throws Exception {
     Class<TestClass> testClass = TestClass.class;
     testForR8(parameters)
-        .addOptionsModification(
-            options -> {
-              assertFalse(options.enableAtomicFieldUpdaterOptimization);
-              options.enableAtomicFieldUpdaterOptimization = true;
-              assertFalse(options.testing.enableAtomicFieldUpdaterLogs);
-              options.testing.enableAtomicFieldUpdaterLogs = true;
-            })
+        .apply(this::enableAtomicFieldUpdaterWithInfo)
         .addProgramClasses(testClass)
-        .allowDiagnosticInfoMessages()
         .addKeepMainRule(testClass)
         .applyIf(
             keepRule,
             testing ->
                 testing.addKeepFieldRules(
                     Reference.fieldFromField(testClass.getDeclaredField("myString$FU"))))
-        .compileWithExpectedDiagnostics(
+        .compile()
+        .inspectDiagnosticMessagesIf(
+            isOptimizationOn(),
             diagnostics -> {
               if (keepRule) {
                 diagnostics.assertInfosMatch(
@@ -79,14 +62,10 @@ public class AtomicFieldUpdaterKeepTest extends TestBase {
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
-              AnyOf<MethodSubject> usesUnsafe =
-                  anyOf(
-                      CodeMatchers.invokesMethodWithHolder("sun.misc.Unsafe"),
-                      CodeMatchers.invokesMethodWithHolder("jdk.internal.misc.Unsafe"));
-              if (keepRule) {
-                assertThat(method, not(usesUnsafe));
+              if (isOptimizationOn() && !keepRule) {
+                assertThat(method, INVOKES_UNSAFE);
               } else {
-                assertThat(method, usesUnsafe);
+                assertThat(method, not(INVOKES_UNSAFE));
               }
             })
         .run(parameters.getRuntime(), testClass)

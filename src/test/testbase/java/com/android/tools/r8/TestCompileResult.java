@@ -179,6 +179,14 @@ public abstract class TestCompileResult<
     return self();
   }
 
+  public CR inspectDiagnosticMessagesIf(
+      boolean condition, Consumer<TestDiagnosticMessages> consumer) {
+    if (condition) {
+      consumer.accept(getDiagnosticMessages());
+    }
+    return self();
+  }
+
   public abstract Set<String> getMainDexClasses();
 
   public final CR inspectMainDexClasses(Consumer<Set<String>> consumer) {

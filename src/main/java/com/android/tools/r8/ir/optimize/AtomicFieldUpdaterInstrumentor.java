@@ -42,6 +42,7 @@ import com.android.tools.r8.profile.rewriting.ProfileCollectionAdditions;
 import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.shaking.FieldAccessInfoCollectionModifier;
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
+import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.base.Predicates;
@@ -134,7 +135,13 @@ public class AtomicFieldUpdaterInstrumentor {
   public static void run(
       AppView<AppInfoWithLiveness> appView, ExecutorService service, Timing timing)
       throws ExecutionException {
-    new AtomicFieldUpdaterInstrumentor(appView, service).runInternal(timing);
+    var options = appView.options();
+    if (options.enableAtomicFieldUpdaterOptimization
+        && options.isGeneratingDex()
+        && appView.enableWholeProgramOptimizations()
+        && options.getMinApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.K)) {
+      new AtomicFieldUpdaterInstrumentor(appView, service).runInternal(timing);
+    }
   }
 
   private AtomicFieldUpdaterInstrumentor(
