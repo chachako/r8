@@ -18,9 +18,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class AtomicFieldUpdaterCatchInitTest extends AtomicFieldUpdaterBase {
+public class AtomicFieldUpdaterCatchUsageTest extends AtomicFieldUpdaterBase {
 
-  public AtomicFieldUpdaterCatchInitTest(TestParameters parameters) {
+  public AtomicFieldUpdaterCatchUsageTest(TestParameters parameters) {
     super(parameters);
   }
 
@@ -41,14 +41,18 @@ public class AtomicFieldUpdaterCatchInitTest extends AtomicFieldUpdaterBase {
             isOptimizationOn(),
             diagnostics ->
                 diagnostics.assertInfosMatch(
-                    diagnosticMessage(containsString("Cannot instrument"))))
+                    diagnosticMessage(containsString("Can instrument")),
+                    diagnosticMessage(containsString("Cannot optimize")),
+                    diagnosticMessage(containsString("Cannot optimize")),
+                    diagnosticMessage(containsString("Cannot optimize")),
+                    diagnosticMessage(containsString("Cannot remove"))))
         .inspect(
             inspector -> {
               MethodSubject method = inspector.clazz(testClass).mainMethod();
               assertThat(method, not(INVOKES_UNSAFE));
             })
         .run(parameters.getRuntime(), testClass)
-        .assertSuccessWithOutputLines("Hello");
+        .assertSuccessWithOutputLines("Hello!!");
   }
 
   // Corresponding to simple kotlin usage of `atomic("Hello")` via atomicfu.
@@ -59,13 +63,8 @@ public class AtomicFieldUpdaterCatchInitTest extends AtomicFieldUpdaterBase {
     private static final AtomicReferenceFieldUpdater<TestClass, Object> myString$FU;
 
     static {
-      try {
-        myString$FU =
-            AtomicReferenceFieldUpdater.newUpdater(TestClass.class, Object.class, "myString");
-      } catch (Exception e) {
-        // The try block never throws. This is here to test the rewriting with catch handlers.
-        throw new RuntimeException(e);
-      }
+      myString$FU =
+          AtomicReferenceFieldUpdater.newUpdater(TestClass.class, Object.class, "myString");
     }
 
     public TestClass() {
@@ -75,7 +74,14 @@ public class AtomicFieldUpdaterCatchInitTest extends AtomicFieldUpdaterBase {
 
     public static void main(String[] args) {
       TestClass instance = new TestClass();
-      System.out.println(myString$FU.get(instance));
+      try {
+        Object old = myString$FU.getAndSet(instance, "World");
+        myString$FU.set(instance, old.toString() + "!!");
+        System.out.println(myString$FU.get(instance));
+      } catch (Exception e) {
+        // The try block never throws. This is here to test the rewriting with catch handlers.
+        throw new RuntimeException(e);
+      }
     }
   }
 }

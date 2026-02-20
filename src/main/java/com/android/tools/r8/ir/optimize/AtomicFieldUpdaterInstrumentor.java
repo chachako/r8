@@ -244,43 +244,39 @@ public class AtomicFieldUpdaterInstrumentor {
 
     // Iterate instructions to find singular syntactically obvious writes.
     var fieldInfos = new HashMap<DexField, UpdaterFieldInfo<Void>>();
-    var blockIterator = ir.listIterator();
-    while (blockIterator.hasNext()) {
-      var block = blockIterator.next();
-      var it = block.listIterator();
-      while (it.hasNext()) {
-        var next = it.next();
-        if (!next.isStaticPut()) {
-          continue;
-        }
-        var staticPut = next.asStaticPut();
-        var modifiedField = staticPut.getField();
-        if (!initialUpdaterFields.contains(modifiedField)) {
-          continue;
-        }
-        if (block.hasCatchHandlers()) {
-          reportInfo(
-              appView, new Event.CannotInstrument(modifiedField), Reason.UNDER_CATCH_HANDLER);
-          fieldInfos.remove(modifiedField);
-          initialUpdaterFields.remove(modifiedField);
-          continue;
-        }
-        if (fieldInfos.containsKey(modifiedField)) {
-          reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.MULTIPLE_WRITES);
-          fieldInfos.remove(modifiedField);
-          initialUpdaterFields.remove(modifiedField);
-          continue;
-        }
-        var updaterInfo = resolveNewUpdaterCall(clazz, modifiedField, staticPut.getFirstOperand());
-        if (updaterInfo == null) {
-          // Statically unknown call - give up (resolveNewUpdaterCall already reports the reason).
-          fieldInfos.remove(modifiedField);
-          initialUpdaterFields.remove(modifiedField);
-          continue;
-        }
-        reportInfo(appView, new Event.CanInstrument(modifiedField));
-        fieldInfos.put(modifiedField, updaterInfo);
+    var it = ir.instructionListIterator();
+    while (it.hasNext()) {
+      var next = it.next();
+      if (!next.isStaticPut()) {
+        continue;
       }
+      var staticPut = next.asStaticPut();
+      var modifiedField = staticPut.getField();
+      if (!initialUpdaterFields.contains(modifiedField)) {
+        continue;
+      }
+      // TODO(b/453628974): implement and test optimization under handlers.
+      if (staticPut.getBlock().hasCatchHandlers()) {
+        reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.UNDER_CATCH_HANDLER);
+        fieldInfos.remove(modifiedField);
+        initialUpdaterFields.remove(modifiedField);
+        continue;
+      }
+      if (fieldInfos.containsKey(modifiedField)) {
+        reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.MULTIPLE_WRITES);
+        fieldInfos.remove(modifiedField);
+        initialUpdaterFields.remove(modifiedField);
+        continue;
+      }
+      var updaterInfo = resolveNewUpdaterCall(clazz, modifiedField, staticPut.getFirstOperand());
+      if (updaterInfo == null) {
+        // Statically unknown call - give up (resolveNewUpdaterCall already reports the reason).
+        fieldInfos.remove(modifiedField);
+        initialUpdaterFields.remove(modifiedField);
+        continue;
+      }
+      reportInfo(appView, new Event.CanInstrument(modifiedField));
+      fieldInfos.put(modifiedField, updaterInfo);
     }
 
     // All fields should be invalid (removed from initialUpdaterFields) or valid (in fieldInfos)
@@ -672,8 +668,7 @@ public class AtomicFieldUpdaterInstrumentor {
         continue;
       }
       var newInstructions = createFieldWriteInstructions(ir, unsafeInstanceField, updaterFieldInfo);
-      // TODO(b/453628974): Add test with catch handler to verify this case.
-      it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(newInstructions, appView.options());
+      it.addAll(newInstructions);
       profiling.addMethodIfContextIsInProfile(
           unsafeInstanceField.getHolder().getProgramClassInitializer(), ir.context());
     }

@@ -115,6 +115,12 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
         continue;
       }
 
+      // TODO(b/453628974): implement and test optimization under handlers.
+      if (invoke.getBlock().hasCatchHandlers()) {
+        reportInfo(appView, new Event.CannotOptimize(invoke), Reason.UNDER_CATCH_HANDLER);
+        continue;
+      }
+
       if (invokedMethod.isIdenticalTo(
           dexItemFactory.atomicFieldUpdaterMethods.referenceCompareAndSet)) {
         if (visitCompareAndSet(context, invoke)) {
@@ -600,8 +606,7 @@ public class AtomicFieldUpdaterOptimizer extends CodeRewriterPass<AppInfoWithCla
   private void insertInstructionsBeforeCurrentInstruction(
       IRCodeInstructionListIterator it, ArrayList<Instruction> instructions) {
     it.previous();
-    // TODO(b/453628974): Test with a local exception handler.
-    it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(instructions, appView.options());
+    it.addAll(instructions);
     it.next();
   }
 
