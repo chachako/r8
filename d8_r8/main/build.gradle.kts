@@ -323,6 +323,7 @@ val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
 val libraryAnalyzerJarTask = projectTask("libanalyzer", "jar")
+val libraryAnalyzerProtoJarTask = projectTask("libanalyzer", "protoJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
 val resourceShrinkerDepsTask = projectTask("resourceshrinker", "depsJar")
 
@@ -539,8 +540,10 @@ tasks {
 
   val protoJar by
     registering(Zip::class) {
-      dependsOn(blastRadiusProtoJarTask)
+      dependsOn(blastRadiusProtoJarTask, libraryAnalyzerProtoJarTask)
       from(blastRadiusProtoJarTask.outputs.files.map(::zipTree))
+      from(libraryAnalyzerProtoJarTask.outputs.files.map(::zipTree))
+      exclude("META-INF/MANIFEST.MF")
       archiveFileName.set("proto.jar")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
     }
