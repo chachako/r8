@@ -54,4 +54,9 @@ class TimingEmpty extends Timing {
 
   @Override
   public void report() {}
+
+  @Override
+  public Timing endAll() {
+    return this;
+  }
 }

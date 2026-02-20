@@ -74,4 +74,6 @@ public abstract class Timing implements AutoCloseable {
   public final void close() {
     end();
   }
+
+  public abstract Timing endAll();
 }

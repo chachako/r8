@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public class AssistantExporter {
 
-  public static void run(AppView<AppInfoWithClassHierarchy> appView) {
+  public static AssistantOptions run(AppView<AppInfoWithClassHierarchy> appView) {
     InternalOptions options = appView.options();
     if (options.getAssistantOptions().exportFinalKeepInfoCollectionToDirectory != null) {
       try {
@@ -29,5 +29,6 @@ public class AssistantExporter {
           .finalKeepInfoCollectionConsumer
           .accept(appView.getKeepInfo().exportToCollection());
     }
+    return options.getAssistantOptions();
   }
 }

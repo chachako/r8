@@ -65,4 +65,9 @@ class PerfettoThreadTiming extends TimingImplBase {
   public void report() {
     throw new Unreachable();
   }
+
+  @Override
+  public Timing endAll() {
+    throw new Unreachable();
+  }
 }

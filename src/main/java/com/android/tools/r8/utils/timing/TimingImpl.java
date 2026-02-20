@@ -384,6 +384,14 @@ public class TimingImpl extends TimingImplBase {
     top.report(0, top);
   }
 
+  @Override
+  public Timing endAll() {
+    while (stack.size() > 1) {
+      end();
+    }
+    return this;
+  }
+
   private static Map<String, MemInfo> computeMemoryInformation() {
     System.gc();
     Map<String, MemInfo> info = new LinkedHashMap<>();

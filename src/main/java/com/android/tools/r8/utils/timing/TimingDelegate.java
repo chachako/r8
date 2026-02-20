@@ -49,4 +49,9 @@ abstract class TimingDelegate extends Timing {
   public void report() {
     delegate.report();
   }
+
+  @Override
+  public Timing endAll() {
+    return delegate.endAll();
+  }
 }

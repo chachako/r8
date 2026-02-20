@@ -406,7 +406,7 @@ public class R8 {
 
       if (options.getBlastRadiusOptions().shouldExitEarly()) {
         if (options.isPrintTimesReportingEnabled()) {
-          timing.end().report();
+          timing.endAll().report();
         }
         return;
       }
@@ -630,7 +630,12 @@ public class R8 {
                 pruner.run(
                     executorService, timing, PrunedItems.builder().addRemovedClasses(prunedTypes));
 
-            AssistantExporter.run(appView);
+            if (AssistantExporter.run(appView).shouldExitEarly()) {
+              if (options.isPrintTimesReportingEnabled()) {
+                timing.endAll().report();
+              }
+              return;
+            }
             appViewWithLiveness
                 .appInfo()
                 .notifyTreePrunerFinished(Enqueuer.Mode.FINAL_TREE_SHAKING);

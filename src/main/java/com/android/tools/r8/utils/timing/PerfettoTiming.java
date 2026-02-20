@@ -125,6 +125,14 @@ public class PerfettoTiming extends TimingImplBase {
     traceDriver.close();
   }
 
+  @Override
+  public Timing endAll() {
+    for (int i = 1; i < depth; i++) {
+      end();
+    }
+    return this;
+  }
+
   private void awaitMemoryTracker() {
     if (memoryTracker != null) {
       // Signal to the memory tracker to stop.

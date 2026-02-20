@@ -1073,7 +1073,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   private final AccessModifierOptions accessModifierOptions = new AccessModifierOptions(this);
   private final BlastRadiusOptions blastRadiusOptions = new BlastRadiusOptions(this);
 
-  private final AssistantOptions assistantOptions = new AssistantOptions();
+  private final AssistantOptions assistantOptions = new AssistantOptions(this);
 
   private final RewriteArrayOptions rewriteArrayOptions = new RewriteArrayOptions();
   private final CallSiteOptimizationOptions callSiteOptimizationOptions =
