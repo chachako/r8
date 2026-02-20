@@ -49,6 +49,7 @@ java {
 kotlin { explicitApi() }
 
 dependencies {
+  compileOnly(":keepanno")
   compileOnly(Deps.protobuf)
   errorprone(Deps.errorprone)
 }

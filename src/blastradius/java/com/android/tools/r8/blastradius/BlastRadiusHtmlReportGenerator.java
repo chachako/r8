@@ -15,6 +15,7 @@ import com.android.tools.r8.blastradius.proto.KeepRuleTag;
 import com.android.tools.r8.blastradius.proto.KeptClassInfo;
 import com.android.tools.r8.blastradius.proto.KeptFieldInfo;
 import com.android.tools.r8.blastradius.proto.KeptMethodInfo;
+import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.google.protobuf.AbstractMessage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@KeepForApi
 public class BlastRadiusHtmlReportGenerator {
 
   /**
@@ -44,6 +46,9 @@ public class BlastRadiusHtmlReportGenerator {
    * using {@code BlastRadiusHtmlReportGenerator <blastradius dir> <out dir>}. </code>
    */
   public static void main(String[] args) throws IOException {
+    // TODO(b/486097941): Remove.
+    System.out.println("NOTE: Running experimental BlastRadiusHtmlReportGenerator.");
+
     Path input = Paths.get(args[0]);
     Path output = Paths.get(args[1]);
     List<Path> blastRadiusFiles = new ArrayList<>();
@@ -102,7 +107,7 @@ public class BlastRadiusHtmlReportGenerator {
     }
   }
 
-  public static String generate(BlastRadiusContainer blastRadius) {
+  private static String generate(BlastRadiusContainer blastRadius) {
     String html = BlastRadiusHtmlReportTemplate.getHtmlTemplate();
     return html.replace(
         "<script id=\"blastradius-data\" type=\"application/octet-stream\"></script>",
@@ -113,7 +118,7 @@ public class BlastRadiusHtmlReportGenerator {
             "</script>"));
   }
 
-  public static String generateSummary(List<BlastRadiusSummary> blastRadiusSummaries) {
+  private static String generateSummary(List<BlastRadiusSummary> blastRadiusSummaries) {
     String html = BlastRadiusHtmlReportTemplate.getSummaryHtmlTemplate();
     return html.replace(
         "<script id=\"blastradius-data\" type=\"application/json\"></script>",
