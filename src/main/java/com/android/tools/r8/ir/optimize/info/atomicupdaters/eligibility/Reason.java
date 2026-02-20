@@ -24,6 +24,8 @@ public abstract class Reason {
 
   public static final Reason MULTIPLE_WRITES = new GenericReason("multiple writes");
 
+  public static final Reason UNDER_CATCH_HANDLER = new GenericReason("inside try-catch");
+
   public static final Reason UPDATER_INITIALIZED_BY_PHI =
       new GenericReason("updater initialized by phi function");
 

@@ -241,35 +241,46 @@ public class AtomicFieldUpdaterInstrumentor {
     var genericCode = classInitializer.getDefinition().getCode();
     assert genericCode.isLirCode();
     var ir = genericCode.asLirCode().buildIR(classInitializer, appView);
-    var it = ir.instructionListIterator();
 
     // Iterate instructions to find singular syntactically obvious writes.
     var fieldInfos = new HashMap<DexField, UpdaterFieldInfo<Void>>();
-    while (it.hasNext()) {
-      var next = it.next();
-      if (!next.isStaticPut()) {
-        continue;
+    var blockIterator = ir.listIterator();
+    while (blockIterator.hasNext()) {
+      var block = blockIterator.next();
+      var it = block.listIterator();
+      while (it.hasNext()) {
+        var next = it.next();
+        if (!next.isStaticPut()) {
+          continue;
+        }
+        var staticPut = next.asStaticPut();
+        var modifiedField = staticPut.getField();
+        if (!initialUpdaterFields.contains(modifiedField)) {
+          continue;
+        }
+        if (block.hasCatchHandlers()) {
+          reportInfo(
+              appView, new Event.CannotInstrument(modifiedField), Reason.UNDER_CATCH_HANDLER);
+          fieldInfos.remove(modifiedField);
+          initialUpdaterFields.remove(modifiedField);
+          continue;
+        }
+        if (fieldInfos.containsKey(modifiedField)) {
+          reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.MULTIPLE_WRITES);
+          fieldInfos.remove(modifiedField);
+          initialUpdaterFields.remove(modifiedField);
+          continue;
+        }
+        var updaterInfo = resolveNewUpdaterCall(clazz, modifiedField, staticPut.getFirstOperand());
+        if (updaterInfo == null) {
+          // Statically unknown call - give up (resolveNewUpdaterCall already reports the reason).
+          fieldInfos.remove(modifiedField);
+          initialUpdaterFields.remove(modifiedField);
+          continue;
+        }
+        reportInfo(appView, new Event.CanInstrument(modifiedField));
+        fieldInfos.put(modifiedField, updaterInfo);
       }
-      var staticPut = next.asStaticPut();
-      var modifiedField = staticPut.getField();
-      if (!initialUpdaterFields.contains(modifiedField)) {
-        continue;
-      }
-      if (fieldInfos.containsKey(modifiedField)) {
-        reportInfo(appView, new Event.CannotInstrument(modifiedField), Reason.MULTIPLE_WRITES);
-        fieldInfos.remove(modifiedField);
-        initialUpdaterFields.remove(modifiedField);
-        continue;
-      }
-      var updaterInfo = resolveNewUpdaterCall(clazz, modifiedField, staticPut.getFirstOperand());
-      if (updaterInfo == null) {
-        // Statically unknown call - give up (resolveNewUpdaterCall already reports the reason).
-        fieldInfos.remove(modifiedField);
-        initialUpdaterFields.remove(modifiedField);
-        continue;
-      }
-      reportInfo(appView, new Event.CanInstrument(modifiedField));
-      fieldInfos.put(modifiedField, updaterInfo);
     }
 
     // All fields should be invalid (removed from initialUpdaterFields) or valid (in fieldInfos)
@@ -660,7 +671,7 @@ public class AtomicFieldUpdaterInstrumentor {
       if (updaterFieldInfo == null) {
         continue;
       }
-      var newInstructions = addOffsetFieldWrite(ir, unsafeInstanceField, updaterFieldInfo);
+      var newInstructions = createFieldWriteInstructions(ir, unsafeInstanceField, updaterFieldInfo);
       // TODO(b/453628974): Add test with catch handler to verify this case.
       it.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(newInstructions, appView.options());
       profiling.addMethodIfContextIsInProfile(
@@ -671,7 +682,7 @@ public class AtomicFieldUpdaterInstrumentor {
     classInitializer.setCode(newLir, appView);
   }
 
-  private Collection<Instruction> addOffsetFieldWrite(
+  private Collection<Instruction> createFieldWriteInstructions(
       IRCode ir, ProgramField unsafeInstanceField, UpdaterFieldInfo<DexField> creationInfo) {
     var newInstructions = new ArrayList<Instruction>(4);
     Instruction unsafeInstance =
