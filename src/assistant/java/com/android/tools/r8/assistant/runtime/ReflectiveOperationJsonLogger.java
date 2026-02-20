@@ -38,6 +38,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 
 // This logs the information in JSON-like format,
 // manually encoded to avoid loading gson on the mobile.
@@ -46,16 +47,30 @@ public class ReflectiveOperationJsonLogger implements ReflectiveOperationReceive
 
   private final FileWriter output;
 
+  // TODO(b/486090382): Consider injecting the app id as part of instrumentation.
+  public String getApplicationId() {
+    try {
+      Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+      Method currentAppMethod = activityThreadClass.getDeclaredMethod("currentApplication");
+      currentAppMethod.setAccessible(true);
+      Object applicationContext = currentAppMethod.invoke(null);
+      if (applicationContext == null) {
+        return null;
+      }
+      Method getPackageNameMethod = applicationContext.getClass().getMethod("getPackageName");
+      Object packageName = getPackageNameMethod.invoke(applicationContext);
+      return (String) packageName;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   public ReflectiveOperationJsonLogger() throws IOException {
     String outputFileName = System.getProperty("com.android.tools.r8.reflectiveJsonLogger");
     File file;
     if (outputFileName == null) {
-      String tmpDir = System.getProperty("java.io.tmpdir");
-      if (tmpDir == null) {
-        throw new IllegalStateException(
-            "System property 'java.io.tmpdir' is null, cannot create log file.");
-      }
-      file = new File(tmpDir, "log.txt");
+      String tmpDir = "/sdcard/Android/media/" + getApplicationId() + "/additional_test_output";
+      file = new File(tmpDir, "reflection_log.json");
     } else {
       file = new File(outputFileName);
     }
