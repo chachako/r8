@@ -93,11 +93,18 @@ def download_target(root, target, hash_or_version, is_hash, quiet=False):
     url = archive.GetUploadDestination(hash_or_version, target, is_hash)
     if not quiet:
         print('Downloading: ' + url + ' -> ' + download_path)
-    utils.download_file_from_cloud_storage(
-        url, download_path, printcmd=not quiet, quiet=quiet)
+    utils.download_file_from_cloud_storage(url,
+                                           download_path,
+                                           printcmd=not quiet,
+                                           quiet=quiet)
 
 
-def main_download(hash, maps, targets, target_root, version, keepanno=False):
+def main_download(hash_value,
+                  maps,
+                  targets,
+                  target_root,
+                  version,
+                  keepanno=False):
     sbom_targets = []
     if version:
         semver = utils.check_basic_semver_version(version, allowPrerelease=True)
@@ -110,12 +117,12 @@ def main_download(hash, maps, targets, target_root, version, keepanno=False):
         (lambda t: t[0] + '.jar'), jar_targets)) + OTHER_TARGETS + sbom_targets
     with utils.TempDir() as root:
         for target in final_targets:
-            if hash:
-                download_hash(root, hash, target)
+            if hash_value:
+                download_hash(root, hash_value, target)
                 if maps and target not in OTHER_TARGETS:
-                    download_hash(root, hash, target + '.map')
+                    download_hash(root, hash_value, target + '.map')
                 if keepanno:
-                    download_hash(root, hash, KEEPANNO_JAR)
+                    download_hash(root, hash_value, KEEPANNO_JAR)
             else:
                 assert version
                 download_version(root, version, target)
@@ -145,11 +152,11 @@ def main(args):
     if args.maps and args.targets != 'lib':
         raise Exception("Use '--maps' only with '--targets lib.")
     target_root = args.android_root[0]
-    if args.commit_hash == None and args.version == None:
+    if args.commit_hash is None and args.version is None:
         main_build(args.maps, args.java_max_memory_size, args.targets,
                    target_root)
     else:
-        assert args.commit_hash == None or args.version == None
+        assert args.commit_hash is None or args.version is None
         main_download(args.commit_hash, args.maps, args.targets, target_root,
                       args.version, args.keepanno)
 
