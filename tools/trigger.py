@@ -5,14 +5,12 @@
 
 # Convenience script for triggering bots on specific commits.
 
-import json
 import git_utils
 import optparse
 import os
 import re
 import subprocess
 import sys
-import urllib
 from urllib.request import urlopen
 import utils
 
@@ -28,14 +26,14 @@ DESUGAR_JDK8_BOT = 'lib_desugar-archive-jdk8'
 SMALI_BOT = 'smali'
 
 
-def ParseOptions():
+def parse_options():
     result = optparse.OptionParser()
     result.add_option('--release',
                       help='Run on the release branch builders.',
                       default=False,
                       action='store_true')
     result.add_option('--cl',
-                      metavar=('<url>'),
+                      metavar='<url>',
                       help='Run the specified cl on the bots. This should be '
                       'the full url, e.g., '
                       'https://r8-review.googlesource.com/c/r8/+/37420/1, '
@@ -54,7 +52,7 @@ def ParseOptions():
                       default=False,
                       action='store_true')
     result.add_option('--smali',
-                      metavar=('<version>'),
+                      metavar='<version>',
                       help='Build smali version <version>.')
     result.add_option('--builder', help='Trigger specific builder')
     (options, args) = result.parse_args()
@@ -142,8 +140,8 @@ def trigger_cl(builders, cl_url):
         subprocess.check_call(cmd)
 
 
-def Main():
-    (options, args) = ParseOptions()
+def main():
+    (options, args) = parse_options()
     desugar = options.desugar_jdk11 or options.desugar_jdk11_legacy or options.desugar_jdk8
     requires_commit = not options.cl and not desugar and not options.smali
     if len(args) != 1 and requires_commit:
@@ -168,7 +166,7 @@ def Main():
             return 1
 
         trigger_smali_builder(options.smali)
-        return
+        return 0
 
     commit = None if not requires_commit else args[0]
     (main_builders, release_builders) = get_builders()
@@ -188,10 +186,12 @@ def Main():
         commit = git_utils.GetHeadRevision(utils.REPO_ROOT, use_main=True)
     if options.cl:
         trigger_cl(builders, options.cl)
+        return 0
     else:
         assert commit
         trigger_builders(builders, commit)
+        return 0
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())
