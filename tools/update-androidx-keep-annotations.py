@@ -9,61 +9,45 @@ import shutil
 import sys
 import utils
 
-
 KOTLIN_EXTENSION = '.kt'
 
 
 def parse_options():
-    parser = argparse.ArgumentParser(description='Update androidx keep annotations')
-    parser.add_argument(
-        '--androidx',
-        metavar=('<path>'),
-        required=True,
-        help='Path to the androidx checkout')
-    parser.add_argument(
-        '--dry-run',
-        '--dry_run',
-        help="Don't copy, just print what to copy",
-        default=False,
-        action='store_true')
+    parser = argparse.ArgumentParser(
+        description='Update androidx keep annotations')
+    parser.add_argument('--androidx',
+                        metavar='<path>',
+                        required=True,
+                        help='Path to the androidx checkout')
+    parser.add_argument('--dry-run',
+                        '--dry_run',
+                        help="Don't copy, just print what to copy",
+                        default=False,
+                        action='store_true')
     return parser.parse_args()
 
 
 def main():
     args = parse_options()
 
-    source_dir = os.path.join(
-        utils.REPO_ROOT,
-        'src',
-        'keepanno',
-        'java',
-        'androidx',
-        'annotation',
-        'keep')
-    dest_dir = os.path.join(
-        args.androidx,
-        'frameworks',
-        'support',
-        'annotation',
-        'annotation-keep',
-        'src',
-        'commonMain',
-        'kotlin',
-        'androidx',
-        'annotation',
-        'keep')
+    source_dir = os.path.join(utils.REPO_ROOT, 'src', 'keepanno', 'java',
+                              'androidx', 'annotation', 'keep')
+    dest_dir = os.path.join(args.androidx, 'frameworks', 'support',
+                            'annotation', 'annotation-keep', 'src',
+                            'commonMain', 'kotlin', 'androidx', 'annotation',
+                            'keep')
 
-    for root, dirnames, filenames in os.walk(source_dir):
+    for root, dir_names, filenames in os.walk(source_dir):
         if root != source_dir:
-            print('Unexpected subdirectory under {source_dir}.'
-                .format(source_dir=source_dir))
-        if len(dirnames) > 0:
-            print('Unexpected subdirectories under {dirnames}.'
-                .format(dirnames=dirnames))
+            print('Unexpected subdirectory under {source_dir}.'.format(
+                source_dir=source_dir))
+        if len(dir_names) > 0:
+            print('Unexpected subdirectories under {dir_names}.'.format(
+                dir_names=dir_names))
         for filename in filenames:
             if not filename.endswith(KOTLIN_EXTENSION):
-                print('Unexpected non Kotlin file {filename}.'
-                    .format(filename=os.path.join(root, filename)))
+                print('Unexpected non Kotlin file {filename}.'.format(
+                    filename=os.path.join(root, filename)))
                 sys.exit(1)
 
             files = (
