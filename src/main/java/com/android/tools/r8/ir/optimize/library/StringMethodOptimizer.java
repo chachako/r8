@@ -20,6 +20,7 @@ import com.android.tools.r8.ir.analysis.type.Nullability;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.BasicBlockIterator;
+import com.android.tools.r8.ir.code.ConstNumber;
 import com.android.tools.r8.ir.code.ConstString;
 import com.android.tools.r8.ir.code.DexItemBasedConstString;
 import com.android.tools.r8.ir.code.IRCode;
@@ -30,6 +31,8 @@ import com.android.tools.r8.ir.code.InvokeMethod;
 import com.android.tools.r8.ir.code.InvokeMethodWithReceiver;
 import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
+import com.android.tools.r8.ir.code.NewArrayEmpty;
+import com.android.tools.r8.ir.code.NewArrayFilledData;
 import com.android.tools.r8.ir.code.NewInstance;
 import com.android.tools.r8.ir.code.Position;
 import com.android.tools.r8.ir.code.StaticGet;
@@ -211,6 +214,9 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
       case 't':
         if (singleTargetReference.isIdenticalTo(stringMembers.toString)) {
           optimizeStringToStringFunction(code, instructionIterator, invoke, affectedValues, s -> s);
+        } else if (singleTargetReference.isIdenticalTo(stringMembers.toCharArray)) {
+          instructionIterator =
+              optimizeToCharArray(code, blockIterator, instructionIterator, invoke, affectedValues);
         } else if (singleTargetReference.isIdenticalTo(stringMembers.trim)) {
           optimizeStringToStringFunction(
               code, instructionIterator, invoke, affectedValues, str -> str.trim(dexItemFactory));
@@ -848,6 +854,63 @@ public class StringMethodOptimizer extends StatelessLibraryMethodModelCollection
         instructionIterator.removeOrReplaceByDebugLocalRead();
       }
     }
+  }
+
+  private InstructionListIterator optimizeToCharArray(
+      IRCode code,
+      BasicBlockIterator blockIterator,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      AffectedValues affectedValues) {
+    if (!appView.options().isGeneratingDex()) {
+      return instructionIterator;
+    }
+    Value receiver = invoke.getArgument(0).getAliasedValue();
+    if (receiver.isPhi() || !receiver.definition.isConstString()) {
+      return instructionIterator;
+    }
+    DexString value = receiver.definition.asConstString().getValue();
+    String stringValue = value.toString();
+    int length = stringValue.length();
+    if (length > appView.options().rewriteArrayOptions().maxSizeForFilledArrayData) {
+      return instructionIterator;
+    }
+
+    // If the string literal is used elsewhere, the optimization would duplicate the data (once in
+    // the string pool and once in the array payload), which is not size-optimal.
+    if (receiver.numberOfAllUsers() > 1) {
+      return instructionIterator;
+    }
+
+    instructionIterator.previous();
+    ConstNumber sizeValue = code.createIntConstant(length);
+    sizeValue.setPosition(invoke.getPosition(), appView.options());
+    instructionIterator.add(sizeValue);
+    Instruction next = instructionIterator.next();
+    assert next == invoke;
+
+    Value newValue =
+        code.createValue(
+            TypeElement.fromDexType(
+                dexItemFactory.charArrayType, Nullability.definitelyNotNull(), appView));
+    NewArrayEmpty newArrayEmpty =
+        new NewArrayEmpty(newValue, sizeValue.outValue(), dexItemFactory.charArrayType);
+    instructionIterator.replaceCurrentInstruction(newArrayEmpty, affectedValues);
+
+    if (length == 0) {
+      return instructionIterator;
+    }
+
+    char[] chars = stringValue.toCharArray();
+    short[] data = new short[length];
+    for (int i = 0; i < length; i++) {
+      data[i] = (short) chars[i];
+    }
+    NewArrayFilledData newArrayFilledData = new NewArrayFilledData(newValue, 2, length, data);
+    newArrayFilledData.setPosition(invoke.getPosition());
+
+    return instructionIterator.addPossiblyThrowingInstructionToPossiblyThrowingBlock(
+        code, blockIterator, newArrayFilledData, appView.options());
   }
 
   /**
