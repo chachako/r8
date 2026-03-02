@@ -32,8 +32,6 @@ r8.ipr
 r8.iws
 src/test/jack/ub-jack
 test_modules/tests_java_8/libs/
-tests/2016-12-19/art
-tests/2016-12-19/art.tar.gz
 tests/2017-10-04/art
 tests/2017-10-04/art.tar.gz
 *.download_deps_lock

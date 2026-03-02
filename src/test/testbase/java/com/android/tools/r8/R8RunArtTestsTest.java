@@ -7,7 +7,6 @@ import static com.android.tools.r8.TestCondition.compilers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import com.android.tools.r8.TestCondition.Runtime;
 import com.android.tools.r8.TestCondition.RuntimeSet;
 import com.android.tools.r8.ToolHelper.ArtCommandBuilder;
 import com.android.tools.r8.ToolHelper.DexVm;
@@ -86,11 +85,8 @@ public abstract class R8RunArtTestsTest extends TestBase {
   }
 
   public static final String ART_TESTS_DIR = ToolHelper.ART_TESTS_ROOT + "2017-10-04/art";
-  private static final String ART_LEGACY_TESTS_DIR = ToolHelper.ART_TESTS_ROOT + "2016-12-19/art/";
   private static final String ART_TESTS_NATIVE_LIBRARY_DIR =
       ToolHelper.ART_TESTS_ROOT + "2017-10-04/art/lib64";
-  private static final String ART_LEGACY_TESTS_NATIVE_LIBRARY_DIR =
-      ToolHelper.ART_TESTS_ROOT + "2016-12-19/art/lib64";
 
   private static final RuntimeSet LEGACY_RUNTIME =
       TestCondition.runtimes(
@@ -1422,8 +1418,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
       CompilerUnderTest compilerUnderTest, CompilationMode compilationMode, DexVm dexVm) {
     DexVm.Version version = dexVm.getVersion();
     File defaultArtTestDir = new File(ART_TESTS_DIR);
-    File legacyArtTestDir = new File(ART_LEGACY_TESTS_DIR);
-    if (!defaultArtTestDir.exists() || !legacyArtTestDir.exists()) {
+    if (!defaultArtTestDir.exists()) {
       // Don't run any tests if the directory does not exist.
       return Collections.emptyMap();
     }
@@ -1439,10 +1434,7 @@ public abstract class R8RunArtTestsTest extends TestBase {
       skipTest.addAll(usesNativeAgentCode);
       skipTest.addAll(failuresToTriage);
 
-      File artTestDir =
-          LEGACY_RUNTIME.contains(Runtime.fromDexVmVersion(version))
-              ? legacyArtTestDir
-              : defaultArtTestDir;
+      File artTestDir = defaultArtTestDir;
       // Collect the tests failing code generation.
       Set<String> failsWithCompiler =
           collectTestsMatchingConditions(
@@ -1583,9 +1575,6 @@ public abstract class R8RunArtTestsTest extends TestBase {
     if (specification.nativeLibrary != null) {
       // All the native libraries for all Art tests is in the same directory.
       File artTestNativeLibraryDir = new File(ART_TESTS_NATIVE_LIBRARY_DIR);
-      if (artVersion != DexVm.ART_DEFAULT) {
-        artTestNativeLibraryDir = new File(ART_LEGACY_TESTS_NATIVE_LIBRARY_DIR);
-      }
       builder.addToJavaLibraryPath(artTestNativeLibraryDir);
       builder.appendProgramArgument(specification.nativeLibrary);
     }
