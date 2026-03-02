@@ -79,13 +79,31 @@ public class ObjectMethodOptimizer extends StatelessLibraryMethodModelCollection
       // TODO(b/465869067): Remove this restriction by maintaining catch handlers.
       return instructionIterator;
     }
+    return replaceWithIf(
+        code,
+        blockIterator,
+        instructionIterator,
+        invoke,
+        lhs,
+        invoke.getSecondArgument(),
+        affectedValues,
+        blocksToRemove);
+  }
+
+  public static InstructionListIterator replaceWithIf(
+      IRCode code,
+      BasicBlockIterator blockIterator,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      Value lhs,
+      Value rhs,
+      AffectedValues affectedValues,
+      Set<BasicBlock> blocksToRemove) {
     Value outValue = invoke.outValue();
     if (outValue == null || !outValue.hasAnyUsers()) {
       instructionIterator.removeOrReplaceByDebugLocalRead();
       return instructionIterator;
     }
-
-    Value rhs = invoke.getSecondArgument();
 
     BasicBlock startBlock = invoke.getBlock();
     boolean hadCatchHandlers = startBlock.hasCatchHandlers();

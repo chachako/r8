@@ -410,7 +410,20 @@ public abstract class MethodResolutionResult
         InvokeMethodWithReceiver invoke,
         DynamicType dynamicReceiverType,
         ProgramMethod context) {
-      DexMethod invokedMethod = invoke.getInvokedMethod();
+      return lookupVirtualDispatchTarget(
+          appView,
+          invoke.getInvokedMethod(),
+          invoke.getInterfaceBit(),
+          dynamicReceiverType,
+          context);
+    }
+
+    public DispatchTargetLookupResult lookupVirtualDispatchTarget(
+        AppView<?> appView,
+        DexMethod invokedMethod,
+        boolean isInterface,
+        DynamicType dynamicReceiverType,
+        ProgramMethod context) {
       DexClassAndMethod result = null;
       if (appView.appInfo().hasLiveness()) {
         AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
@@ -422,7 +435,7 @@ public abstract class MethodResolutionResult
                     invokedMethod,
                     this,
                     context,
-                    invoke.getInterfaceBit(),
+                    isInterface,
                     appView,
                     dynamicReceiverType);
       } else {

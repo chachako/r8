@@ -7,7 +7,6 @@ package com.android.tools.r8.ir.optimize.library;
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithHolderAndName;
 import static com.android.tools.r8.utils.codeinspector.CodeMatchers.invokesMethodWithName;
 import static com.android.tools.r8.utils.codeinspector.Matchers.isPresent;
-import static com.android.tools.r8.utils.codeinspector.Matchers.notIf;
 import static com.android.tools.r8.utils.codeinspector.Matchers.onlyIf;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,9 +59,7 @@ public class ObjectsEqualsTest extends TestBase {
               assertThat(
                   testNonNullArgumentsMethodSubject,
                   not(invokesMethodWithHolderAndName("java.util.Objects", "equals")));
-              assertThat(
-                  testNonNullArgumentsMethodSubject,
-                  invokesMethodWithHolderAndName("java.lang.Object", "equals"));
+              assertThat(testNonNullArgumentsMethodSubject, not(invokesMethodWithName("equals")));
 
               MethodSubject testNullAndNullArgumentsMethodSubject =
                   mainClassSubject.uniqueMethodWithOriginalName("testNullAndNullArguments");
@@ -80,14 +77,23 @@ public class ObjectsEqualsTest extends TestBase {
                   mainClassSubject.uniqueMethodWithOriginalName("testNullAndMaybeNullArguments");
               assertThat(testNullAndMaybeNullArgumentsMethodSubject, isPresent());
               assertThat(
-                  testNullAndMaybeNullArgumentsMethodSubject,
-                  notIf(invokesMethodWithName("equals"), canUseJavaUtilObjectsIsNull(parameters)));
+                  testNullAndMaybeNullArgumentsMethodSubject, not(invokesMethodWithName("equals")));
               assertThat(
                   testNullAndMaybeNullArgumentsMethodSubject,
                   onlyIf(canUseJavaUtilObjectsIsNull(parameters), invokesMethodWithName("isNull")));
+
+              MethodSubject testOverrideAsSecond =
+                  mainClassSubject.uniqueMethodWithOriginalName("testOverrideAsSecond");
+              assertThat(testOverrideAsSecond, isPresent());
+              assertThat(testOverrideAsSecond, not(invokesMethodWithName("equals")));
+
+              MethodSubject testOverrideAsFirst =
+                  mainClassSubject.uniqueMethodWithOriginalName("testOverrideAsFirst");
+              assertThat(testOverrideAsFirst, isPresent());
+              assertThat(testOverrideAsFirst, invokesMethodWithName("equals"));
             })
         .run(parameters.getRuntime(), Main.class)
-        .assertSuccessWithOutputLines("false", "true", "false", "false");
+        .assertSuccessWithOutputLines("false", "true", "false", "false", "false", "false");
   }
 
   static class Main {
@@ -97,6 +103,8 @@ public class ObjectsEqualsTest extends TestBase {
       testNullAndNullArguments();
       testNullAndNonNullArguments();
       testNullAndMaybeNullArguments();
+      testOverrideAsSecond();
+      testOverrideAsFirst();
     }
 
     @NeverInline
@@ -118,6 +126,34 @@ public class ObjectsEqualsTest extends TestBase {
     static void testNullAndMaybeNullArguments() {
       System.out.println(
           Objects.equals(null, System.currentTimeMillis() > 0 ? new Object() : null));
+    }
+
+    @NeverInline
+    static void testMaybeNullNoOverride() {
+      Object a = System.currentTimeMillis() > 0 ? new Object() : null;
+      System.out.println(Objects.equals(a, new Object()));
+    }
+
+    @NeverInline
+    static void testOverrideAsSecond() {
+      FinalWithOverride a = System.currentTimeMillis() > 0 ? new FinalWithOverride() : null;
+      System.out.println(Objects.equals(new Object(), a));
+    }
+
+    @NeverInline
+    static void testOverrideAsFirst() {
+      FinalWithOverride a = System.currentTimeMillis() > 0 ? new FinalWithOverride() : null;
+      System.out.println(Objects.equals(a, new Object()));
+    }
+  }
+
+  static final class FinalNoOverride {}
+
+  static final class FinalWithOverride {
+    @Override
+    @NeverInline
+    public boolean equals(Object other) {
+      return false;
     }
   }
 }

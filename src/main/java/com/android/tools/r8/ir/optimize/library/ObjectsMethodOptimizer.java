@@ -21,7 +21,9 @@ import com.android.tools.r8.ir.code.InvokeStatic;
 import com.android.tools.r8.ir.code.InvokeVirtual;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.optimize.AffectedValues;
+import com.android.tools.r8.shaking.AppInfoWithLiveness;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ValueUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.Set;
 
@@ -59,7 +61,8 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
     switch (singleTargetReference.getName().byteAt(0)) {
       case 'e':
         if (singleTargetReference == objectsMethods.equals) {
-          optimizeEquals(code, instructionIterator, invoke);
+          return optimizeEquals(
+              code, blockIterator, instructionIterator, invoke, affectedValues, blocksToRemove);
         }
         break;
       case 'h':
@@ -102,26 +105,51 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
     return instructionIterator;
   }
 
-  private void optimizeEquals(
-      IRCode code, InstructionListIterator instructionIterator, InvokeMethod invoke) {
+  private InstructionListIterator optimizeEquals(
+      IRCode code,
+      BasicBlockIterator blockIterator,
+      InstructionListIterator instructionIterator,
+      InvokeMethod invoke,
+      AffectedValues affectedValues,
+      Set<BasicBlock> blocksToRemove) {
     Value aValue = invoke.getFirstArgument();
     Value bValue = invoke.getLastArgument();
+    // Optimize Objects.equals(null, b) into true if b is null, false if b is never null, and
+    // Objects.isNull(b) otherwise.
     if (aValue.isAlwaysNull(appView)) {
-      // Optimize Objects.equals(null, b) into true if b is null, false if b is never null, and
-      // Objects.isNull(b) otherwise.
       if (bValue.isAlwaysNull(appView)) {
         instructionIterator.replaceCurrentInstructionWithConstTrue(code);
+        return instructionIterator;
       } else if (bValue.isNeverNull()) {
         instructionIterator.replaceCurrentInstructionWithConstFalse(code);
+        return instructionIterator;
       } else if (options.canUseJavaUtilObjectsIsNull()) {
+        // This will be rewritten to use if-nez by BranchSimplifier.
         instructionIterator.replaceCurrentInstruction(
             InvokeStatic.builder()
                 .setMethod(objectsMethods.isNull)
                 .setOutValue(invoke.outValue())
                 .setSingleArgument(bValue)
                 .build());
+        return instructionIterator;
       }
-    } else if (aValue.isNeverNull()) {
+    }
+    if (appView.hasLiveness() && !code.metadata().mayHaveMonitorInstruction()) {
+      // Optimize "Objects.equals(a, b)" into "a == b".
+      AppView<AppInfoWithLiveness> appViewWithLiveness = appView.withLiveness();
+      if (!mightDispatchToEqualsOverride(aValue, code, appViewWithLiveness)) {
+        return ObjectMethodOptimizer.replaceWithIf(
+            code,
+            blockIterator,
+            instructionIterator,
+            invoke,
+            aValue,
+            bValue,
+            affectedValues,
+            blocksToRemove);
+      }
+    }
+    if (aValue.isNeverNull()) {
       // Optimize Objects.equals(nonNull, b) into nonNull.equals(b).
       instructionIterator.replaceCurrentInstruction(
           InvokeVirtual.builder()
@@ -129,9 +157,20 @@ public class ObjectsMethodOptimizer extends StatelessLibraryMethodModelCollectio
               .setOutValue(invoke.outValue())
               .setArguments(ImmutableList.of(aValue, bValue))
               .build());
-    } else {
-      // TODO(b/465869067): Convert to == when no override exists.
     }
+    return instructionIterator;
+  }
+
+  private boolean mightDispatchToEqualsOverride(
+      Value receiver, IRCode code, AppView<AppInfoWithLiveness> appView) {
+    if (receiver.isAlwaysNull(appView)) {
+      return false;
+    }
+    DexClassAndMethod singleTarget =
+        ValueUtils.lookupSingleTarget(
+            receiver, dexItemFactory.objectMembers.equals, appView, code.context());
+    return singleTarget == null
+        || !singleTarget.getHolder().getType().isIdenticalTo(dexItemFactory.objectType);
   }
 
   private void optimizeHashCode(
