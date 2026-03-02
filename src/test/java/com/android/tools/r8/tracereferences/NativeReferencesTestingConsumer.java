@@ -13,6 +13,7 @@ import com.android.tools.r8.references.MethodReference;
 import com.android.tools.r8.utils.Pair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 class NativeReferencesTestingConsumer implements TraceReferencesNativeReferencesConsumer {
 
@@ -55,7 +56,15 @@ class NativeReferencesTestingConsumer implements TraceReferencesNativeReferences
         return this;
       }
     }
-    fail("Expected to contain " + name + " with origin " + origin + ", but did not.");
+    fail(
+        "Expected to contain "
+            + name
+            + " with origin "
+            + origin
+            + ", but did not. Content was: "
+            + loadLibraryKnown.stream()
+                .map(o -> o.getFirst() + ": " + o.getSecond())
+                .collect(Collectors.joining(", ")));
     return this;
   }
 

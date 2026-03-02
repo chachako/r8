@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.StringJoiner;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -376,5 +377,17 @@ public class ZipUtils {
     }
     return Reference.classFromBinaryName(
         entry.getName().substring(0, entry.getName().length() - CLASS_EXTENSION.length()));
+  }
+
+  /**
+   * Generate the zip entry path from a Path. This will use the zip entry separator independent of
+   * the separator used by the file system the path is created from.
+   */
+  public static String zipEntryFromPath(Path path) {
+    StringJoiner joiner = new StringJoiner("/");
+    for (Path part : path) {
+      joiner.add(part.toString());
+    }
+    return joiner.toString();
   }
 }
