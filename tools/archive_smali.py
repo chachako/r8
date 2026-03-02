@@ -60,10 +60,10 @@ def Main():
         raise Exception(
             'Option --version is required (when not using local checkout)')
 
-    if utils.is_bot() and not utils.is_windows():
+    if utils.is_bot() and not utils.IsWindows():
         set_rlimit_to_max()
 
-    utils.download_from_google_cloud_storage(utils.JAVA11_SHA_FILE)
+    utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
     with utils.TempDir() as temp:
         # Resolve dry run location to support relative directories.
         dry_run_output = None
@@ -107,9 +107,7 @@ def Main():
             subprocess.check_call([
                 './gradlew',
                 '-Dorg.gradle.java.home=%s' % jdk.GetJdk11Home(),
-                '-Dmaven.repo.local=%s' % m2,
-                'release',
-                'test',
+                '-Dmaven.repo.local=%s' % m2, 'release', 'test',
                 'publishToMavenLocal',
             ])
             base = os.path.join('com', 'android', 'tools', 'smali')

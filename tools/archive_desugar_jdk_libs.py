@@ -182,7 +182,7 @@ def setUpFakeAndroidHome(androidHomeTemp):
     subprocess.check_call(cmd)
     dest = os.path.join(subpath, "android.jar")
     sha = os.path.join(utils.THIRD_PARTY, "android_jar", "lib-v32.tar.gz.sha1")
-    utils.download_from_google_cloud_storage(sha)
+    utils.DownloadFromGoogleCloudStorage(sha)
     src = os.path.join(utils.THIRD_PARTY, "android_jar", "lib-v32",
                        "android.jar")
     cmd = ["cp", src, dest]
@@ -205,10 +205,10 @@ def BuildDesugaredLibrary(checkout_dir, variant, version=None):
                 bazel, '--bazelrc=/dev/null', 'build', '--spawn_strategy=local',
                 '--verbose_failures', MAVEN_RELEASE_TARGET_MAP[variant]
             ]
-            utils.print_cmd(cmd)
+            utils.PrintCmd(cmd)
             subprocess.check_call(cmd, env=javaEnv)
             cmd = [bazel, 'shutdown']
-            utils.print_cmd(cmd)
+            utils.PrintCmd(cmd)
             subprocess.check_call(cmd, env=javaEnv)
 
         # Locate the library jar and the maven zip with the jar from the
@@ -262,9 +262,10 @@ def write_sha1_for(file):
 
 def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
     gradle.RunGradle([
-        utils.GRADLE_TASK_R8, utils.GRADLE_TASK_TEST_BASE_JAR,
-        utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
-        '-Pno_internal'
+        utils.GRADLE_TASK_R8,
+        utils.GRADLE_TASK_TEST_BASE_JAR,
+        utils.GRADLE_TASK_TEST_JAR,
+        utils.GRADLE_TASK_TEST_DEPS_JAR, '-Pno_internal'
     ])
     with utils.TempDir() as tmp:
         with zipfile.ZipFile(maven_zip, 'r') as zip_ref:
@@ -277,8 +278,8 @@ def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
         buildLibs = os.path.join(defines.REPO_ROOT, 'build', 'libs')
         cmd = [
             jdk.GetJavaExecutable(), '-cp',
-            '%s:%s:%s:%s' % (utils.R8_JAR, utils.R8_TESTBASE_JAR,
-                             utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR),
+            '%s:%s:%s:%s' %
+            (utils.R8_JAR, utils.R8_TESTBASE_JAR, utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR),
             'com.android.tools.r8.desugar.desugaredlibrary.jdk11.DesugaredLibraryJDK11Undesugarer',
             desugar_jdk_libs_jar, undesugared_jar
         ]
@@ -383,10 +384,10 @@ def Main(argv):
         archive.SetRLimitToMax()
 
     # Make sure bazel is extracted in third_party.
-    utils.download_from_google_cloud_storage(utils.BAZEL_SHA_FILE)
-    utils.download_from_google_cloud_storage(utils.JAVA8_SHA_FILE)
-    utils.download_from_google_cloud_storage(utils.JAVA17_SHA_FILE)
-    utils.download_from_google_cloud_storage(utils.DESUGAR_JDK_LIBS_11_SHA_FILE)
+    utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)
+    utils.DownloadFromGoogleCloudStorage(utils.JAVA8_SHA_FILE)
+    utils.DownloadFromGoogleCloudStorage(utils.JAVA17_SHA_FILE)
+    utils.DownloadFromGoogleCloudStorage(utils.DESUGAR_JDK_LIBS_11_SHA_FILE)
 
     for v in options.variant:
         BuildAndUpload(options, v)

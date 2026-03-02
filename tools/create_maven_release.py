@@ -320,7 +320,7 @@ def generate_jar_with_desugar_configuration(configuration, implementation,
             configuration, implementation, lint_dir,
             utils.get_android_jar(34, 0)
         ]
-        utils.print_cmd(cmd)
+        utils.PrintCmd(cmd)
         subprocess.check_call(cmd)
 
         # Add LICENSE file.

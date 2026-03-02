@@ -124,14 +124,14 @@ def GetMavenUrl(is_main):
 
 
 def SetRLimitToMax():
-    if not utils.is_bot() or utils.is_windows():
+    if not utils.is_bot() or utils.IsWindows():
         return
     (soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(resource.RLIMIT_NOFILE, (hard, hard))
 
 
 def PrintResourceInfo():
-    if utils.is_windows():
+    if utils.IsWindows():
         return
     (soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
     print('INFO: Open files soft limit: %s' % soft)

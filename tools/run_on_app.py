@@ -332,7 +332,7 @@ def find_min_xmx(options, args):
     print(found_range)
 
     if options.find_min_xmx_archive:
-        sha = utils.get_head_sha1()
+        sha = utils.get_HEAD_sha1()
         (version, _) = get_version_and_data(options)
         destination = os.path.join(utils.R8_TEST_RESULTS_BUCKET,
                                    FIND_MIN_XMX_DIR, sha, options.compiler,

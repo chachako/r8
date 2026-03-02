@@ -12,14 +12,14 @@ import subprocess
 import sys
 import xml.etree.ElementTree
 
+
 JETBRAINS_KOTLIN_STABLE_URL = "https://github.com/JetBrains/kotlin/releases/download"
 JETBRAINS_KOTLIN_MAVEN_URL = "https://redirector.kotlinlang.org/maven/" \
                              "bootstrap/org/jetbrains/kotlin/"
 
 KOTLIN_RELEASE_URL = JETBRAINS_KOTLIN_MAVEN_URL + "kotlin-compiler/"
-KOTLINC_LIB = os.path.join(utils.THIRD_PARTY, "kotlin", "kotlin-compiler-dev",
-                           "kotlinc", "lib")
-
+KOTLINC_LIB = os.path.join(utils.THIRD_PARTY, "kotlin",
+                   "kotlin-compiler-dev", "kotlinc", "lib")
 
 def ParseOptions(args):
     parser = argparse.ArgumentParser(description='Update third_party Kotlin')
@@ -29,20 +29,18 @@ def ParseOptions(args):
         help="The Kotlin version, use 'dev' for the latest dev compiler")
     return parser.parse_args()
 
-
 def download_stable(version):
     with utils.TempDir() as temp:
         unzip_dir = os.path.join(
-            utils.THIRD_PARTY, 'kotlin',
+            utils.THIRD_PARTY,
+            'kotlin',
             'kotlin-compiler-{version}'.format(version=version))
         if os.path.exists(unzip_dir):
-            print(
-                'Destination dir {dir} exists. Please remove and retry.'.format(
-                    dir=unzip_dir))
+            print('Destination dir {dir} exists. Please remove and retry.'.format(dir=unzip_dir))
             sys.exit(-1)
-        url = ('{download_url_base}/v{version}/kotlin-compiler-{version}.zip'.
-               format(download_url_base=JETBRAINS_KOTLIN_STABLE_URL,
-                      version=version))
+        url = (
+            '{download_url_base}/v{version}/kotlin-compiler-{version}.zip'
+                .format(download_url_base=JETBRAINS_KOTLIN_STABLE_URL, version=version))
         kotlin_compiler_download_zip = os.path.join(temp, 'kotlin-compiler.zip')
         download_and_save(url, kotlin_compiler_download_zip)
         cmd = ['unzip', '-q', kotlin_compiler_download_zip, '-d', unzip_dir]
@@ -54,10 +52,11 @@ def download_stable(version):
             readme.write('Revision: NA\n')
             readme.write('License: Apache License Version 2.0\n')
     print('If you want to upload this run:')
-    print(
-        '  (cd {dir}; upload_to_google_storage.py -a --bucket r8-deps {file})'.
-        format(dir=os.path.dirname(unzip_dir),
-               file=os.path.basename(unzip_dir)))
+    print('  (cd {dir}; upload_to_google_storage.py -a --bucket r8-deps {file})'
+        .format(dir=os.path.dirname(unzip_dir), file=os.path.basename(unzip_dir)))
+
+
+
 
 
 def download_newest():
@@ -98,7 +97,7 @@ def download_newest():
     # Download checked in kotlin dev compiler before owerlaying with the new.
     # TODO(sgjesse): This should just ensure an empty directory instead of
     # relying on overlaying and reusing some jars.
-    utils.download_from_google_cloud_storage(
+    utils.DownloadFromGoogleCloudStorage(
         os.path.join(utils.THIRD_PARTY, "kotlin",
                      "kotlin-compiler-dev.tar.gz.sha1"))
 
@@ -131,11 +130,9 @@ def download_newest():
             top_most_version_and_build), KOTLINC_LIB,
         "kotlin-script-runtime.jar")
     download_and_save(
-        "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar",
-        KOTLINC_LIB, "kotlinx-coroutines-core-jvm.jar")
+        "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.8.0/kotlinx-coroutines-core-jvm-1.8.0.jar", KOTLINC_LIB, "kotlinx-coroutines-core-jvm.jar")
     download_and_save(
-        "https://repo1.maven.org/maven2/org/jetbrains/intellij/deps/trove4j/1.0.20200330/trove4j-1.0.20200330.jar",
-        KOTLINC_LIB, "trove4j.jar")
+        "https://repo1.maven.org/maven2/org/jetbrains/intellij/deps/trove4j/1.0.20200330/trove4j-1.0.20200330.jar", KOTLINC_LIB, "trove4j.jar")
 
 
 def check_pom(top_most_version_and_build):
@@ -154,20 +151,18 @@ def check_pom(top_most_version_and_build):
         groupId = dependency.find("{%s}groupId" % ns).text
         artifactId = dependency.find("{%s}artifactId" % ns).text
         version = dependency.find("{%s}version" % ns).text
-        coordinates = ('{groupId}:{artifactId}:{version}'.format(
-            groupId=groupId, artifactId=artifactId, version=version))
+        coordinates = (
+            '{groupId}:{artifactId}:{version}'
+                .format(groupId=groupId, artifactId=artifactId, version=version))
         print('Dependecy: ' + coordinates)
         expected_dependencies = set()
-        for artifactId in ("kotlin-stdlib", "kotlin-stdlib-jdk8",
-                           "kotlin-script-runtime"):
+        for artifactId in ("kotlin-stdlib", "kotlin-stdlib-jdk8", "kotlin-script-runtime"):
             expected_dependencies.add(
-                'org.jetbrains.kotlin:{artifactId}:{version}'.format(
-                    artifactId=artifactId, version=top_most_version_and_build))
+                'org.jetbrains.kotlin:{artifactId}:{version}'
+                    .format(artifactId=artifactId, version=top_most_version_and_build))
         expected_dependencies.add('org.jetbrains.kotlin:kotlin-reflect:1.6.10')
-        expected_dependencies.add(
-            'org.jetbrains.intellij.deps:trove4j:1.0.20200330')
-        expected_dependencies.add(
-            'org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0')
+        expected_dependencies.add('org.jetbrains.intellij.deps:trove4j:1.0.20200330')
+        expected_dependencies.add('org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.0')
         if not coordinates in expected_dependencies:
             raise Exception('Unexpected dependency: ' + coordinates)
 

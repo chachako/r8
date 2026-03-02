@@ -236,7 +236,7 @@ def ParseOptions():
 
 
 def Build(options):
-    utils.print_info('Building', quiet=options.quiet)
+    utils.Print('Building', quiet=options.quiet)
     target = options.target or 'r8-full'
     build_cmd = GetRunCmd('N/A', target, options, ['--iterations', '0'])
     subprocess.check_call(build_cmd)
@@ -296,7 +296,7 @@ def GetArtifactLocation(benchmark,
             return f'branches/{branch}/{benchmark}/{target}/{version}/{filename}'
         return f'{benchmark}/{target}/{version}/{filename}'
     else:
-        commit = utils.get_head_commit()
+        commit = utils.get_HEAD_commit()
         branch = commit.branch()
         if is_try:
             assert branch is None
@@ -389,7 +389,7 @@ def main():
 
                 failed = False
                 for i in range(options.iterations):
-                    utils.print_info(
+                    utils.Print(
                         f'Benchmarking {benchmark} ({i+1}/{options.iterations})',
                         quiet=options.quiet)
                     if sub_benchmarks_for_target:

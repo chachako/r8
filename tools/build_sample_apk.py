@@ -79,7 +79,7 @@ def parse_options():
 def run_aapt(aapt, args):
     command = [aapt]
     command.extend(args)
-    utils.print_cmd(command)
+    utils.PrintCmd(command)
     subprocess.check_call(command)
 
 
@@ -165,7 +165,7 @@ def compile_with_javac(api, app):
             get_bin_path(app)
         ]
         command.extend(files)
-        utils.print_cmd(command)
+        utils.PrintCmd(command)
         subprocess.check_call(command)
 
 
@@ -184,7 +184,7 @@ def dex(app, api):
     if app != 'simple':
         command.append(get_guava_jar())
 
-    utils.print_cmd(command)
+    utils.PrintCmd(command)
     subprocess.check_call(command)
 
 
@@ -195,14 +195,14 @@ def split(app):
         get_dex_path(app), '--output',
         get_bin_path(app), '--feature-splits', split_spec
     ]
-    utils.print_cmd(command)
+    utils.PrintCmd(command)
     subprocess.check_call(command)
 
 
 def run_adb(args, ignore_exit=False):
     command = ['adb']
     command.extend(args)
-    utils.print_cmd(command)
+    utils.PrintCmd(command)
     # On M adb install-multiple exits 1 but succeed in installing.
     if ignore_exit:
         subprocess.call(command)
@@ -319,7 +319,7 @@ def generate_proto_apks(apks, options):
             options.aapt2, 'convert', '-o', proto_apk, '--output-format',
             'proto', apk
         ]
-        utils.print_cmd(cmd)
+        utils.PrintCmd(cmd)
         subprocess.check_call(cmd)
         proto_apks.append(proto_apk)
     return proto_apks

@@ -92,7 +92,7 @@ def main(argv):
     with utils.ChangedWorkingDirectory(REPO_ROOT, quiet=True):
         branches = [
             parse(line)
-            for line in utils.run_cmd(['git', 'branch', '-vv'], quiet=True)
+            for line in utils.RunCmd(['git', 'branch', '-vv'], quiet=True)
         ]
 
         current_branch = None
@@ -120,7 +120,7 @@ def main(argv):
         while len(stack) > 0:
             branch = stack.pop()
 
-            utils.run_cmd(['git', 'checkout', branch.name], quiet=True)
+            utils.RunCmd(['git', 'checkout', branch.name], quiet=True)
 
             status = get_status_for_current_branch(branch)
             print('Syncing %s (status: %s)' % (branch.name, status))
@@ -158,19 +158,19 @@ def main(argv):
                     upload_cmd = ['git', 'cl', 'upload', '-m', options.message]
                     if options.bypass_hooks:
                         upload_cmd.append('--bypass-hooks')
-                    utils.run_cmd(upload_cmd, quiet=True)
+                    utils.RunCmd(upload_cmd, quiet=True)
 
         if get_delete_branches_option(closed_branches, options):
             delete_branches(closed_branches)
 
-        utils.run_cmd(['git', 'cl', 'issue'])
+        utils.RunCmd(['git', 'cl', 'issue'])
 
 
 def delete_branches(branches):
     assert len(branches) > 0
     cmd = ['git', 'branch', '-D']
     cmd.extend(branches)
-    utils.run_cmd(cmd, quiet=True)
+    utils.RunCmd(cmd, quiet=True)
 
 
 def get_branch_with_name(name, branches):
@@ -198,8 +198,8 @@ def get_delete_branches_option(closed_branches, options):
 def get_status_for_current_branch(current_branch):
     if current_branch.name == 'main':
         return 'main'
-    return utils.run_cmd(['git', 'cl', 'status', '--field', 'status'],
-                         quiet=True)[0].strip()
+    return utils.RunCmd(['git', 'cl', 'status', '--field', 'status'],
+                        quiet=True)[0].strip()
 
 
 def is_root_branch(branch, options):
@@ -210,11 +210,11 @@ def pull_for_current_branch(branch, options):
     if branch.name == 'main' and options.skip_main:
         return
     rebase_args = ['--rebase'] if options.rebase else []
-    utils.run_cmd(['git', 'pull'] + rebase_args, quiet=True)
+    utils.RunCmd(['git', 'pull'] + rebase_args, quiet=True)
 
 
 def set_upstream_for_current_branch_to_main():
-    utils.run_cmd(['git', 'cl', 'upstream', 'main'], quiet=True)
+    utils.RunCmd(['git', 'cl', 'upstream', 'main'], quiet=True)
 
 
 # Parses a line from the output of `git branch -vv`.

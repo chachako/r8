@@ -52,7 +52,7 @@ def main(output_dir=None):
 
 
 def write_sorted_lines(cmd_args, output_path):
-    utils.print_cmd(cmd_args)
+    utils.PrintCmd(cmd_args)
     output_lines = subprocess.check_output(cmd_args).splitlines(True)
     print("Write output to %s" % output_path)
     output_lines.sort()

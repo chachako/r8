@@ -17,7 +17,7 @@ def set_up_test_state(gradle_args, testing_state_mode, testing_state_path):
         return
     if not testing_state_path:
         testing_state_path = os.path.join(DEFAULT_REPORTS_ROOT,
-                                          utils.get_head_branch())
+                                          utils.get_HEAD_branch())
     testing_state_path = os.path.abspath(testing_state_path)
     gradle_args.append('-Ptesting-state-mode=%s' % testing_state_mode)
     gradle_args.append('-Ptesting-state-path=%s' % testing_state_path)
@@ -68,11 +68,11 @@ def prepare_testing_index(testing_state_mode, testing_state_dir):
     # git branch/hash and diff for future reference
     index.write(f"<p>Run on: {datetime.datetime.now()}</p>")
     index.write(f"<p>State path: {testing_state_dir}</p>")
-    index.write(f"<p>Git branch: {utils.get_head_branch()}")
-    index.write(f"</br>Git SHA: {utils.get_head_sha1()}")
+    index.write(f"<p>Git branch: {utils.get_HEAD_branch()}")
+    index.write(f"</br>Git SHA: {utils.get_HEAD_sha1()}")
     index.write(f'</br>Git diff summary:\n')
     index.write(
-        f'<pre style="background-color: lightgray">{utils.get_head_diff_stat()}</pre></p>'
+        f'<pre style="background-color: lightgray">{utils.get_HEAD_diff_stat()}</pre></p>'
     )
     # header for the failing tests
     index.write(

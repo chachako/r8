@@ -83,7 +83,7 @@ def get_r8_version(r8jar):
         fd.close()
         cmd = [jdk.GetJavacExecutable(), '-cp', r8jar, name]
         print(' '.join(cmd))
-        cp_separator = ';' if utils.is_windows() else ':'
+        cp_separator = ';' if utils.IsWindows() else ':'
         subprocess.check_call(cmd)
         output = subprocess.check_output([
             jdk.GetJavaExecutable(), '-cp',

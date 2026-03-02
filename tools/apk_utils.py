@@ -64,9 +64,9 @@ def add_baseline_profile_to_apk(apk, baseline_profile,
 
 def align(apk, aligned_apk):
     zipalign_path = ('zipalign' if 'build_tools' in os.environ.get('PATH') else
-                     os.path.join(utils.get_android_build_tools(), 'zipalign'))
+                     os.path.join(utils.getAndroidBuildTools(), 'zipalign'))
     cmd = [zipalign_path, '-f', '-p', '4', apk, aligned_apk]
-    utils.run_cmd(cmd, quiet=True, logging=False)
+    utils.RunCmd(cmd, quiet=True, logging=False)
     return aligned_apk
 
 
@@ -75,7 +75,7 @@ def default_keystore():
 
 
 def get_min_api(apk):
-    aapt = os.path.join(utils.get_android_build_tools(), 'aapt')
+    aapt = os.path.join(utils.getAndroidBuildTools(), 'aapt')
     cmd = [aapt, 'dump', 'badging', apk]
     stdout = subprocess.check_output(cmd).decode('utf-8').strip()
     for line in stdout.splitlines():
@@ -85,15 +85,15 @@ def get_min_api(apk):
 
 
 def sign(unsigned_apk, signed_apk, keystore, quiet=False, logging=True):
-    utils.print_info('Signing (ignore the warnings)', quiet=quiet)
+    utils.Print('Signing (ignore the warnings)', quiet=quiet)
     cmd = ['zip', '-d', unsigned_apk, 'META-INF/*']
-    utils.run_cmd(cmd, quiet=quiet, logging=logging, fail=False)
+    utils.RunCmd(cmd, quiet=quiet, logging=logging, fail=False)
     cmd = [
         'jarsigner', '-sigalg', 'SHA1withRSA', '-digestalg', 'SHA1',
         '-keystore', keystore, '-storepass', 'android', '-signedjar',
         signed_apk, unsigned_apk, 'androiddebugkey'
     ]
-    utils.run_cmd(cmd, quiet=quiet)
+    utils.RunCmd(cmd, quiet=quiet)
 
 
 def sign_with_apksigner(unsigned_apk,
@@ -103,12 +103,12 @@ def sign_with_apksigner(unsigned_apk,
                         quiet=False,
                         logging=True):
     cmd = [
-        os.path.join(utils.get_android_build_tools(), 'apksigner'), 'sign',
-        '-v', '--ks', keystore or default_keystore(), '--ks-pass',
-        'pass:' + password, '--min-sdk-version', '19', '--out', signed_apk,
-        '--v2-signing-enabled', unsigned_apk
+        os.path.join(utils.getAndroidBuildTools(), 'apksigner'), 'sign', '-v',
+        '--ks', keystore or default_keystore(), '--ks-pass', 'pass:' + password,
+        '--min-sdk-version', '19', '--out', signed_apk, '--v2-signing-enabled',
+        unsigned_apk
     ]
-    utils.run_cmd(cmd, quiet=quiet, logging=logging)
+    utils.RunCmd(cmd, quiet=quiet, logging=logging)
     return signed_apk
 
 

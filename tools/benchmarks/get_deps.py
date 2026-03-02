@@ -15,7 +15,7 @@ ANDROID_EMULATORS = os.path.join(utils.TOOLS_DIR, 'benchmarks',
 
 
 def Main():
-    utils.download_from_google_cloud_storage(ANDROID_EMULATORS)
+    utils.DownloadFromGoogleCloudStorage(ANDROID_EMULATORS)
 
 
 if __name__ == '__main__':

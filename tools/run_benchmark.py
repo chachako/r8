@@ -127,12 +127,10 @@ def main(argv, temp):
         options.output = os.path.abspath(options.output)
 
     if options.dump_blast_radius_to_directory:
-        options.dump_blast_radius_to_directory = os.path.abspath(
-            options.dump_blast_radius_to_directory)
+        options.dump_blast_radius_to_directory = os.path.abspath(options.dump_blast_radius_to_directory)
 
     if options.dump_trace_to_directory:
-        options.dump_trace_to_directory = os.path.abspath(
-            options.dump_trace_to_directory)
+        options.dump_trace_to_directory = os.path.abspath(options.dump_trace_to_directory)
 
     if options.temp:
         temp = options.temp
@@ -239,7 +237,7 @@ def run(options, r8jar, testjars):
         # repository root as an argument. The runner can then setup dependencies.
         'golem' if options.golem else utils.REPO_ROOT,
     ])
-    utils.print_cmd(cmd, quiet=options.quiet)
+    utils.PrintCmd(cmd, quiet=options.quiet)
     return subprocess.check_call(cmd)
 
 

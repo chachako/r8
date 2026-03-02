@@ -34,9 +34,7 @@ def parse_arguments():
         default=None,
         action='store_true',
         help='Use the exclude-deps version of the mapping file.')
-    parser.add_argument('--map',
-                        help='Path to r8lib map in text format.',
-                        default=None)
+    parser.add_argument('--map', help='Path to r8lib map in text format.', default=None)
     parser.add_argument('--partition-map',
                         '--partition_map',
                         help='Path to r8lib map in ZIP partition format.',
@@ -78,7 +76,7 @@ def parse_arguments():
         default=False,
         action='store_true',
         help='Disable use of partition map (unless one was explicitly specified'
-        ' with --partition-map).')
+            ' with --partition-map).')
     return parser.parse_args()
 
 
@@ -89,8 +87,7 @@ def get_map_file(args, temp):
     if args.partition_map:
         return (True, args.partition_map)
 
-    for use_partition_map in ([False]
-                              if args.disable_partition_map else [True, False]):
+    for use_partition_map in ([False] if args.disable_partition_map else [True, False]):
         # Try to extract map from the tag/version options.
         map_path = utils.find_cloud_storage_file_from_options(
             'r8lib.jar_map.zip' if use_partition_map else 'r8lib.jar.map', args)
@@ -130,8 +127,7 @@ def get_r8_source_file_attribute(stacktrace):
     return r8_source_file
 
 
-def get_map_from_r8_source_file_attribute(args, r8_source_file,
-                                          use_partition_map):
+def get_map_from_r8_source_file_attribute(args, r8_source_file, use_partition_map):
     (header, r8_version_or_hash, maphash) = r8_source_file.split('_')
     # If the command-line specified --exclude-deps then assume it is as previous
     # versions will not be marked as such in the source-file line.
@@ -153,8 +149,9 @@ def get_map_from_r8_source_file_attribute(args, r8_source_file,
         # Look for mapping file on GCS based on the version or commit hash
         # found in the source file atttribute.
         map_path = utils.find_cloud_storage_file_from_options(
-            'r8lib' + ('-exclude-deps' if is_excldeps else '') +
-            ('.jar_map.zip' if use_partition_map else '.jar.map'), args)
+            'r8lib' + ('-exclude-deps' if is_excldeps else '')
+            + ('.jar_map.zip' if use_partition_map else '.jar.map'),
+            args)
 
         if map_path:
             # Partition map is not validated. The mapping file header is
@@ -233,7 +230,9 @@ def run(map_path,
     if not r8jar:
         r8jar = utils.R8_JAR if no_r8lib else utils.R8LIB_JAR
 
-    retrace_args += ['-cp', r8jar, 'com.android.tools.r8.retrace.Retrace']
+    retrace_args += [
+        '-cp', r8jar, 'com.android.tools.r8.retrace.Retrace'
+    ]
     if is_partition_map:
         retrace_args.extend(['--partition-map', map_path])
     else:
@@ -252,7 +251,7 @@ def run(map_path,
     if verbose:
         retrace_args.append('--verbose')
 
-    utils.print_cmd(retrace_args, quiet=quiet)
+    utils.PrintCmd(retrace_args, quiet=quiet)
     return subprocess.call(retrace_args)
 
 

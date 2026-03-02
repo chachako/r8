@@ -156,7 +156,7 @@ def git_pull():
     ensure_git_clean()
     subprocess.check_call(['git', 'checkout', 'main'])
     subprocess.check_call(['git', 'pull'])
-    return utils.get_head_sha1()
+    return utils.get_HEAD_sha1()
 
 
 def git_checkout(git_hash):
@@ -195,7 +195,7 @@ def get_status(sha):
 
 
 def archive_log(stdout, stderr, exitcode, timed_out, cmd):
-    sha = utils.get_head_sha1()
+    sha = utils.get_HEAD_sha1()
     cmd_dir = cmd.replace(' ', '_').replace('/', '_')
     destination = os.path.join(get_sha_destination(sha), cmd_dir)
     gs_destination = 'gs://%s' % destination
@@ -263,7 +263,7 @@ def run_bot():
             delete_magic_file(magic)
     print_magic_file_state()
     assert not get_magic_file_exists(READY_FOR_TESTING)
-    git_hash = utils.get_head_sha1()
+    git_hash = utils.get_HEAD_sha1()
     put_magic_file(READY_FOR_TESTING, git_hash)
     begin = time.time()
     timeout = get_bot_timeout()
@@ -304,7 +304,7 @@ def run_continuously():
                 put_magic_file(TESTING_COMPLETE, git_hash)
                 delete_magic_file(READY_FOR_TESTING)
                 continue
-            checked_out = utils.get_head_sha1()
+            checked_out = utils.get_HEAD_sha1()
             # Sanity check, if this does not succeed stop.
             if checked_out != git_hash:
                 log('Inconsistent state: %s %s' % (git_hash, checked_out))
@@ -352,7 +352,7 @@ def execute(cmd, archive, env=None):
     assert (cmd[0].endswith('.py'))
     cmd = [sys.executable] + cmd
 
-    utils.print_cmd(cmd)
+    utils.PrintCmd(cmd)
     with utils.TempDir() as temp:
         try:
             stderr_fd = None
@@ -387,7 +387,7 @@ def execute(cmd, archive, env=None):
 
 
 def run_once(archive, try_run):
-    git_hash = utils.get_head_sha1()
+    git_hash = utils.get_HEAD_sha1()
     log('Running once with hash %s (try run: %s)' % (git_hash, try_run))
     env = os.environ.copy()
     # Bot does not have a lot of memory.
@@ -429,7 +429,7 @@ def get_test_commands(try_run):
         # the try run should do.
         return [get_perf_test_command(try_run)]
     test_commands = get_default_test_commands()
-    version = utils.get_head_commit().version()
+    version = utils.get_HEAD_commit().version()
     if version and version.endswith('-dev'):
         test_commands.append([
             'tools/perf.py', '--benchmark', 'AGSA', '--iterations-inner', '1',

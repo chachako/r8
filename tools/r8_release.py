@@ -30,7 +30,6 @@ ANDROID_TOOLS_PACKAGE = 'com.android.tools'
 
 GITHUB_DESUGAR_JDK_LIBS = 'https://github.com/google/desugar_jdk_libs'
 
-
 def install_gerrit_change_id_hook(checkout_dir):
     with utils.ChangedWorkingDirectory(checkout_dir):
         # Fancy way of getting the string ".git".
@@ -123,8 +122,7 @@ def prepare_release(args):
                                              version)
 
                 cmd = ['git', 'cl', 'upload', '--no-squash', '--bypass-hooks']
-                git_utils.GitClAppendReviewers(cmd, args.reviewer,
-                                               args.send_mail)
+                git_utils.GitClAppendReviewers(cmd, args.reviewer, args.send_mail)
 
                 maybe_check_call(args, cmd)
 
@@ -204,8 +202,7 @@ def prepare_maven(args):
 
         print("Staged Release ID " + release_id + ".\n")
         gmaven_publisher_stage_redir_test_info(
-            release_id, "com.android.tools:r8:%s" % args.version[0],
-            "r8lib.jar")
+            release_id, "com.android.tools:r8:%s" % args.version[0], "r8lib.jar")
 
         print
         answer = input("Continue with publishing [y/N]:")
@@ -242,8 +239,9 @@ def g4_change(version, commit_info):
     if commit_info:
         message += f'\n\n{commit_info}'
     message = message.replace("'", r"\'")
-    return subprocess.check_output(f"g4 change --desc $'{message}\n'",
-                                   shell=True).decode('utf-8')
+    return subprocess.check_output(
+        f"g4 change --desc $'{message}\n'",
+        shell=True).decode('utf-8')
 
 
 def get_cl_id(c4_change_output):
@@ -260,7 +258,6 @@ def sed(pattern, replace, path):
     with open(path, "w") as sources:
         for line in lines:
             sources.write(re.sub(pattern, replace, line))
-
 
 def download_file(version, file, dst):
     if version == 'main':
@@ -296,9 +293,12 @@ def find_r8_version_hash(branch, version):
         print('Expected branch to start with origin/')
         return 1
     output = subprocess.check_output([
-        'git', 'log', '--pretty=format:%H\t%s', '--grep',
-        r'^Version [[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+\(\|-dev\)$', branch
-    ]).decode('utf-8')
+        'git',
+        'log',
+        '--pretty=format:%H\t%s',
+        '--grep',
+        r'^Version [[:digit:]]\+.[[:digit:]]\+.[[:digit:]]\+\(\|-dev\)$',
+        branch]).decode('utf-8')
     for l in output.split('\n'):
         (hash, subject) = l.split('\t')
         m = re.search('Version (.+)', subject)
@@ -346,15 +346,26 @@ def prepare_google3(args):
             g4_open('desugar_jdk_libs_configuration.jar')
             g4_open('threading-module-blocking.jar')
             g4_open('threading-module-single-threaded.jar')
-            download_file(version, 'r8-full-exclude-deps.jar', 'full.jar')
-            download_file(version, 'r8-src.jar', 'src.jar')
-            download_file(version, 'r8lib-exclude-deps.jar', 'lib.jar')
-            download_file(version, 'r8lib-exclude-deps.jar.map', 'lib.jar.map')
-            download_file(version, 'desugar_jdk_libs_configuration.jar',
+            download_file(version,
+                          'r8-full-exclude-deps.jar',
+                          'full.jar')
+            download_file(version,
+                          'r8-src.jar',
+                          'src.jar')
+            download_file(version,
+                          'r8lib-exclude-deps.jar',
+                          'lib.jar')
+            download_file(version,
+                          'r8lib-exclude-deps.jar.map',
+                          'lib.jar.map')
+            download_file(version,
+                          'desugar_jdk_libs_configuration.jar',
                           'desugar_jdk_libs_configuration.jar')
-            download_file(version, 'threading-module-blocking.jar',
+            download_file(version,
+                          'threading-module-blocking.jar',
                           'threading-module-blocking.jar')
-            download_file(version, 'threading-module-single-threaded.jar',
+            download_file(version,
+                          'threading-module-single-threaded.jar',
                           'threading-module-single-threaded.jar')
             if version != 'main':
                 g4_open('METADATA')
@@ -387,17 +398,14 @@ def prepare_google3(args):
                     """)
                     sys.exit(1)
                 sed(version_match_regexp, version, metadata_path)
-                sed(
-                    r'\{ year.*\}',
+                sed(r'\{ year.*\}',
                     f'{{ year: {today.year} month: {today.month} day: {today.day} }}',
                     metadata_path)
             subprocess.check_output('chmod u+w *', shell=True)
             previous_version = match_value
-            if not version.endswith('-dev') or not previous_version.endswith(
-                    '-dev'):
-                print(
-                    f'ERROR: At least one of {version} (new version) ' +
-                    f'and {previous_version} (previous version) is not a -dev version. '
+            if not version.endswith('-dev') or not previous_version.endswith('-dev'):
+                print(f'ERROR: At least one of {version} (new version) '
+                    + f'and {previous_version} (previous version) is not a -dev version. '
                     + 'Expected both to be.')
                 sys.exit(1)
             print(f'Previous version was: {previous_version}')
@@ -405,29 +413,24 @@ def prepare_google3(args):
                 subprocess.check_call(['git', 'clone', utils.REPO_SOURCE, temp])
                 with utils.ChangedWorkingDirectory(temp):
                     current_version_hash = find_r8_version_hash(
-                        'origin/' + branch_from_version(previous_version),
-                        previous_version)
+                        'origin/' + branch_from_version(previous_version), previous_version)
                     new_version_hash = find_r8_version_hash(
                         'origin/' + branch_from_version(version), version)
                     if not current_version_hash or not new_version_hash:
-                        print(
-                            'ERROR: Failed to generate merged commits log, missing version'
-                        )
+                        print('ERROR: Failed to generate merged commits log, missing version')
                         sys.exit(1)
                     commits_merged = subprocess.check_output([
-                        'git', 'log', '--oneline',
-                        f"{current_version_hash}..{new_version_hash}"
-                    ]).decode('utf-8')
+                        'git',
+                        'log',
+                        '--oneline',
+                        f"{current_version_hash}..{new_version_hash}"]).decode('utf-8')
                     if len(commits_merged) == 0:
-                        print(
-                            'ERROR: Failed to generate merged commits log, commit log is empty'
-                        )
+                        print('ERROR: Failed to generate merged commits log, commit log is empty')
                         sys.exit(1)
                     commit_info = (
-                        f'Commits merged (since {previous_version}):\n' +
-                        f'{commits_merged}\n' +
-                        f'See https://r8.googlesource.com/r8/+log/{new_version_hash}'
-                    )
+                        f'Commits merged (since {previous_version}):\n'
+                        + f'{commits_merged}\n'
+                        + f'See https://r8.googlesource.com/r8/+log/{new_version_hash}')
 
         with utils.ChangedWorkingDirectory(google3_base):
             blaze_result = blaze_run('//third_party/java/r8:d8 -- --version')
@@ -471,10 +474,10 @@ def update_desugar_library_in_studio(args):
                 '--repo=https://maven.google.com com.android.tools:desugar_jdk_libs:%s'
                 % library_version
             ]
-            utils.print_cmd(cmd)
+            utils.PrintCmd(cmd)
             subprocess.check_call(" ".join(cmd), shell=True)
             cmd = ['tools/base/bazel/bazel', 'shutdown']
-            utils.print_cmd(cmd)
+            utils.PrintCmd(cmd)
             subprocess.check_call(cmd)
 
         prebuilts_tools = os.path.join(args.studio, 'prebuilts', 'tools')
@@ -539,8 +542,7 @@ def prepare_desugar_library(args):
         postfixes = ['']
         if library_version.startswith('1.2'):
             postfixes = ['_legacy']
-        if library_version.startswith('2.0') or library_version.startswith(
-                '2.1'):
+        if library_version.startswith('2.0') or library_version.startswith('2.1'):
             postfixes = ['_minimal', '', '_nio']
 
         with utils.TempDir() as temp:
@@ -648,10 +650,7 @@ def gmaven_publisher_stage(args, gfiles):
     print("Staging: %s" % ', '.join(gfiles))
     print("")
 
-    cmd = [
-        GMAVEN_PUBLISHER, 'stage', '--ack_deprecated', '--gfile',
-        ','.join(gfiles)
-    ]
+    cmd = [GMAVEN_PUBLISHER, 'stage', '--ack_deprecated', '--gfile', ','.join(gfiles)]
     output = subprocess.check_output(cmd)
 
     # Expect output to contain:
@@ -797,45 +796,38 @@ def prepare_branch(args):
             with utils.ChangedWorkingDirectory(temp):
                 if len(options.new_dev_branch) == 1:
                     # Calculate the usual branch hash.
-                    subprocess.check_call(
-                        ['git', 'fetch', 'origin', R8_DEV_BRANCH])
-                    hashes = subprocess.check_output([
-                        'git', 'show', '-s', '--pretty=%P',
-                        'origin/%s~1' % R8_DEV_BRANCH
-                    ]).decode('utf-8').strip()
+                    subprocess.check_call(['git',  'fetch', 'origin', R8_DEV_BRANCH])
+                    hashes = subprocess.check_output(
+                      ['git',
+                      'show',
+                      '-s',
+                      '--pretty=%P',
+                      'origin/%s~1' % R8_DEV_BRANCH]).decode('utf-8').strip()
                     if (len(hashes.split()) != 2):
-                        print(
-                            'Expected two parent hashes for commit origin/%s~1'
+                        print('Expected two parent hashes for commit origin/%s~1'
                             % R8_DEV_BRANCH)
                         sys.exit(0)
                     commithash = hashes.split()[1]
                     print()
                     print('Calculated branch hash: %s' % commithash)
-                    print(
-                        'Please double check that this is the correct branch hash. It'
-                        ' is obtained as the second parent of origin/%s~1.' %
-                        R8_DEV_BRANCH)
-                    print(
-                        'If not rerun the script passing an explicit hash to branch from.'
-                    )
+                    print('Please double check that this is the correct branch hash. It'
+                        ' is obtained as the second parent of origin/%s~1.' % R8_DEV_BRANCH)
+                    print('If not rerun the script passing an explicit hash to branch from.')
                 else:
                     commithash = options.new_dev_branch[1]
                     print()
                     print('Using explicit branch hash %s' % commithash)
                 print()
-                print(
-                    'Use the Gerrit admin UI at'
-                    ' https://r8-review.googlesource.com/admin/repos/r8,branches'
-                    ' to create the %s branch from %s.' %
-                    (branch_version, commithash))
+                print('Use the Gerrit admin UI at'
+                     ' https://r8-review.googlesource.com/admin/repos/r8,branches'
+                     ' to create the %s branch from %s.' % (branch_version, commithash))
                 answer = input("Branch created in Gerrit UI? [y/N]:")
                 if answer != 'y':
                     print('Aborting preparing branch for %s' % branch_version)
                     sys.exit(1)
 
                 # Fetch and checkout the new branch created through the Gerrit UI.
-                subprocess.check_call(
-                    ['git', 'fetch', 'origin', branch_version])
+                subprocess.check_call(['git',  'fetch', 'origin', branch_version])
                 subprocess.check_call(['git', 'checkout', branch_version])
 
                 # Rewrite the version on the branch, commit and validate.
@@ -865,12 +857,12 @@ def prepare_branch(args):
                     answer = input('Continue with branch for %s [y/N]:' %
                                    branch_version)
                     if answer != 'y':
-                        print('Aborting preparing branch for %s' %
-                              branch_version)
+                        print('Aborting preparing branch for %s' % branch_version)
                         sys.exit(1)
 
-                maybe_check_call(options,
-                                 ['git', 'cl', 'upload', '--bypass-hooks'])
+                maybe_check_call(
+                    options,
+                    ['git', 'cl', 'upload', '--bypass-hooks'])
 
                 print(
                     'Updating tools/r8_release.py to make new dev releases on %s'
@@ -916,9 +908,8 @@ def prepare_branch(args):
                                  ['git', 'cl', 'upload', '-f', '-m', message])
 
                 print('')
-                print(
-                    'Make sure to send out the two branch change CL for review'
-                    ' (on %s and main).' % branch_version)
+                print('Make sure to send out the two branch change CL for review'
+                      ' (on %s and main).' % branch_version)
                 print('')
 
     return make_branch
@@ -936,8 +927,7 @@ def parse_options():
         default=[],
         action='append',
         help=
-        'The new version(s) of R8 (e.g., 1.4.51) to release to selected channels'
-    )
+        'The new version(s) of R8 (e.g., 1.4.51) to release to selected channels')
     group.add_argument(
         '--desugar-library',
         nargs=2,
@@ -948,12 +938,13 @@ def parse_options():
         nargs=2,
         metavar=('<version>', '<configuration version>'),
         help='Update studio mirror of com.android.tools:desugar_jdk_libs')
-    group.add_argument('--new-dev-branch',
-                       nargs='+',
-                       metavar=('<version>', '<branch hash>'),
-                       help=('Prepare new branch for a version line (e.g. 8.0)'
-                             ' Suggested branch hash is calculated '
-                             ' if not explicitly specified'))
+    group.add_argument(
+        '--new-dev-branch',
+        nargs='+',
+        metavar=('<version>', '<branch hash>'),
+        help=('Prepare new branch for a version line (e.g. 8.0)'
+             ' Suggested branch hash is calculated '
+             ' if not explicitly specified'))
     result.add_argument('--reviewer',
                         metavar=('<reviewer(s)>'),
                         default=[],
@@ -993,11 +984,12 @@ def parse_options():
                         default='update-r8',
                         metavar=('<client name>'),
                         help='P4 client name for google 3')
-    result.add_argument('--use-existing-work-branch',
-                        '--use_existing_work_branch',
-                        default=False,
-                        action='store_true',
-                        help='Use existing work CL in google3')
+    result.add_argument(
+        '--use-existing-work-branch',
+        '--use_existing_work_branch',
+        default=False,
+        action='store_true',
+        help='Use existing work CL in google3')
     result.add_argument('--delete-work-branch',
                         '--delete_work_branch',
                         default=False,
@@ -1025,8 +1017,7 @@ def parse_options():
             print("ERROR: only one version supported for google 3")
             sys.exit(1)
         if not 'dev' in args.version[0]:
-            print(
-                "WARNING: You should not roll a release version into google 3")
+            print("WARNING: You should not roll a release version into google 3")
 
     return args
 

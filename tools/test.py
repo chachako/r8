@@ -328,7 +328,7 @@ def archive_failures(options):
 def bot_symlinks():
     art7 = os.path.join(utils.TOOLS_DIR, "linux", "art-7.0.0")
     art7_sha = art7 + ".tar.gz.sha1"
-    utils.download_from_google_cloud_storage(art7_sha)
+    utils.DownloadFromGoogleCloudStorage(art7_sha)
     if not os.path.exists("tools/linux/art-7.0.0/lib/libncurses.so.5"):
         os.symlink("/usr/lib/i386-linux-gnu/libncurses.so.6",
                    art7 + "/lib/libncurses.so.5")
@@ -384,9 +384,9 @@ def test(options, args):
             archive_desugar_jdk_libs.CloneDesugaredLibrary(
                 'google', checkout_dir, 'HEAD')
             # Make sure bazel is extracted in third_party.
-            utils.download_from_google_cloud_storage(utils.BAZEL_SHA_FILE)
-            utils.download_from_google_cloud_storage(utils.JAVA8_SHA_FILE)
-            utils.download_from_google_cloud_storage(utils.JAVA11_SHA_FILE)
+            utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)
+            utils.DownloadFromGoogleCloudStorage(utils.JAVA8_SHA_FILE)
+            utils.DownloadFromGoogleCloudStorage(utils.JAVA11_SHA_FILE)
             (library_jar,
              maven_zip) = archive_desugar_jdk_libs.BuildDesugaredLibrary(
                  checkout_dir, 'jdk11_legacy' if
@@ -474,13 +474,13 @@ def test(options, args):
                            options.generate_golden_files_to)
         if not os.path.exists(options.generate_golden_files_to):
             os.makedirs(options.generate_golden_files_to)
-        gradle_args.append('-PHEAD_sha1=' + utils.get_head_sha1())
+        gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
     if options.use_golden_files_in:
         gradle_args.append('-Puse_golden_files_in=' +
                            options.use_golden_files_in)
         if not os.path.exists(options.use_golden_files_in):
             os.makedirs(options.use_golden_files_in)
-        gradle_args.append('-PHEAD_sha1=' + utils.get_head_sha1())
+        gradle_args.append('-PHEAD_sha1=' + utils.get_HEAD_sha1())
     if options.r8lib_no_deps and options.no_r8lib:
         print(
             'Inconsistent arguments: both --no-r8lib and --r8lib-no-deps specified.'
@@ -542,7 +542,7 @@ def test(options, args):
         gradle_args.append('jacocoTestReport')
 
     if options.use_golden_files_in:
-        sha1 = '%s' % utils.get_head_sha1()
+        sha1 = '%s' % utils.get_HEAD_sha1()
         with utils.ChangedWorkingDirectory(options.use_golden_files_in):
             utils.download_file_from_cloud_storage(
                 'gs://r8-test-results/golden-files/%s.tar.gz' % sha1,
@@ -550,7 +550,7 @@ def test(options, args):
             utils.unpack_archive('%s.tar.gz' % sha1)
 
     print_stacks_timeout = options.print_hanging_stacks
-    if (utils.is_bot() and not utils.is_windows()) or print_stacks_timeout > -1:
+    if (utils.is_bot() and not utils.IsWindows()) or print_stacks_timeout > -1:
         timestamp_file = os.path.join(utils.BUILD, 'last_test_time')
         if os.path.exists(timestamp_file):
             os.remove(timestamp_file)
@@ -615,7 +615,7 @@ def test(options, args):
         ],
                                        throw_on_failure=False)
         if options.generate_golden_files_to:
-            sha1 = '%s' % utils.get_head_sha1()
+            sha1 = '%s' % utils.get_HEAD_sha1()
             with utils.ChangedWorkingDirectory(
                     options.generate_golden_files_to):
                 archive = utils.create_archive(sha1)
