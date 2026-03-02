@@ -528,6 +528,12 @@ public object ThirdPartyDeps {
       Paths.get("tests", "2017-10-04", "art").toFile(),
       Paths.get("tests", "2017-10-04", "art.tar.gz.sha1").toFile(),
     )
+  public val artTestsLegacy: ThirdPartyDependency =
+    ThirdPartyDependency(
+      "art-tests-legacy",
+      Paths.get("tests", "2016-12-19", "art").toFile(),
+      Paths.get("tests", "2016-12-19", "art.tar.gz.sha1").toFile(),
+    )
   public val clank: ThirdPartyDependency =
     ThirdPartyDependency(
       "clank",
