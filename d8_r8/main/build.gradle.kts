@@ -717,6 +717,7 @@ tasks.withType<KotlinCompile> { enabled = false }
  */
 fun enforceUncompressedEntries(jarFile: File, uncompressedEntries: Set<String>) {
   if (!jarFile.exists()) return
+  val remainingUncompressedEntries = uncompressedEntries.toMutableSet()
   val tempJarFile = jarFile.resolveSibling(jarFile.name + ".tmp")
   ZipFile(jarFile).use { zip ->
     ZipOutputStream(FileOutputStream(tempJarFile)).use { zos ->
@@ -726,6 +727,7 @@ fun enforceUncompressedEntries(jarFile: File, uncompressedEntries: Set<String>) 
         val newEntry = ZipEntry(entry.name)
 
         if (uncompressedEntries.contains(entry.name)) {
+          remainingUncompressedEntries.remove(entry.name)
           // Read data into memory to calculate CRC and size required for STORED method.
           val bytes = zip.getInputStream(entry).readAllBytes()
           newEntry.method = ZipEntry.STORED
@@ -750,6 +752,13 @@ fun enforceUncompressedEntries(jarFile: File, uncompressedEntries: Set<String>) 
     }
   }
 
+  if (remainingUncompressedEntries.isNotEmpty()) {
+    throw GradleException(
+      "Expected to uncompress the following entries in $jarFile, but they were not found: " +
+        remainingUncompressedEntries.joinToString(", ")
+    )
+  }
+
   // Overwrite the original jar.
   Files.move(tempJarFile.toPath(), jarFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
 }
@@ -758,5 +767,7 @@ tasks.withType<JavaCompile> {
   dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
   println("NOTE: Running with JDK: " + org.gradle.internal.jvm.Jvm.current().javaHome)
 }
+
+tasks.withType<ProcessResources> { dependsOn(gradle.includedBuild("shared").task(":downloadDeps")) }
 
 configureErrorProneForJavaCompile()
