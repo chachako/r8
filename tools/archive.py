@@ -196,28 +196,39 @@ def RSyncDir(src_dir, version_or_path, dst_dir, is_main, options):
     print(f'RSyncing {src_dir} to {destination}')
     if options.dry_run:
         if options.dry_run_output:
-            dry_run_destination = os.path.join(options.dry_run_output, version_or_path, dst_dir)
-            print(f'Dry run, not actually syncing. Copying to {dry_run_destination}')
+            dry_run_destination = os.path.join(options.dry_run_output,
+                                               version_or_path, dst_dir)
+            print(
+                f'Dry run, not actually syncing. Copying to {dry_run_destination}'
+            )
             shutil.copytree(src_dir, dry_run_destination)
         else:
             print('Dry run, not actually uploading')
     else:
         utils.rsync_directory_to_cloud_storage(src_dir, destination)
-        print(f'Directory available at: {GetUrl(version_or_path, dst_dir, is_main)}')
+        print(
+            f'Directory available at: {GetUrl(version_or_path, dst_dir, is_main)}'
+        )
+
 
 def UploadDir(src_dir, version_or_path, dst_dir, is_main, options):
     destination = GetUploadDestination(version_or_path, dst_dir, is_main)
     print(f'Uploading {src_dir} to {destination}')
     if options.dry_run:
         if options.dry_run_output:
-            dry_run_destination = os.path.join(options.dry_run_output, version_or_path, dst_dir)
-            print(f'Dry run, not actually uploading. Copying to {dry_run_destination}')
+            dry_run_destination = os.path.join(options.dry_run_output,
+                                               version_or_path, dst_dir)
+            print(
+                f'Dry run, not actually uploading. Copying to {dry_run_destination}'
+            )
             shutil.copytree(src_dir, dry_run_destination)
         else:
             print('Dry run, not actually uploading')
     else:
         utils.upload_directory_to_cloud_storage(src_dir, destination)
-        print(f'Directory available at: {GetUrl(version_or_path, dst_dir, is_main)}')
+        print(
+            f'Directory available at: {GetUrl(version_or_path, dst_dir, is_main)}'
+        )
 
 
 def Main():
@@ -302,7 +313,6 @@ def Run(options):
             utils.LIBRARY_DESUGAR_CONVERSIONS_ZIP)
         timing.end()
 
-
         destination = GetVersionDestination('gs://', version, is_main)
         if utils.cloud_storage_exists(destination) and not options.dry_run:
             raise Exception('Target archive directory %s already exists' %
@@ -314,8 +324,7 @@ def Run(options):
         create_maven_release.write_default_r8_pom_file(default_pom_file,
                                                        version)
         gradle.RunGradle([
-            ':main:spdxSbom',
-            '-PspdxVersion=' + version,
+            ':dist:spdxSbom', '-PspdxVersion=' + version,
             '-PspdxRevision=' + GetGitHash()
         ])
         timing.end()
@@ -325,7 +334,8 @@ def Run(options):
         if is_main:
             version_or_path = 'docs'
             dst_dir = 'keepanno/javadoc'
-            RSyncDir(utils.KEEPANNO_ANNOTATIONS_DOC, version_or_path, dst_dir, is_main, options)
+            RSyncDir(utils.KEEPANNO_ANNOTATIONS_DOC, version_or_path, dst_dir,
+                     is_main, options)
         timing.end()
 
         # Upload directories.
@@ -351,11 +361,9 @@ def Run(options):
             for_archiving.append(lib_jar + '.map')
             for_archiving.append(lib_jar + '_map.zip')
         for_archiving.extend([
-            utils.R8_JAR, utils.R8_FULL_EXCLUDE_DEPS_JAR,
-            utils.MAVEN_ZIP_LIB,
+            utils.R8_JAR, utils.R8_FULL_EXCLUDE_DEPS_JAR, utils.MAVEN_ZIP_LIB,
             utils.THREADING_MODULE_BLOCKING_JAR,
-            utils.THREADING_MODULE_SINGLE_THREADED_JAR,
-            utils.KEEPANNOTOOLS_JAR,
+            utils.THREADING_MODULE_SINGLE_THREADED_JAR, utils.KEEPANNOTOOLS_JAR,
             utils.DESUGAR_CONFIGURATION, utils.DESUGAR_CONFIGURATION_MAVEN_ZIP,
             utils.DESUGAR_CONFIGURATION_JDK11_LEGACY,
             utils.DESUGAR_CONFIGURATION_JDK11_LEGACY_MAVEN_ZIP,
@@ -364,9 +372,8 @@ def Run(options):
             utils.DESUGAR_CONFIGURATION_JDK11_NIO_MAVEN_ZIP, utils.R8_SRC_JAR,
             utils.KEEPANNO_ANNOTATIONS_JAR,
             utils.KEEPANNO_LEGACY_ANNOTATIONS_JAR,
-            utils.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR,
-            utils.GENERATED_LICENSE,
-            'd8_r8/main/build/spdx/r8.spdx.json'
+            utils.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR, utils.GENERATED_LICENSE,
+            'd8_r8/dist/build/spdx/r8.spdx.json'
         ])
         for file in for_archiving:
             file_name = os.path.basename(file)
@@ -380,8 +387,8 @@ def Run(options):
             print('Uploading %s to %s' % (tagged_jar, destination))
             if options.dry_run:
                 if options.dry_run_output:
-                    dry_run_destination = os.path.join(
-                        options.dry_run_output, version, file_name)
+                    dry_run_destination = os.path.join(options.dry_run_output,
+                                                       version, file_name)
                     print('Dry run, not actually uploading. Copying to ' +
                           dry_run_destination)
                     shutil.copyfile(tagged_jar, dry_run_destination)

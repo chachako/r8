@@ -52,7 +52,8 @@ dependencies {
   compileOnly(Deps.guava)
   compileOnly(Deps.protobuf)
   compileOnly(":keepanno")
-  compileOnly(":r8")
+  compileOnly(projectTask("main", "compileTurboJava").outputs.files)
+  compileOnly(projectTask("main", "compileJava").outputs.files)
   errorprone(Deps.errorprone)
 }
 

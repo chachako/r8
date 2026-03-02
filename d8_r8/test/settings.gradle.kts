@@ -29,6 +29,8 @@ includeBuild(root.resolve("libanalyzer"))
 
 includeBuild(root.resolve("main"))
 
+includeBuild(root.resolve("dist"))
+
 includeBuild(root.resolve("resourceshrinker"))
 
 includeBuild(root.resolve("test_modules").resolve("testbase"))

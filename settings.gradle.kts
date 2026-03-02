@@ -94,6 +94,8 @@ includeBuild(rootProject.projectDir.resolve("d8_r8/resourceshrinker"))
 // will compete with the test to compile the source files.
 includeBuild(rootProject.projectDir.resolve("d8_r8/main"))
 
+includeBuild(rootProject.projectDir.resolve("d8_r8/dist"))
+
 includeBuild(rootProject.projectDir.resolve("d8_r8/library_desugar"))
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/test"))

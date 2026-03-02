@@ -33,6 +33,8 @@ includeBuild(root.resolve("resourceshrinker"))
 // will compete with the test to compile the source files.
 includeBuild(root.resolve("main"))
 
+includeBuild(root.resolve("dist"))
+
 includeBuild(root.resolve("test_modules").resolve("testbase"))
 
 includeBuild(root.resolve("test_modules").resolve("tests_java_9"))
