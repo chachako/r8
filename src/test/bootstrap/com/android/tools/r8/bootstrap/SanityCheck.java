@@ -180,14 +180,19 @@ public class SanityCheck extends TestBase {
   }
 
   @Test
-  public void testLibJarsContent() throws Exception {
+  public void testR8Lib() throws Exception {
     assumeTrue(ToolHelper.isTestingR8Lib());
     checkLibJarContent(ToolHelper.R8LIB_JAR, ToolHelper.R8LIB_MAP);
     checkLibJarContent(ToolHelper.R8LIB_EXCLUDE_DEPS_JAR, ToolHelper.R8LIB_EXCLUDE_DEPS_MAP);
   }
 
   @Test
-  public void testJarsContent() throws Exception {
+  public void testR8WithRelocatedDeps() throws Exception {
     checkJarContent(ToolHelper.getR8WithRelocatedDeps());
+  }
+
+  @Test
+  public void testSwissArmyKnife() throws Exception {
+    checkJarContent(ToolHelper.getR8SwissArmyKnife());
   }
 }

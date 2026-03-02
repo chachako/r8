@@ -291,6 +291,11 @@ public class ToolHelper {
     return Paths.get(System.getProperty("R8_WITH_RELOCATED_DEPS"));
   }
 
+  public static Path getR8SwissArmyKnife() {
+    assert System.getProperty("R8_SWISS_ARMY_KNIFE") != null;
+    return Paths.get(System.getProperty("R8_SWISS_ARMY_KNIFE"));
+  }
+
   public static final String DESUGARED_LIB_RELEASES_DIR =
       OPEN_JDK_DIR + "desugar_jdk_libs_releases/";
   public static final Path DESUGARED_JDK_8_LIB_JAR =

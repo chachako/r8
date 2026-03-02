@@ -485,6 +485,7 @@ tasks {
       processKeepRulesLibWithRelocatedDepsTask,
       r8Lib,
       r8WithRelocatedDepsTask,
+      swissArmyKnifeTask,
       assembleR8LibNoDeps,
       testsJava8SourceSetDependenciesTask,
       rewriteTestBaseForR8LibWithRelocatedDeps,
@@ -496,6 +497,7 @@ tasks {
     val r8LibJar = r8Lib.getSingleOutputFile()
     val r8LibMappingFile = file(r8LibJar.toString() + ".map")
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+    val swissArmyKnifeJar = swissArmyKnifeTask.getSingleOutputFile()
     configure(isR8Lib = true, r8Jar = r8WithRelocatedDepsJar, r8LibMappingFile = r8LibMappingFile)
 
     // R8lib should be used instead of the main output and all the tests in r8 should be mapped and
@@ -523,7 +525,8 @@ tasks {
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
     systemProperty("R8_DEPS", mainDepsJarTask.getSingleOutputFile())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
-    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsTask.outputs.files.singleFile)
+    systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
+    systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
 
     javaLauncher = getJavaLauncher(Jdk.JDK_21)
 

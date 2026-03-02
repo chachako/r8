@@ -27,10 +27,11 @@ kotlin { explicitApi() }
 val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
+val distR8WithRelocatedDeps = projectTask("dist", "r8WithRelocatedDeps")
+val distSwissArmyKnife = projectTask("dist", "swissArmyKnife")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val mainR8RelocatedTask = projectTask("dist", "r8WithRelocatedDeps")
 val resourceShrinkerJavaCompileTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerKotlinCompileTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -60,7 +61,7 @@ tasks {
 
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(mainR8RelocatedTask)
+    dependsOn(distR8WithRelocatedDeps, distSwissArmyKnife)
     systemProperty(
       "TEST_DATA_LOCATION",
       layout.buildDirectory.dir("classes/java/test").get().toString(),
@@ -77,8 +78,9 @@ tasks {
         keepAnnoCompileKotlinTask.outputs.files.asPath,
       ),
     )
-    systemProperty("R8_WITH_RELOCATED_DEPS", mainR8RelocatedTask.outputs.files.singleFile)
-    systemProperty("BUILD_PROP_R8_RUNTIME_PATH", mainR8RelocatedTask.outputs.files.singleFile)
+    systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
+    systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)
+    systemProperty("BUILD_PROP_R8_RUNTIME_PATH", distR8WithRelocatedDeps.outputs.files.singleFile)
   }
 
   val testJar by

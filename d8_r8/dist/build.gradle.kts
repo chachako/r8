@@ -259,6 +259,9 @@ tasks {
       manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
       exclude("META-INF/*.kotlin_module")
       exclude("**/*.kotlin_metadata")
+      exclude("androidx/")
+      exclude("androidx/annotation/")
+      exclude("androidx/annotation/keep/**")
       exclude("blastradius.proto")
       exclude("keepspec.proto")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
@@ -339,9 +342,6 @@ tasks {
       dependsOn(swissArmyKnife)
       from(swissArmyKnife.get().outputs.files.map(::zipTree))
       exclude("LICENSE")
-      exclude("androidx/")
-      exclude("androidx/annotation/")
-      exclude("androidx/annotation/keep/**")
       archiveFileName.set("swiss-army-no-license.jar")
     }
 
