@@ -595,12 +595,17 @@ public class CfApplicationClassWriter {
 
   public static class Result {
 
-    private final String descriptor;
-    private final byte[] classFileData;
+    private String descriptor;
+    private byte[] classFileData;
 
     Result(String descriptor, byte[] classFileData) {
       this.descriptor = descriptor;
       this.classFileData = classFileData;
+    }
+
+    public void clear() {
+      descriptor = null;
+      classFileData = null;
     }
 
     public String getDescriptor() {

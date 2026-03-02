@@ -7,6 +7,7 @@ import static com.android.tools.r8.utils.positions.LineNumberOptimizer.runAndWri
 
 import com.android.tools.r8.ByteDataView;
 import com.android.tools.r8.ClassFileConsumer;
+import com.android.tools.r8.ClassFileConsumerUtils;
 import com.android.tools.r8.SourceFileEnvironment;
 import com.android.tools.r8.debuginfo.DebugRepresentation;
 import com.android.tools.r8.dex.ApplicationWriter;
@@ -21,11 +22,15 @@ import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.ExceptionUtils;
 import com.android.tools.r8.utils.InternalGlobalSyntheticsProgramConsumer.InternalGlobalSyntheticsCfConsumer;
 import com.android.tools.r8.utils.InternalOptions;
+import com.android.tools.r8.utils.ListUtils;
 import com.android.tools.r8.utils.OriginalSourceFiles;
+import com.android.tools.r8.utils.Pair;
 import com.android.tools.r8.utils.timing.Timing;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -119,7 +124,13 @@ public class CfApplicationWriter {
         }
       }
       supplyConsumer(
-          consumer, classes, markerString, rewriter, sourceFileEnvironment, executorService);
+          consumer,
+          classes,
+          markerString,
+          rewriter,
+          sourceFileEnvironment,
+          executorService,
+          timing);
       if (!globalSyntheticClasses.isEmpty()) {
         InternalGlobalSyntheticsCfConsumer globalsConsumer =
             new InternalGlobalSyntheticsCfConsumer(options.getGlobalSyntheticsConsumer(), appView);
@@ -129,7 +140,8 @@ public class CfApplicationWriter {
             markerString,
             rewriter,
             sourceFileEnvironment,
-            executorService);
+            executorService,
+            timing);
         globalsConsumer.finished(appView);
       }
       ApplicationWriter.supplyAdditionalConsumers(appView, Collections.emptyList());
@@ -145,23 +157,56 @@ public class CfApplicationWriter {
       Optional<String> markerString,
       LensCodeRewriterUtils rewriter,
       SourceFileEnvironment sourceFileEnvironment,
-      ExecutorService executorService)
+      ExecutorService executorService,
+      Timing timing)
       throws ExecutionException {
     TaskCollection<CfApplicationClassWriter.Result> taskCollection =
         new TaskCollection<>(options.getThreadingModule(), executorService, classes.size());
     taskCollection.stream(
-        classes,
-        clazz ->
+        sortClassesForWriting(consumer, classes),
+        (clazz, threadTiming) ->
             new CfApplicationClassWriter(appView, clazz)
                 .writeClassCatchingErrors(rewriter, markerString, sourceFileEnvironment),
-        result -> supplyConsumer(consumer, result));
+        result -> supplyConsumer(consumer, result),
+        options,
+        timing,
+        clazz -> "Compute bytes for " + clazz.getTypeName());
+  }
+
+  private Collection<DexProgramClass> sortClassesForWriting(
+      ClassFileConsumer consumer, Collection<DexProgramClass> classes) {
+    if (consumer instanceof ClassFileConsumer.ArchiveConsumer) {
+      // When compiling to an archive, sort the classes by their obfuscated name to allow writing
+      // the archive on-the-fly meanwhile preserving determinism of the output archive.
+      List<Pair<String, DexProgramClass>> entries =
+          ListUtils.map(
+              classes,
+              clazz ->
+                  new Pair<>(
+                      appView.getNamingLens().lookupClassDescriptor(clazz.getType()).toString(),
+                      clazz));
+      // Sort by descriptor (this is equivalent to sorting by .class file entry name).
+      ListUtils.destructiveSort(entries, Comparator.comparing(Pair::getFirst));
+      return ListUtils.map(entries, Pair::getSecond);
+    } else {
+      return classes;
+    }
   }
 
   private void supplyConsumer(ClassFileConsumer consumer, CfApplicationClassWriter.Result result) {
     ExceptionUtils.withConsumeResourceHandler(
         options.reporter,
-        handler ->
+        handler -> {
+          if (consumer instanceof ClassFileConsumer.ArchiveConsumer) {
+            ClassFileConsumer.ArchiveConsumer archiveConsumer =
+                (ClassFileConsumer.ArchiveConsumer) consumer;
+            ClassFileConsumerUtils.ArchiveConsumerUtils.writeFileNow(
+                archiveConsumer, result.getClassFileData(), result.getDescriptor(), handler);
+            result.clear();
+          } else {
             consumer.accept(
-                ByteDataView.of(result.getClassFileData()), result.getDescriptor(), handler));
+                ByteDataView.of(result.getClassFileData()), result.getDescriptor(), handler);
+          }
+        });
   }
 }

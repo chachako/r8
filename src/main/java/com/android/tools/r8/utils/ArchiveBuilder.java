@@ -34,8 +34,8 @@ public class ArchiveBuilder implements OutputBuilder {
   private boolean closed = false;
   private int openCount = 0;
   private int classesFileIndex = 0;
-  private Map<Integer, DelayedData> delayedClassesDexFiles = new HashMap<>();
-  private SortedSet<DelayedData> delayedWrites = new TreeSet<>();
+  private final Map<Integer, DelayedData> delayedClassesDexFiles = new HashMap<>();
+  private final SortedSet<DelayedData> delayedWrites = new TreeSet<>();
 
   public ArchiveBuilder(Path archive) {
     this.archive = archive;
@@ -49,7 +49,7 @@ public class ArchiveBuilder implements OutputBuilder {
   }
 
   @Override
-  public synchronized void close(DiagnosticsHandler handler)  {
+  public void close(DiagnosticsHandler handler) {
     assert !closed;
     openCount--;
     if (openCount == 0) {
@@ -108,8 +108,10 @@ public class ArchiveBuilder implements OutputBuilder {
   }
 
   @Override
-  public synchronized void addDirectory(String name, DiagnosticsHandler handler) {
-    delayedWrites.add(DelayedData.createDirectory(name));
+  public void addDirectory(String name, DiagnosticsHandler handler) {
+    synchronized (delayedWrites) {
+      delayedWrites.add(DelayedData.createDirectory(name));
+    }
   }
 
   private void writeDirectoryNow(String name, DiagnosticsHandler handler) {
@@ -133,10 +135,10 @@ public class ArchiveBuilder implements OutputBuilder {
   public void addFile(String name, DataEntryResource content, DiagnosticsHandler handler) {
     try (InputStream in = content.getByteStream()) {
       ByteDataView view = ByteDataView.of(ByteStreams.toByteArray(in));
-      synchronized (this) {
-        if (AndroidApiDataAccess.isApiDatabaseEntry(name)) {
-          writeFileNow(name, view, handler, true);
-        } else {
+      if (AndroidApiDataAccess.isApiDatabaseEntry(name)) {
+        writeFileNow(name, view, handler, true);
+      } else {
+        synchronized (delayedWrites) {
           delayedWrites.add(DelayedData.createFile(name, view, true));
         }
       }
@@ -149,17 +151,18 @@ public class ArchiveBuilder implements OutputBuilder {
   }
 
   @Override
-  public synchronized void addFile(String name, ByteDataView content, DiagnosticsHandler handler) {
-    addFile(name, content, handler, true);
+  public void addFile(String name, ByteDataView content, DiagnosticsHandler handler) {
+    writeFileLater(name, content, true);
   }
 
-  public synchronized void addFile(
-      String name, ByteDataView content, DiagnosticsHandler handler, boolean storeCompressed) {
-    delayedWrites.add(
-        DelayedData.createFile(name, ByteDataView.of(content.copyByteData()), storeCompressed));
+  public void writeFileLater(String name, ByteDataView content, boolean storeCompressed) {
+    synchronized (delayedWrites) {
+      delayedWrites.add(
+          DelayedData.createFile(name, ByteDataView.of(content.copyByteData()), storeCompressed));
+    }
   }
 
-  private void writeFileNow(
+  public void writeFileNow(
       String name, ByteDataView content, DiagnosticsHandler handler, boolean compressed) {
     try {
       ZipUtils.writeToZipStream(

@@ -1,12 +1,11 @@
 // Copyright (c) 2026, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.utils;
+package com.android.tools.r8;
 
-import com.android.tools.r8.DataDirectoryResource;
-import com.android.tools.r8.DataEntryResource;
-import com.android.tools.r8.ProgramResource;
-import com.android.tools.r8.ResourceException;
+import com.android.tools.r8.utils.DescriptorUtils;
+import com.android.tools.r8.utils.FileUtils;
+import com.android.tools.r8.utils.ZipUtils;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Closer;
 import java.io.BufferedOutputStream;
@@ -22,6 +21,14 @@ import java.util.zip.ZipOutputStream;
 public class ClassFileConsumerUtils {
 
   public static class ArchiveConsumerUtils {
+
+    public static void writeFileNow(
+        ClassFileConsumer.ArchiveConsumer consumer,
+        byte[] bytes,
+        String descriptor,
+        DiagnosticsHandler handler) {
+      consumer.writeFileNow(ByteDataView.of(bytes), descriptor, handler);
+    }
 
     public static void writeResourcesForTesting(
         Path archive,

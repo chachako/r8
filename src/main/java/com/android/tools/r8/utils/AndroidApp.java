@@ -15,6 +15,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.android.tools.r8.AndroidResourceInput;
 import com.android.tools.r8.AndroidResourceProvider;
+import com.android.tools.r8.ClassFileConsumerUtils;
 import com.android.tools.r8.ClassFileResourceProvider;
 import com.android.tools.r8.DataDirectoryResource;
 import com.android.tools.r8.DataEntryResource;

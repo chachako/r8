@@ -55,10 +55,9 @@ public class ArchiveProtoAndroidResourceConsumer implements AndroidResourceConsu
 
   @Override
   public void accept(AndroidResourceOutput androidResource, DiagnosticsHandler diagnosticsHandler) {
-    archiveBuilder.addFile(
+    archiveBuilder.writeFileLater(
         androidResource.getPath().location(),
         androidResource.getByteDataView(),
-        diagnosticsHandler,
         getCompressionMap(diagnosticsHandler)
             .getOrDefault(androidResource.getPath().location(), true));
   }

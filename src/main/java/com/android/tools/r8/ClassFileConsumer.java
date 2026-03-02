@@ -77,7 +77,7 @@ public interface ClassFileConsumer extends ProgramConsumer {
   @KeepForApi
   class ArchiveConsumer extends ForwardingConsumer
       implements DataResourceConsumer, InternalProgramOutputPathConsumer {
-    private final OutputBuilder outputBuilder;
+    private final ArchiveBuilder outputBuilder;
     protected final boolean consumeDataResources;
 
     public ArchiveConsumer(Path archive) {
@@ -121,6 +121,10 @@ public interface ClassFileConsumer extends ProgramConsumer {
     @Override
     public void accept(DataEntryResource file, DiagnosticsHandler handler) {
       outputBuilder.addFile(file.getName(), file, handler);
+    }
+
+    void writeFileNow(ByteDataView data, String descriptor, DiagnosticsHandler handler) {
+      outputBuilder.writeFileNow(DescriptorUtils.getClassFileName(descriptor), data, handler, true);
     }
 
     @Override

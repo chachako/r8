@@ -10,6 +10,7 @@ import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
 import com.android.tools.r8.utils.ThrowingAction;
 import com.android.tools.r8.utils.UncheckedExecutionException;
+import com.android.tools.r8.utils.timing.Timing;
 import com.google.common.util.concurrent.Futures;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -52,19 +54,32 @@ public class TaskCollection<T> {
     return ThreadUtils.getNumberOfThreadsOrDefault(executorService, defaultValue);
   }
 
-  public <S> void stream(Collection<S> items, Function<S, T> fn, Consumer<T> consumer)
+  public <S> void stream(
+      Collection<S> items,
+      BiFunction<S, Timing, T> fn,
+      Consumer<T> consumer,
+      InternalOptions options,
+      Timing timing,
+      Function<S, String> taskNameFunction)
       throws ExecutionException {
     if (threadingModule.isSingleThreaded()) {
       for (S item : items) {
         try {
-          consumer.accept(fn.apply(item));
+          consumer.accept(fn.apply(item, timing));
         } catch (Exception e) {
           throw new ExecutionException(e);
         }
       }
     } else {
       for (S item : items) {
-        submit(() -> fn.apply(item));
+        submit(
+            () -> {
+              Timing threadTiming =
+                  timing.createThreadTiming(taskNameFunction.apply(item), options);
+              T result = fn.apply(item, threadTiming);
+              threadTiming.end().notifyThreadTimingFinished();
+              return result;
+            });
       }
       forEach(consumer);
     }
