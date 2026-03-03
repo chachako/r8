@@ -4,7 +4,7 @@
 
 package com.android.tools.r8;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,17 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class ArchiveClassFileProviderTest {
 
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @TempDir public Path tempRoot;
 
   public Path createZip() throws IOException {
-    Path tempRoot = temporaryFolder.getRoot().toPath();
     Path zipFile = tempRoot.resolve("zipfile.zip");
     ZipOutputStream zipStream =
         new ZipOutputStream(new FileOutputStream(zipFile.toFile()), StandardCharsets.UTF_8);
@@ -46,7 +43,7 @@ public class ArchiveClassFileProviderTest {
 
   @Test
   public void testMultiReleaseJars() throws IOException {
-    Path jar = temporaryFolder.getRoot().toPath().resolve("classes.jar");
+    Path jar = tempRoot.resolve("classes.jar");
     try (ZipOutputStream output = new ZipOutputStream(Files.newOutputStream(jar))) {
       output.putNextEntry(new ZipEntry("META-INF/9/Test.class"));
       output.closeEntry();

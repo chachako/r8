@@ -61,6 +61,9 @@ dependencies {
   implementation(resourceShrinkerDepsJarTask.outputs.files)
   implementation(testbaseDepsJarTask.outputs.files)
   implementation(testbaseJavaCompileTask.outputs.files)
+  testImplementation(Deps.junitJupiter)
+  testImplementation(Deps.junitVintageEngine)
+  testRuntimeOnly(Deps.junitPlatform)
 }
 
 val sourceSetDependenciesTasks =

@@ -3,12 +3,14 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.android.tools.r8.origin.EmbeddedOrigin;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class R8IgnoreMissingClassesTest {
 
@@ -24,9 +26,13 @@ public class R8IgnoreMissingClassesTest {
         .setProgramConsumer(DexIndexedConsumer.emptyConsumer());
   }
 
-  @Test(expected = CompilationFailedException.class)
-  public void testFailsWithoutLibrary() throws CompilationFailedException {
-    R8.run(config().build());
+  @Test
+  public void testFailsWithoutLibrary() {
+    assertThrows(
+        CompilationFailedException.class,
+        () -> {
+          R8.run(config().build());
+        });
   }
 
   @Test

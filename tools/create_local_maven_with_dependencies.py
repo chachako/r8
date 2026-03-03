@@ -30,11 +30,12 @@ KOTLIN_VERSION = '2.0.21'
 GUAVA_VERSION = '32.1.2-jre'
 GSON_VERSION = '2.10.1'
 JAVASSIST_VERSION = '3.29.2-GA'
-JUNIT_VERSION = '4.13-beta-2'
 MOCKITO_VERSION = '2.10.0'
 SMALI_VERSION = '3.0.3'
 ERROR_PRONE_VERSION = '2.18.0'
 TESTNG_VERSION = '6.10'
+JUNIT_JUPITER_VERSION = '5.14.3'
+JUNIT_PLATFORM_VERSION = '1.14.3'
 ZIPFLINGER_VERSION = '9.0.0'
 
 # keepanno & resource shrinker dependencies
@@ -98,7 +99,6 @@ BUILD_DEPENDENCIES = [
 ]
 
 TEST_DEPENDENCIES = [
-    'junit:junit:{version}'.format(version=JUNIT_VERSION),
     'com.android.tools.smali:smali:{version}'.format(version=SMALI_VERSION),
     'com.android.tools.smali:smali-util:{version}'.format(
         version=SMALI_VERSION),
@@ -107,6 +107,9 @@ TEST_DEPENDENCIES = [
     'org.javassist:javassist:{version}'.format(version=JAVASSIST_VERSION),
     'org.mockito:mockito-core:{version}'.format(version=MOCKITO_VERSION),
     'org.testng:testng:{version}'.format(version=TESTNG_VERSION),
+    'org.junit.jupiter:junit-jupiter:{version}'.format(version=JUNIT_JUPITER_VERSION),
+    'org.junit.vintage:junit-vintage-engine:{version}'.format(version=JUNIT_JUPITER_VERSION),
+    'org.junit.platform:junit-platform-launcher:{version}'.format(version=JUNIT_PLATFORM_VERSION),
 ]
 
 PLUGIN_DEPENDENCIES = [

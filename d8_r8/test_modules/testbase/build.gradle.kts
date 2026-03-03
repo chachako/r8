@@ -54,7 +54,8 @@ dependencies {
   implementation(Deps.gson)
   implementation(Deps.guava)
   implementation(Deps.javassist)
-  implementation(Deps.junit)
+  implementation(Deps.junitJupiter)
+  implementation(Deps.junitVintageEngine)
   implementation(Deps.kotlinStdLib)
   implementation(Deps.kotlinReflect)
   implementation(Deps.kotlinMetadata)
@@ -64,6 +65,7 @@ dependencies {
   implementation(Deps.fastUtil)
   implementation(Deps.smali)
   implementation(Deps.smaliUtil)
+  runtimeOnly(Deps.junitPlatform)
 }
 
 fun testDependencies(): FileCollection {

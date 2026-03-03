@@ -142,12 +142,43 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
 public class TestBase {
+
+  public static Iterable<?> allRuntimesAndApiLevelsSource() {
+    return getTestParameters().withAllRuntimesAndApiLevels().build();
+  }
+
+  public static Iterable<?> allCfRuntimes() {
+    return getTestParameters().withCfRuntimes().build();
+  }
+
+  @BeforeEach
+  public void setupTempJUnit5() throws IOException {
+    if (tempDirJUnit5 != null) {
+      try {
+        temp.create();
+      } catch (IllegalStateException e) {
+        // Ignore
+      }
+    }
+  }
+
+  @AfterEach
+  public void tearDownTempJUnit5() {
+    if (tempDirJUnit5 != null) {
+      temp.delete();
+    }
+  }
 
   public enum Backend {
     CF,
@@ -545,12 +576,29 @@ public class TestBase {
   @Rule
   public TemporaryFolder temp = ToolHelper.getTemporaryFolderForTest();
 
+  @TempDir public Path tempDirJUnit5;
+
+  public Path getTempFolder() {
+    if (tempDirJUnit5 != null) {
+      return tempDirJUnit5;
+    }
+    return temp.getRoot().toPath();
+  }
+
+  public File getNewTempFile(String prefix, String suffix) throws IOException {
+    if (tempDirJUnit5 != null) {
+      return Files.createTempFile(tempDirJUnit5, prefix, suffix).toFile();
+    }
+    return File.createTempFile(prefix, suffix, temp.getRoot());
+  }
+
   @Rule
   public TestDescriptionWatcher watcher = new TestDescriptionWatcher();
 
   private static TemporaryFolder staticTemp = null;
 
   @BeforeClass
+  @BeforeAll
   public static void testBaseBeforeClassSetup() throws IOException {
     assert staticTemp == null;
     staticTemp = ToolHelper.getTemporaryFolderForTest();
@@ -558,6 +606,7 @@ public class TestBase {
   }
 
   @AfterClass
+  @AfterAll
   public static void testBaseBeforeClassTearDown() {
     assert staticTemp != null;
     staticTemp.delete();
@@ -654,7 +703,7 @@ public class TestBase {
   protected Path writeTextToTempFile(
       String lineSeparator, List<String> lines, boolean includeTerminatingLineSeparator)
       throws IOException {
-    Path file = temp.newFile().toPath();
+    Path file = getNewTempFile("junit", ".tmp").toPath();
     writeTextToTempFile(file, lineSeparator, lines, includeTerminatingLineSeparator);
     return file;
   }
@@ -840,7 +889,7 @@ public class TestBase {
   /** Create a temporary JAR file containing the specified test classes and data resources. */
   protected Path jarTestClasses(Iterable<Class<?>> classes, List<DataResource> dataResources)
       throws IOException {
-    Path jar = File.createTempFile("junit", ".jar", temp.getRoot()).toPath();
+    Path jar = getNewTempFile("junit", ".jar").toPath();
     try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(jar.toFile()))) {
       addTestClassesToZip(out, classes);
       if (dataResources != null) {
@@ -1350,7 +1399,7 @@ public class TestBase {
   protected ProcessResult runOnArtRaw(
       AndroidApp app, String mainClass, Consumer<ArtCommandBuilder> cmdBuilder, DexVm version)
       throws IOException {
-    Path out = File.createTempFile("junit", ".zip", temp.getRoot()).toPath();
+    Path out = getNewTempFile("junit", ".zip").toPath();
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
     return ToolHelper.runArtRaw(
         ImmutableList.of(out.toString()), mainClass, cmdBuilder, version, false);
@@ -1381,7 +1430,7 @@ public class TestBase {
   @Deprecated
   protected String runOnArt(AndroidApp app, String mainClass, List<String> args, DexVm dexVm)
       throws IOException {
-    Path out = File.createTempFile("junit", ".zip", temp.getRoot()).toPath();
+    Path out = getNewTempFile("junit", ".zip").toPath();
     app.writeToZipForTesting(out, OutputMode.DexIndexed);
     return ToolHelper.runArtNoVerificationErrors(
         ImmutableList.of(out.toString()), mainClass,
@@ -1474,7 +1523,7 @@ public class TestBase {
   @Deprecated
   protected ProcessResult runOnJavaRaw(AndroidApp app, String mainClass, List<String> args)
       throws IOException {
-    Path out = File.createTempFile("junit", ".zip", temp.getRoot()).toPath();
+    Path out = getNewTempFile("junit", ".zip").toPath();
     app.writeToZipForTesting(out, OutputMode.ClassFile);
     List<String> mainAndArgs = new ArrayList<>();
     mainAndArgs.add(mainClass);
@@ -1538,7 +1587,7 @@ public class TestBase {
   }
 
   protected Path writeToJar(List<byte[]> classes) throws IOException {
-    Path result = File.createTempFile("junit", ".jar", temp.getRoot()).toPath();
+    Path result = getNewTempFile("junit", ".jar").toPath();
     writeClassFileDataToJar(result, classes);
     return result;
   }

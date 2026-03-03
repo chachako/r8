@@ -62,6 +62,8 @@ public class TestConfigurationHelper {
     }
 
     public fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
+      test.useJUnitPlatform()
+      test.systemProperty("junit.jupiter.execution.parallel.enabled", "true")
       val project = test.project
       if (project.hasProperty("testfilter")) {
         val testFilter = project.property("testfilter").toString()

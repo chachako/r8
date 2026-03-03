@@ -10,35 +10,27 @@ import com.android.tools.r8.NoMethodStaticizing;
 import com.android.tools.r8.NoVerticalClassMerging;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import com.android.tools.r8.WithAllCfRuntimes;
+import com.android.tools.r8.WithAllRuntimesAndApiLevels;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
 
-@RunWith(Parameterized.class)
+@Execution(ExecutionMode.SAME_THREAD)
 public class B420228751AltTest extends TestBase {
 
-  @Parameter(0)
-  public TestParameters parameters;
-
-  @Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withAllRuntimesAndApiLevels().build();
-  }
-
-  @Test
-  public void testJvm() throws Exception {
-    parameters.assumeJvmTestParameters();
+  @ParameterizedTest
+  @WithAllCfRuntimes
+  public void testJvm(TestParameters parameters) throws Exception {
     testForJvm(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), Main.class)
         .assertSuccessWithOutputLines("A", "I", "J");
   }
 
-  @Test
-  public void testR8() throws Exception {
+  @ParameterizedTest
+  @WithAllRuntimesAndApiLevels
+  public void testR8(TestParameters parameters) throws Exception {
     testForR8(parameters.getBackend())
         .addInnerClasses(getClass())
         .addKeepMainRule(Main.class)
