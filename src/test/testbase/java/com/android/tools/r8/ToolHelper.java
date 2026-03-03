@@ -1331,7 +1331,7 @@ public class ToolHelper {
   }
 
   public static Path getJunitFromDeps() {
-    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13-beta-2", "junit-4.13-beta-2.jar");
+    return Paths.get(DEPENDENCIES, "junit", "junit", "4.13.2", "junit-4.13.2.jar");
   }
 
   public static Path getHamcrestFromDeps() {
