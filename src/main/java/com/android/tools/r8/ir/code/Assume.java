@@ -295,7 +295,7 @@ public class Assume extends Instruction {
             + ", type: "
             + src().getType()
             + ")";
-    assert src().getDefinition() == null || !src().getDefinition().isStringConcat()
+    assert src().isPhi() || !src().getDefinition().isStringConcat()
         : "Unexpected Assume value "
             + outValue()
             + " for StringConcat value "
