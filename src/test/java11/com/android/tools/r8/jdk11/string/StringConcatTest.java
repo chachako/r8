@@ -44,6 +44,7 @@ public class StringConcatTest extends TestBase {
           "try true and false",
           "3 true 4 true",
           "ONE true TWO true",
+          "start  middle  end",
           "ONE 1 TWO 0",
           "a 1 b 2 c 3 d 4 e CONST_STR f CONST_STR",
           "false123456.07.08hi",
@@ -52,7 +53,9 @@ public class StringConcatTest extends TestBase {
           "hi3",
           "hi333",
           "truetruetruefalsetrue0truenull",
-          "true-3truedtruee");
+          "true-3truedtruee",
+          "a bc",
+          "a b c");
 
   @Parameter(0)
   public TestParameters parameters;
@@ -206,6 +209,7 @@ public class StringConcatTest extends TestBase {
       firstSharedConcat();
       secondSharedConcatWithTryCatch();
       mergeStringsSharedConcat();
+      mergeAdjacentConstantsAcrossConcats();
       mergeStringsWithSideEffects();
       mergeConstants();
       System.out.println(allTheParams(false, (byte) 1, '2', (short) 3, 4, 5, 6, 7, 8, "hi"));
@@ -214,6 +218,8 @@ public class StringConcatTest extends TestBase {
       doesRemoveExplicitToString_singleUser();
       doesRemoveExplicitToString_multiUser();
       numericAndBooleanStrings();
+      regression_AssertionError_UnexpectedValuesLiveAtEntry();
+      regression_IllegalStateException_Split();
     }
 
     @NeverInline
@@ -259,6 +265,17 @@ public class StringConcatTest extends TestBase {
       String partOne = "ONE " + alwaysTrue;
       String partTwo = " TWO " + alwaysTrue;
       System.out.println(partOne + partTwo);
+    }
+
+    @NeverInline
+    public static void mergeAdjacentConstantsAcrossConcats() {
+      boolean alwaysTrue = System.currentTimeMillis() > 0;
+      // concat1 ends with a constant " middle "
+      String concat1 = (alwaysTrue ? "start " : "alt ") + " middle ";
+      // concat2 starts with a constant " end"
+      // Resulting merge: "start " + " middle " + " end" -> "start  middle  end"
+      String result = concat1 + " end";
+      System.out.println(result);
     }
 
     @NeverInline
@@ -346,6 +363,49 @@ public class StringConcatTest extends TestBase {
       System.out.println(
           alwaysTrue + "" + true + alwaysTrue + "false" + alwaysTrue + 0 + alwaysTrue + "null");
       System.out.println(alwaysTrue + "-3" + alwaysTrue + 'd' + alwaysTrue + "e");
+    }
+
+    @NeverInline
+    public static String getA() {
+      return System.currentTimeMillis() > 0 ? "a" : "x";
+    }
+
+    @NeverInline
+    public static String getB() {
+      return System.currentTimeMillis() > 0 ? "b" : "y";
+    }
+
+    @NeverInline
+    public static String getC() {
+      return System.currentTimeMillis() > 0 ? "c" : "z";
+    }
+
+    @NeverInline
+    public static void regression_AssertionError_UnexpectedValuesLiveAtEntry() {
+      String a = getA();
+      String b = getB();
+      String c = getC();
+      String s1 = a + " " + b;
+      if (s1 == null) return;
+      String s2 = s1;
+      if (s2 == null) return;
+      String s3 = s2;
+      if (s3 == null) return;
+      System.out.println(s3 + c);
+    }
+
+    @NeverInline
+    public static void regression_IllegalStateException_Split() {
+      String a = getA();
+      String b = getB();
+      String c = getC();
+      try {
+        // StringConcat(a, b, c) with 3 args to trigger StringBuilder path.
+        // We need a constant to trigger materialization split.
+        System.out.println(a + " " + b + " " + c);
+      } catch (Throwable t) {
+        System.out.println("catch");
+      }
     }
   }
 }

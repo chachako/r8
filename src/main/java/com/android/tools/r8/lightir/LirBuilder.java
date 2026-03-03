@@ -214,13 +214,41 @@ public class LirBuilder<V, EV> {
       if (diff != 0) {
         return diff;
       }
-      return visitor.visitItemCollection(argConstants, otherPayload.argConstants);
+      List<DexString> otherArgConstants = otherPayload.argConstants;
+      int ret = Integer.compare(argConstants.size(), otherArgConstants.size());
+      if (ret != 0) {
+        return ret;
+      }
+      for (int i = 0, l = argConstants.size(); i < l; ++i) {
+        DexString a = argConstants.get(i);
+        DexString b = otherArgConstants.get(i);
+        if (a == null && b == null) {
+          continue;
+        } else if (a == null) {
+          return 1;
+        } else if (b == null) {
+          return 0;
+        } else {
+          ret = visitor.visitDexString(a, b);
+          if (ret != 0) {
+            return ret;
+          }
+        }
+      }
+
+      return 0;
     }
 
     @Override
     public void internalLirConstantAcceptHashing(HashingVisitor visitor) {
       visitor.visitItemArray(argTypes);
-      visitor.visitItemCollection(argConstants);
+      for (DexString str : argConstants) {
+        if (str != null) {
+          visitor.visitDexString(str);
+        } else {
+          visitor.visitBool(false);
+        }
+      }
     }
   }
 

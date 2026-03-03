@@ -88,7 +88,9 @@ public class StringConcatRemover extends CodeRewriterPass {
       assert argTypes.length != 0;
 
       if (argTypes.length == 1) {
+        iterator.previous();
         Value argValue = materializeInValues(code, iterator, stringConcat).get(0);
+        iterator.next();
         TypeElement argTypeElement = argValue.getType();
         if (argTypeElement.isReferenceType() && argTypeElement.isDefinitelyNull()) {
           if (stringConcat.hasOutValue()) {
@@ -119,7 +121,9 @@ public class StringConcatRemover extends CodeRewriterPass {
         }
         continue;
       } else if (argTypes.length == 2 && canUseConcatMethod(stringConcat)) {
+        iterator.previous();
         argValues = materializeInValues(code, iterator, stringConcat);
+        iterator.next();
 
         // Two non-null strings: String.concat()
         replaceWithInvoke(

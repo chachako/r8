@@ -22,6 +22,7 @@ import com.android.tools.r8.ir.code.StringConcat;
 import com.android.tools.r8.ir.code.Value;
 import com.android.tools.r8.ir.conversion.MethodProcessor;
 import com.android.tools.r8.ir.conversion.passes.result.CodeRewriterResult;
+import com.android.tools.r8.utils.ValueUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -103,52 +104,54 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
     List<DexString> argConstants = stringConcat.getArgConstants();
     List<Value> inValues = stringConcat.inValues();
 
-    List<DexString> newArgConstants = new ArrayList<>();
-    List<DexType> newArgTypes = new ArrayList<>();
-    List<Value> newInValues = new ArrayList<>();
+    StringConcatBuilder builder = new StringConcatBuilder();
 
     int inValueIdx = 0;
     for (int argIdx = 0; argIdx < argTypes.length; ++argIdx) {
       DexString curString = argConstants.get(argIdx);
       if (curString != null) {
-        newArgConstants.add(curString);
-        newArgTypes.add(argTypes[argIdx]);
+        builder.addConstant(curString);
         continue;
       }
 
       Value value = inValues.get(inValueIdx++);
-      Value aliasedValue = value.getAliasedValue();
       boolean safeToMerge =
-          aliasedValue.isDefinedByInstructionSatisfying(Instruction::isStringConcat)
-              && value.hasSingleUniqueUserAndNoOtherUsers()
-              && aliasedValue.hasSingleUniqueUserAndNoOtherUsers();
+          value.isDefinedByInstructionSatisfying(Instruction::isStringConcat)
+              && value.hasSingleUniqueUserAndNoOtherUsers();
+
       StringConcat otherStringConcat = null;
       if (safeToMerge) {
-        otherStringConcat = aliasedValue.getDefinition().asStringConcat();
         // TODO(467374229): We could also allow this if we verify that the order of the toString()
         // calls does not change when merged.
+        otherStringConcat = value.getDefinition().asStringConcat();
         safeToMerge = !otherStringConcat.mightCallToStringWithSideEffects(appView);
       }
+
       if (!safeToMerge) {
-        newArgConstants.add(null);
-        newInValues.add(value);
-        newArgTypes.add(argTypes[argIdx]);
+        builder.addValue(value, argTypes[argIdx]);
         continue;
       }
       value.clearUsers();
+      DexType[] otherTypes = otherStringConcat.getArgTypes();
+      List<DexString> otherConstants = otherStringConcat.getArgConstants();
+      List<Value> otherInValues = otherStringConcat.inValues();
 
-      Collections.addAll(newArgTypes, otherStringConcat.getArgTypes());
-      newArgConstants.addAll(otherStringConcat.getArgConstants());
-      newInValues.addAll(otherStringConcat.inValues());
-      for (Value otherValue : otherStringConcat.inValues()) {
-        otherValue.removeUser(otherStringConcat);
-        otherValue.addUser(stringConcat);
+      int otherInValueIdx = 0;
+      for (int i = 0; i < otherTypes.length; i++) {
+        DexString otherStr = otherConstants.get(i);
+        if (otherStr != null) {
+          builder.addConstant(otherStr);
+        } else {
+          Value otherValue = otherInValues.get(otherInValueIdx++);
+          otherValue.removeUser(otherStringConcat);
+          otherValue.addUser(stringConcat);
+          builder.addValue(otherValue, otherTypes[i]);
+        }
       }
       otherStringConcat.removeOrReplaceByDebugLocalRead();
     }
 
-    stringConcat.setArguments(
-        newArgTypes.toArray(DexType.EMPTY_ARRAY), newArgConstants, newInValues);
+    builder.apply(stringConcat);
     return true;
   }
 
@@ -192,111 +195,83 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
     List<DexString> argConstants = stringConcat.getArgConstants();
     List<Value> inValues = stringConcat.inValues();
 
-    List<DexString> newArgConstants = new ArrayList<>();
-    List<DexType> newArgTypes = new ArrayList<>();
-    List<Value> newInValues = new ArrayList<>();
+    StringConcatBuilder builder = new StringConcatBuilder();
 
-    DexString prevString = null;
-    Value prevValue = null;
     int inValueIdx = 0;
-    // Loop an extra time to not have to duplicate the "insert previous value" logic after the loop.
-    for (int argIdx = 0; argIdx <= argTypes.length; ++argIdx) {
-      DexString curString = null;
-      Value curValue = null;
-      if (argIdx < argTypes.length) {
-        curString = argConstants.get(argIdx);
-        if (curString == null) {
-          curValue = inValues.get(inValueIdx++);
-          Value aliasedValue = curValue.getAliasedValue();
-          DexType argType = argTypes[argIdx];
+    for (int argIdx = 0; argIdx < argTypes.length; ++argIdx) {
+      DexString curString = argConstants.get(argIdx);
+      if (curString != null) {
+        builder.addConstant(curString);
+        continue;
+      }
 
-          // We re-add the user at the end.
-          curValue.removeUser(stringConcat);
-          if (!aliasedValue.isPhi()) {
-            Instruction instruction = aliasedValue.getDefinition();
-            // Translate foo.toString() -> foo.
-            // Check for non-null since null.toString() throws, but "" + null == "null".
-            if (isToStringInvoke(instruction)) {
-              Value receiver = instruction.getFirstOperand();
-              // TODO(467374229): We could also allow this if we verify that the order of the
-              //     toString() call does not change.
-              if (receiver.isNeverNull()
-                  && !StringConcat.toStringMayHaveSideEffects(dexItemFactory, receiver.getType())) {
-                Value newValue = instruction.getFirstOperand();
-                if (!curValue.hasAnyUsers()) {
-                  // Remove the alias instruction if present.
-                  if (aliasedValue != curValue
-                      && aliasedValue.hasSingleUniqueUserAndNoOtherUsers()) {
-                    curValue.definition.remove();
-                  }
+      Value value = inValues.get(inValueIdx++);
+      Value aliasedValue = value.getAliasedValue();
+      DexType argType = argTypes[argIdx];
 
-                  // Remove the toString() instruction.
-                  instruction.remove();
-                }
-                argType = dexItemFactory.objectType;
-                curValue = newValue;
-                aliasedValue = curValue.getAliasedValue();
-                instruction = aliasedValue.getDefinition();
-              }
-            }
-            // Translate {String,Integer,etc}.valueOf(thing) -> thing.
-            DexMethod matchedMethod = detectValueOf(instruction);
-            if (matchedMethod != null) {
-              Value newValue = instruction.getFirstOperand();
-              if (!curValue.hasAnyUsers()) {
-                // Remove the alias instruction if present.
-                if (aliasedValue != curValue && aliasedValue.hasSingleUniqueUserAndNoOtherUsers()) {
-                  curValue.definition.remove();
-                  instruction.remove();
-                }
-              }
-              argType = matchedMethod.getProto().getParameter(0);
-              curValue = newValue;
-              aliasedValue = curValue.getAliasedValue();
-            }
+      // We re-add the user at the end.
+      value.removeUser(stringConcat);
 
-            if (aliasedValue.isConstString() || aliasedValue.isConstNumber()) {
-              curString = convertConstToString(aliasedValue, argType);
+      if (!aliasedValue.isPhi()) {
+        Instruction instruction = aliasedValue.getDefinition();
+
+        // Translate foo.toString() -> foo.
+        // Check for non-null since null.toString() throws, but "" + null == "null".
+        if (isToStringInvoke(instruction)) {
+          Value receiver = instruction.getFirstOperand();
+          // TODO(467374229): We could also allow this if we verify that the order of the
+          //     toString() call does not change.
+          Value aliasedReceiver = receiver.getAliasedValue();
+          if (!aliasedReceiver.isPhi()
+              && receiver.isNeverNull()
+              && !StringConcat.toStringMayHaveSideEffects(dexItemFactory, receiver.getType())) {
+            ValueUtils.removeAliasChain(value, aliasedValue);
+            if (!aliasedValue.hasAnyUsers()) {
+              // Remove the toString() instruction.
+              instruction.removeOrReplaceByDebugLocalRead();
             }
+            argType = dexItemFactory.objectType;
+            value = receiver;
+            aliasedValue = aliasedReceiver;
+            instruction = aliasedReceiver.getDefinition();
           }
         }
-      } // argIdx < numArgs
-      if (argIdx > 0) {
-        if (prevString != null && curString != null) {
-          // Merge adjacent strings.
-          curString = curString.prepend(prevString, appView.dexItemFactory());
-        } else if (prevString != null) {
-          newArgTypes.add(appView.dexItemFactory().objectType);
-          newArgConstants.add(prevString);
-        } else {
-          assert prevValue != null;
-          // There was a pending value to add.
-          newArgTypes.add(argTypes[argIdx - 1]);
-          newArgConstants.add(null);
-          newInValues.add(prevValue);
+
+        // Simplify {String,Integer,etc}.valueOf(thing) -> thing.
+        DexMethod matchedMethod = detectValueOf(instruction);
+        if (matchedMethod != null) {
+          ValueUtils.removeAliasChain(value, aliasedValue);
+          Value newValue = instruction.getFirstOperand();
+          if (!aliasedValue.hasAnyUsers()) {
+            instruction.removeOrReplaceByDebugLocalRead();
+          }
+          argType = matchedMethod.getProto().getParameter(0);
+          value = newValue;
+          aliasedValue = value.getAliasedValue();
+        }
+
+        // Convert constants to strings.
+        if (aliasedValue.isConstString() || aliasedValue.isConstNumber()) {
+          builder.addConstant(convertConstToString(aliasedValue, argType));
+          continue;
         }
       }
-      prevString = curString;
-      prevValue = curValue;
+
+      // If it wasn't converted to a constant, add as a Value.
+      builder.addValue(value, argType);
     }
 
-    if (newInValues.isEmpty()) {
-      DexString value;
-      if (!newArgConstants.isEmpty()) {
-        assert newArgConstants.size() == 1;
-        value = newArgConstants.get(0);
-      } else {
-        value = dexItemFactory.emptyString;
-      }
+    if (builder.isSingleConstant()) {
+      // Everything was simplified to a single constant or empty string.
+      DexString value = builder.getSingleConstant();
       ConstString constString =
           ConstString.builder().setOutValue(stringConcat.outValue()).setValue(value).build();
       iterator.replaceCurrentInstruction(constString);
     } else {
-      for (Value v : newInValues) {
+      builder.apply(stringConcat);
+      for (Value v : stringConcat.inValues()) {
         v.addUser(stringConcat);
       }
-      stringConcat.setArguments(
-          newArgTypes.toArray(DexType.EMPTY_ARRAY), newArgConstants, newInValues);
     }
     return true;
   }
@@ -351,7 +326,7 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
     DexType[] newArgTypes = new DexType[newInValues.size()];
     Arrays.fill(newArgTypes, dexItemFactory.objectType);
     List<DexString> newArgConstants = Collections.nCopies(newArgTypes.length, null);
-    stringConcat.setArguments(newArgTypes, newArgConstants, newInValues);
+    stringConcat.setArguments(newArgTypes, newArgConstants, newInValues, appView);
   }
 
   private DexString convertConstToString(Value value, DexType argType) {
@@ -380,6 +355,57 @@ public class StringConcatOptimizer extends CodeRewriterPass<AppInfo> {
         return dexItemFactory.createString(String.valueOf(asNumber.getIntValue()));
       default:
         throw new Unreachable();
+    }
+  }
+
+  /** Takes care of merging adjacent constants. */
+  private class StringConcatBuilder {
+    private final List<DexString> newArgConstants = new ArrayList<>();
+    private final List<DexType> newArgTypes = new ArrayList<>();
+    private final List<Value> newInValues = new ArrayList<>();
+    private DexString pendingString = null;
+
+    void addConstant(DexString constant) {
+      if (pendingString == null) {
+        pendingString = constant;
+      } else {
+        pendingString = constant.prepend(pendingString, dexItemFactory);
+      }
+    }
+
+    void addValue(Value value, DexType type) {
+      flushPending();
+      newArgConstants.add(null);
+      newArgTypes.add(type);
+      newInValues.add(value);
+    }
+
+    private void flushPending() {
+      if (pendingString != null) {
+        newArgConstants.add(pendingString);
+        newArgTypes.add(dexItemFactory.objectType);
+        pendingString = null;
+      }
+    }
+
+    boolean isSingleConstant() {
+      return newInValues.isEmpty();
+    }
+
+    DexString getSingleConstant() {
+      // If we have a pending string that hasn't been flushed to lists yet.
+      if (newArgConstants.isEmpty()) {
+        return pendingString != null ? pendingString : dexItemFactory.emptyString;
+      }
+      // If it was flushed, return the single constant.
+      assert newArgConstants.size() == 1;
+      return newArgConstants.get(0);
+    }
+
+    void apply(StringConcat stringConcat) {
+      flushPending();
+      stringConcat.setArguments(
+          newArgTypes.toArray(DexType.EMPTY_ARRAY), newArgConstants, newInValues, appView);
     }
   }
 }

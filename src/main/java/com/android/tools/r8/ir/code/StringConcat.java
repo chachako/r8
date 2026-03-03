@@ -107,7 +107,11 @@ public class StringConcat extends Instruction {
 
   /** Sets argTypes, argConstants, and inValues. Does not update any value users. */
   public void setArguments(
-      DexType[] newArgTypes, List<DexString> newArgConstants, List<Value> newInValues) {
+      DexType[] newArgTypes,
+      List<DexString> newArgConstants,
+      List<Value> newInValues,
+      AppView<?> appView) {
+    assert Arrays.equals(newArgTypes, normalizeArgTypes(newArgTypes, appView.dexItemFactory()));
     inValues.clear();
     inValues.addAll(newInValues);
     argTypes = newArgTypes;

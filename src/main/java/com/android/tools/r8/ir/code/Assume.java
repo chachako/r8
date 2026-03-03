@@ -295,6 +295,18 @@ public class Assume extends Instruction {
             + ", type: "
             + src().getType()
             + ")";
+    assert src().getDefinition() == null || !src().getDefinition().isStringConcat()
+        : "Unexpected Assume value "
+            + outValue()
+            + " for StringConcat value "
+            + src()
+            + " defined by "
+            + src().getDefinition()
+            + " (context: "
+            + context.toSourceString()
+            + ", type: "
+            + src().getType()
+            + ")";
     assert !src().getType().isDefinitelyNull();
     assert !src().getType().isNullType();
     assert hasOutValue();

@@ -15,6 +15,7 @@ import com.android.tools.r8.graph.ProgramMethod;
 import com.android.tools.r8.ir.analysis.type.DynamicType;
 import com.android.tools.r8.ir.analysis.type.TypeElement;
 import com.android.tools.r8.ir.code.ArrayPut;
+import com.android.tools.r8.ir.code.Assume;
 import com.android.tools.r8.ir.code.BasicBlock;
 import com.android.tools.r8.ir.code.Instruction;
 import com.android.tools.r8.ir.code.InvokeVirtual;
@@ -328,5 +329,15 @@ public class ValueUtils {
       }
     }
     return null;
+  }
+
+  /** Must have already removed the current user from value. */
+  public static void removeAliasChain(Value value, Value aliasedValue) {
+    while (value != aliasedValue && !value.hasAnyUsers()) {
+      Assume definition = value.getDefinition().asAssume();
+      assert definition != null : value.getDefinition();
+      value = definition.src();
+      definition.removeOrReplaceByDebugLocalRead();
+    }
   }
 }
