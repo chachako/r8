@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.graph;
 
+import static com.android.tools.r8.ir.desugar.LambdaClass.LAMBDA_INSTANCE_FIELD_NAME;
 import static com.android.tools.r8.utils.ConsumerUtils.emptyConsumer;
 
 import com.android.tools.r8.dex.Constants;
@@ -365,6 +366,7 @@ public class DexItemFactory {
       createString(Constants.CLASS_INITIALIZER_NAME);
 
   public final DexString thisName = createString("this");
+  public final DexString lambdaInstanceFieldName = createString(LAMBDA_INSTANCE_FIELD_NAME);
   public final DexString javacLambdaMethodPrefix =
       createString(LambdaClass.JAVAC_EXPECTED_LAMBDA_METHOD_PREFIX);
   public final DexString kotlinLambdaMethodIdentifier = createString("$lambda$");

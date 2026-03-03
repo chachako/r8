@@ -5,6 +5,7 @@
 package com.android.tools.r8.ir.desugar;
 
 import static com.android.tools.r8.graph.DexAnnotation.VISIBILITY_RUNTIME;
+import static com.android.tools.r8.ir.optimize.info.OptimizationFeedback.getSimpleFeedback;
 import static com.android.tools.r8.utils.DesugarUtils.appendFullyQualifiedHolderToMethodName;
 
 import com.android.tools.r8.dex.Constants;
@@ -44,8 +45,10 @@ import com.android.tools.r8.ir.desugar.lambda.SyntheticLambdaAccessorMethodConsu
 import com.android.tools.r8.synthesis.SyntheticProgramClassBuilder;
 import com.android.tools.r8.utils.InternalOptions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -78,6 +81,9 @@ public final class LambdaClass {
   private final DexMethod factoryMethod;
   public final Target target;
 
+  // For stateless lambda desugaring.
+  public final DexField lambdaField;
+
   // Considered final but is set after due to circularity in allocation.
   private DexProgramClass clazz = null;
 
@@ -103,20 +109,27 @@ public final class LambdaClass {
 
     this.target = createTarget(accessedFrom);
 
-    this.factoryMethod =
-        useFactoryMethodForConstruction
-                || appView.options().testing.alwaysGenerateLambdaFactoryMethods
-            ? factory.createMethod(
-                type,
-                factory.createProto(type, descriptor.captures.values),
-                factory.createString("create"))
-            : null;
+    if (isStatelessSingleton()) {
+      this.factoryMethod = null;
+      this.lambdaField = factory.createField(type, type, factory.lambdaInstanceFieldName);
+    } else if (useFactoryMethodForConstruction
+        || appView.options().testing.alwaysGenerateLambdaFactoryMethods) {
+      this.factoryMethod =
+          factory.createMethod(
+              type,
+              factory.createProto(type, descriptor.captures.values),
+              factory.createString("create"));
+      this.lambdaField = null;
+    } else {
+      this.factoryMethod = null;
+      this.lambdaField = null;
+    }
 
     // Synthesize the program class once all fields are set.
     synthesizeLambdaClass(builder, desugarInvoke);
   }
 
-  public final DexProgramClass getLambdaProgramClass() {
+  public DexProgramClass getLambdaProgramClass() {
     assert clazz != null;
     return clazz;
   }
@@ -141,12 +154,13 @@ public final class LambdaClass {
       SyntheticProgramClassBuilder builder, DesugarInvoke desugarInvoke) {
     builder.setInterfaces(descriptor.interfaces);
     synthesizeInstanceFields(builder);
+    synthesizeStaticFields(builder);
     synthesizeDirectMethods(builder);
     synthesizeVirtualMethods(builder, desugarInvoke);
     synthesizeAnnotations(builder);
   }
 
-  final DexField getCaptureField(int index) {
+  DexField getCaptureField(int index) {
     return appView
         .dexItemFactory()
         .createField(
@@ -162,6 +176,11 @@ public final class LambdaClass {
   public DexMethod getFactoryMethod() {
     assert hasFactoryMethod();
     return factoryMethod;
+  }
+
+  public boolean isStatelessSingleton() {
+    return appView.options().desugarSpecificOptions().createSingletonsForStatelessLambdas
+        && descriptor.isStateless();
   }
 
   // Synthesize virtual methods.
@@ -206,34 +225,58 @@ public final class LambdaClass {
 
   // Synthesize direct methods.
   private void synthesizeDirectMethods(SyntheticProgramClassBuilder builder) {
-    List<DexEncodedMethod> methods = new ArrayList<>(hasFactoryMethod() ? 2 : 1);
-
-    // Constructor.
-    MethodAccessFlags accessFlags =
-        MethodAccessFlags.fromSharedAccessFlags(
-            Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, true);
-    methods.add(
-        DexEncodedMethod.syntheticBuilder()
-            .setMethod(constructor)
-            .setAccessFlags(accessFlags)
-            .setCode(LambdaConstructorSourceCode.build(this))
-            // The api level is computed when tracing.
-            .disableAndroidApiLevelCheck()
-            .build());
-
-    // Class constructor for stateless lambda classes.
-    if (hasFactoryMethod()) {
+    if (isStatelessSingleton()) {
+      builder.setDirectMethods(
+          Lists.newArrayList(
+              // Class initializer method.
+              DexEncodedMethod.syntheticBuilder()
+                  .setAccessFlags(MethodAccessFlags.createForClassInitializer())
+                  .setCode(LambdaClassConstructorSourceCode.build(this))
+                  .setMethod(appView.dexItemFactory().createClassInitializer(type))
+                  // The api level is computed when tracing.
+                  .disableAndroidApiLevelCheck()
+                  .addBuildConsumer(getSimpleFeedback()::classInitializerMayBePostponed)
+                  .build(),
+              // Instance initializer method.
+              DexEncodedMethod.syntheticBuilder()
+                  .setAccessFlags(
+                      MethodAccessFlags.fromSharedAccessFlags(
+                          Constants.ACC_PRIVATE | Constants.ACC_SYNTHETIC, true))
+                  .setCode(LambdaConstructorSourceCode.build(this))
+                  .setMethod(constructor)
+                  // The api level is computed when tracing.
+                  .disableAndroidApiLevelCheck()
+                  .build()));
+    } else {
+      List<DexEncodedMethod> methods = new ArrayList<>(hasFactoryMethod() ? 2 : 1);
       methods.add(
           DexEncodedMethod.syntheticBuilder()
-              .setMethod(factoryMethod)
               .setAccessFlags(
                   MethodAccessFlags.fromSharedAccessFlags(
-                      Constants.ACC_STATIC | Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, false))
-              .setCode(LambdaClassFactorySourceCode.build(this))
+                      Constants.ACC_PUBLIC | Constants.ACC_SYNTHETIC, true))
+              .setCode(LambdaConstructorSourceCode.build(this))
+              .setMethod(constructor)
+              // The api level is computed when tracing.
               .disableAndroidApiLevelCheck()
               .build());
+
+      // Class constructor for stateless lambda classes.
+      if (hasFactoryMethod()) {
+        methods.add(
+            DexEncodedMethod.syntheticBuilder()
+                .setAccessFlags(
+                    MethodAccessFlags.fromSharedAccessFlags(
+                        Constants.ACC_PUBLIC | Constants.ACC_STATIC | Constants.ACC_SYNTHETIC,
+                        false))
+                .setCode(LambdaClassFactorySourceCode.build(this))
+                .setMethod(factoryMethod)
+                // The api level is computed when tracing.
+                .disableAndroidApiLevelCheck()
+                .build());
+      }
+
+      builder.setDirectMethods(methods);
     }
-    builder.setDirectMethods(methods);
   }
 
   // Synthesize instance fields to represent captured values.
@@ -254,6 +297,27 @@ public final class LambdaClass {
               .build());
     }
     builder.setInstanceFields(fields);
+  }
+
+  // Synthesize static fields to represent singleton instance.
+  private void synthesizeStaticFields(SyntheticProgramClassBuilder builder) {
+    if (isStatelessSingleton()) {
+      // Create instance field for stateless lambda.
+      assert lambdaField != null;
+      builder.setStaticFields(
+          Collections.singletonList(
+              DexEncodedField.syntheticBuilder()
+                  .setField(lambdaField)
+                  .setAccessFlags(
+                      FieldAccessFlags.fromSharedAccessFlags(
+                          Constants.ACC_PUBLIC
+                              | Constants.ACC_STATIC
+                              | Constants.ACC_FINAL
+                              | Constants.ACC_SYNTHETIC))
+                  // The api level is computed when tracing.
+                  .disableAndroidApiLevelCheck()
+                  .build()));
+    }
   }
 
   public static boolean isEmitLambdaMethodAnnotations(InternalOptions options) {

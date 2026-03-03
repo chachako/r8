@@ -1735,6 +1735,11 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // Temporary desugar specific options to make progress on b/147485959
   // All options should be including bugs to either fix the underlying issue or extend the api.
   public static class DesugarSpecificOptions {
+    // Flag to control the representation of stateless lambdas.
+    // See b/222081665 for context.
+    public boolean createSingletonsForStatelessLambdas =
+        SystemPropertyUtils.parseSystemPropertyOrDefault(
+            "com.android.tools.r8.createSingletonsForStatelessLambdas", false);
     // b/172508621
     public boolean sortMethodsOnCfOutput =
         System.getProperty("com.android.tools.r8.sortMethodsOnCfWriting") != null;
