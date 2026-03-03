@@ -1,7 +1,7 @@
 // Copyright (c) 2022, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
-package com.android.tools.r8.cf.stringconcatfactory;
+package stringconcatfactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -20,7 +20,6 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestState;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.diagnostic.MissingDefinitionsDiagnostic;
-import com.android.tools.r8.examples.JavaExampleClassProxy;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
@@ -32,12 +31,9 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class StringConcatFactoryTest extends TestBase {
 
-  private static final String PKG = "stringconcatfactory";
-  private static final String EXAMPLE = "examplesJava9/" + PKG;
-  private final JavaExampleClassProxy MAIN =
-      new JavaExampleClassProxy(EXAMPLE, PKG + "/StringConcatFactoryUsage");
-
   static final String EXPECTED = StringUtils.lines("Hello 0");
+  static final Class<?> MAIN = StringConcatFactoryUsage.class;
+  private byte[] MAIN_BYTES = ToolHelper.getClassAsBytes(MAIN);
 
   private final TestParameters parameters;
 
@@ -54,7 +50,7 @@ public class StringConcatFactoryTest extends TestBase {
     assertEquals(
         parameters.isCfRuntime(),
         inspector
-            .clazz(MAIN.typeName())
+            .clazz(MAIN.getTypeName())
             .uniqueMethodWithOriginalName("main")
             .streamInstructions()
             .anyMatch(InstructionSubject::isInvokeDynamic));
@@ -63,8 +59,8 @@ public class StringConcatFactoryTest extends TestBase {
   @Test
   public void testReference() throws Exception {
     testForRuntime(parameters)
-        .addProgramClassFileData(MAIN.bytes())
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .addProgramClassFileData(MAIN_BYTES)
+        .run(parameters.getRuntime(), MAIN.getTypeName())
         .assertSuccessWithOutput(EXPECTED)
         .inspect(this::checkInvokeDynamic);
   }
@@ -74,10 +70,10 @@ public class StringConcatFactoryTest extends TestBase {
     R8FullTestBuilder builder =
         testForR8(parameters.getBackend())
             .setMinApi(parameters)
-            .addProgramClassFileData(MAIN.bytes())
+            .addProgramClassFileData(MAIN_BYTES)
             // Always link to the JDK8 rt.jar which has no definition of StringConcatFactory.
             .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
-            .addKeepMainRule(MAIN.typeName());
+            .addKeepMainRule(MAIN.getTypeName());
     R8TestCompileResult compileResult;
     try {
       compileResult =
@@ -97,7 +93,7 @@ public class StringConcatFactoryTest extends TestBase {
     }
     assertTrue(parameters.isDexRuntime());
     compileResult
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .run(parameters.getRuntime(), MAIN.getTypeName())
         .assertSuccessWithOutput(EXPECTED)
         .inspect(this::checkInvokeDynamic);
   }
@@ -106,14 +102,14 @@ public class StringConcatFactoryTest extends TestBase {
   public void testJdk8WithIgnoreR8() throws Exception {
     testForR8(parameters.getBackend())
         .setMinApi(parameters)
-        .addProgramClassFileData(MAIN.bytes())
+        .addProgramClassFileData(MAIN_BYTES)
         // Always link to the JDK8 rt.jar which has no definition of StringConcatFactory.
         .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
-        .addKeepMainRule(MAIN.typeName())
+        .addKeepMainRule(MAIN.getTypeName())
         .applyIf(
             parameters.isCfRuntime(), b -> b.addDontWarn("java.lang.invoke.StringConcatFactory"))
         .compile()
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .run(parameters.getRuntime(), MAIN.getTypeName())
         .assertSuccessWithOutput(EXPECTED)
         .inspect(this::checkInvokeDynamic);
   }
@@ -133,10 +129,10 @@ public class StringConcatFactoryTest extends TestBase {
         };
     R8FullTestBuilder.create(new TestState(temp, handler), parameters.getBackend())
         .setMinApi(parameters)
-        .addProgramClassFileData(MAIN.bytes())
+        .addProgramClassFileData(MAIN_BYTES)
         // Always link to the JDK8 rt.jar which has no definition of StringConcatFactory.
         .addLibraryFiles(ToolHelper.getJava8RuntimeJar())
-        .addKeepMainRule(MAIN.typeName())
+        .addKeepMainRule(MAIN.getTypeName())
         .allowDiagnosticWarningMessages(parameters.isCfRuntime())
         .compileWithExpectedDiagnostics(
             diagnostics -> {
@@ -149,7 +145,7 @@ public class StringConcatFactoryTest extends TestBase {
                     .assertOnlyWarnings();
               }
             })
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .run(parameters.getRuntime(), MAIN.getTypeName())
         .assertSuccessWithOutput(EXPECTED)
         .inspect(this::checkInvokeDynamic);
   }
@@ -158,12 +154,19 @@ public class StringConcatFactoryTest extends TestBase {
   public void testSystemJdkNoIgnoreClassesR8() throws Exception {
     testForR8(parameters.getBackend())
         .setMinApi(parameters)
-        .addProgramClassFileData(MAIN.bytes())
+        .addProgramClassFileData(MAIN_BYTES)
         // The system runtime has StringConcatFactory so link to its bootclasspath.
         .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
-        .addKeepMainRule(MAIN.typeName())
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .addKeepMainRule(MAIN.getTypeName())
+        .run(parameters.getRuntime(), MAIN.getTypeName())
         .assertSuccessWithOutput(EXPECTED)
         .inspect(this::checkInvokeDynamic);
+  }
+
+  public static class StringConcatFactoryUsage {
+
+    public static void main(String[] args) {
+      System.out.println("Hello " + args.length);
+    }
   }
 }
