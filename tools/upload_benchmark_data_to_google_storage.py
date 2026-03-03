@@ -20,9 +20,9 @@ TARGETS = ['r8-full']
 NUM_COMMITS = 1000
 
 FILES = [
-    'annotations.js', 'chart.js', 'd8.html', 'dom.js', 'extensions.js',
-    'r8.html', 'retrace.html', 'scales.js', 'state.js', 'stylesheet.css',
-    'tooltip.js', 'url.js', 'utils.js'
+    'annotations.js', 'build.html', 'chart.js', 'd8.html', 'dom.js',
+    'extensions.js', 'r8.html', 'retrace.html', 'scales.js', 'state.js',
+    'stylesheet.css', 'tooltip.js', 'url.js', 'utils.js'
 ]
 
 
@@ -282,14 +282,19 @@ def run(commits, local_bucket, temp, outdir=None):
 
 def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
     print('Processing commits')
+    build_benchmark_data = []
     d8_benchmark_data = []
     r8_benchmark_data = []
     retrace_benchmark_data = []
     for commit in commits:
+        build_benchmarks = {}
         d8_benchmarks = {}
         r8_benchmarks = {}
         retrace_benchmarks = {}
         for benchmark, benchmark_info in perf.ALL_BENCHMARKS.items():
+            record_benchmark_result(commit, benchmark, benchmark_info,
+                                    local_bucket_dict, 'build', d8_benchmarks,
+                                    is_try)
             record_benchmark_result(commit, benchmark, benchmark_info,
                                     local_bucket_dict, 'd8', d8_benchmarks,
                                     is_try)
@@ -299,6 +304,8 @@ def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
             record_benchmark_result(commit, benchmark, benchmark_info,
                                     local_bucket_dict, 'retrace',
                                     retrace_benchmarks, is_try)
+        record_benchmark_results(commit, build_benchmarks, build_benchmark_data,
+                                 is_try)
         record_benchmark_results(commit, d8_benchmarks, d8_benchmark_data,
                                  is_try)
         record_benchmark_results(commit, r8_benchmarks, r8_benchmark_data,
@@ -308,6 +315,7 @@ def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
 
     # Trim data.
     print('Trimming data')
+    build_benchmark_data = trim_benchmark_results(build_benchmark_data)
     d8_benchmark_data = trim_benchmark_results(d8_benchmark_data)
     r8_benchmark_data = trim_benchmark_results(r8_benchmark_data)
     retrace_benchmark_data = trim_benchmark_results(retrace_benchmark_data)
@@ -316,6 +324,9 @@ def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
     # with --local-bucket.
     print('Writing JSON')
     data_file_suffix = '_try_data.json' if is_try else '_data.json'
+    archive_benchmark_results(build_benchmark_data,
+                              'build_benchmark' + data_file_suffix, outdir,
+                              temp)
     archive_benchmark_results(d8_benchmark_data,
                               'd8_benchmark' + data_file_suffix, outdir, temp)
     archive_benchmark_results(r8_benchmark_data,
