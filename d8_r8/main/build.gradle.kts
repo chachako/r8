@@ -38,7 +38,8 @@ plugins {
 // change. This is where the speed-up comes from, but can lead to runtime crashes if signatures
 // change without references to them being updated.
 // Be sure to fix problems reported by IntelliJ when using this mode.
-var enableTurboBuilds = project.hasProperty("enable_r8_turbo_builds")
+val isGeminiCli = "1".equals(System.getenv("GEMINI_CLI"))
+var enableTurboBuilds = project.hasProperty("enable_r8_turbo_builds") && !isGeminiCli
 
 val MAIN_JAVA_PATH_PREFIX = "src/main/java/"
 
@@ -169,6 +170,8 @@ if (turboState != null) {
       TurboReason.TOO_MANY_PATHS -> "Paths were compacted. Build will be slow."
     }
   logger.warn("Turbo: $msg")
+} else if (isGeminiCli) {
+  logger.warn("Turbo: enable_r8_turbo_builds=false (gemini-cli detected)")
 } else {
   logger.warn("Turbo: enable_r8_turbo_builds=false")
 }
