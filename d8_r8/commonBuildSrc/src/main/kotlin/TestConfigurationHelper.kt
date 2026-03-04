@@ -186,14 +186,35 @@ public class TestConfigurationHelper {
                 File(project.property("update_test_timestamp")!!.toString())
                   .writeText(Date().getTime().toString())
               }
-              if (
-                isR8Lib &&
-                  result?.resultType == TestResult.ResultType.FAILURE &&
-                  result.exception != null
-              ) {
-                println(
-                  retrace(project, r8Jar!!, r8LibMappingFile!!, result.exception as Throwable)
-                )
+              if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
+                val exception = result.exception as Throwable
+                if (isR8Lib) {
+                  println(retrace(project, r8Jar!!, r8LibMappingFile!!, exception))
+                } else {
+                  val baos = ByteArrayOutputStream()
+                  exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
+                  println(baos)
+                }
+              }
+            }
+          }
+        )
+      } else {
+        test.addTestListener(
+          object : TestListener {
+
+            override fun beforeSuite(desc: TestDescriptor?) {}
+
+            override fun afterSuite(desc: TestDescriptor?, result: TestResult?) {}
+
+            override fun beforeTest(desc: TestDescriptor?) {}
+
+            override fun afterTest(desc: TestDescriptor?, result: TestResult?) {
+              if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
+                val exception = result.exception as Throwable
+                val baos = ByteArrayOutputStream()
+                exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
+                println(baos)
               }
             }
           }
