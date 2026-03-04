@@ -301,9 +301,9 @@ def GetArtifactLocation(benchmark,
         if is_try:
             assert branch is None
             return f'try/{benchmark}/{target}/{commit.hash()}/{filename}'
-        if branch == 'main':
-            return f'{benchmark}/{target}/{commit.hash()}/{filename}'
-        return f'branches/{branch}/{benchmark}/{target}/{commit.hash()}/{filename}'
+        if branch and branch != 'main':
+            return f'branches/{branch}/{benchmark}/{target}/{commit.hash()}/{filename}'
+        return f'{benchmark}/{target}/{commit.hash()}/{filename}'
 
 
 def GetGSLocation(filename, bucket=BUCKET):

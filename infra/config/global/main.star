@@ -176,7 +176,7 @@ common_test_options = [
 
 default_timeout = time.hour * 6
 
-def get_dimensions(windows = False, internal = False, archive = False, jammy=True):
+def get_dimensions(windows = False, internal = False, archive = False, jammy = True):
     # We use the following setup:
     #   windows -> always windows machine
     #   internal -> always internal, single small, machine
@@ -188,11 +188,10 @@ def get_dimensions(windows = False, internal = False, archive = False, jammy=Tru
     }
     if windows:
         dimensions["os"] = "Windows-11"
+    elif jammy:
+        dimensions["os"] = "Ubuntu-22.04"
     else:
-        if jammy:
-            dimensions["os"] = "Ubuntu-22.04"
-        else:
-            dimensions["os"] = "Ubuntu-20.04"
+        dimensions["os"] = "Ubuntu-20.04"
     if internal:
         dimensions["internal"] = "true"
     elif archive:
@@ -387,6 +386,28 @@ def perf():
 
 perf()
 
+def gradle_benchmark():
+    r8_builder(
+        "build_perf",
+        category = "build",
+        dimensions = get_dimensions(),
+        triggering_policy = scheduler.policy(
+            kind = scheduler.GREEDY_BATCHING_KIND,
+            max_batch_size = 1,
+            max_concurrent_invocations = 3,
+        ),
+        priority = 25,
+        properties = {
+            "test_wrapper": "tools/gradle_benchmark.py",
+            "builder_group": "internal.client.r8",
+            "test_options": ["--upload-benchmark-data-to-google-storage"],
+        },
+        execution_timeout = time.hour * 6,
+        expiration_timeout = time.hour * 35,
+    )
+
+gradle_benchmark()
+
 r8_tester_with_default(
     "linux-default",
     ["--runtimes=dex-default", "--command_cache_dir=/tmp/ccache"],
@@ -432,7 +453,7 @@ r8_tester_with_default(
 r8_tester_with_default(
     "linux-android-5",
     ["--dex_vm=5.1.1", "--all_tests", "--command_cache_dir=/tmp/ccache"],
-    dimensions = get_dimensions(jammy=True),
+    dimensions = get_dimensions(jammy = True),
 )
 
 r8_tester_with_default(
@@ -597,6 +618,7 @@ r8_builder(
 
 order_of_categories = [
     "archive",
+    "build",
     "R8",
     "Kotlin",
     "library_desugar",

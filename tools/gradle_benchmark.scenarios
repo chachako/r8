@@ -1,0 +1,86 @@
+# Format example here:
+# https://github.com/gradle/gradle-profiler?tab=readme-ov-file#advanced-profiling-scenarios
+
+scenario-groups {
+    # This is run by gradle_benchmark.py
+    performance-suite = [
+        "configuration_only",
+        "compile_java_main",
+        "compile_java_main_cleaned",
+        "compile_java_main_abi_change_InternalOptions",
+        "compile_java_main_non_abi_change_InternalOptions",
+        "r8_with_relocate_deps",
+        "r8_with_relocate_deps_cleaned",
+        "assemble_tests",
+        "assemble_tests_cleaned",
+        "assemble_tests_abi_change_LambdaFactoryTest"
+    ]
+}
+
+base_config {
+    # These flags should mirror gradle.py
+    gradle-args = ["--offline", "-Dorg.gradle.configuration-cache=false"]
+    # A bug in the csv output prevents changing the amount of warmups per scenario
+    # https://github.com/gradle/gradle-profiler/issues/317
+    warm-ups = 2
+    iterations = 1
+}
+
+configuration_only = ${base_config} {
+    tasks = []
+    iterations = 5
+}
+
+compile_java_main = ${base_config} {
+    tasks = [":main:compileJava"]
+    iterations = 5
+}
+
+compile_java_main_cleaned = ${base_config} {
+    tasks = [":main:compileJava"]
+    cleanup-tasks = ["clean"]
+    iterations = 2
+}
+
+compile_java_main_abi_change_InternalOptions = ${base_config} {
+    tasks = [":main:compileJava"]
+    apply-abi-change-to = ["src/main/java/com/android/tools/r8/utils/InternalOptions.java"]
+    iterations = 2
+}
+
+compile_java_main_non_abi_change_InternalOptions = ${base_config} {
+    tasks = [":main:compileJava"]
+    apply-non-abi-change-to = ["src/main/java/com/android/tools/r8/utils/InternalOptions.java"]
+    iterations = 2
+}
+
+r8_with_relocate_deps = ${base_config} {
+    tasks = [":dist:r8WithRelocatedDeps"]
+    iterations = 5
+}
+
+r8_with_relocate_deps_cleaned = ${base_config} {
+    tasks = [":dist:r8WithRelocatedDeps"]
+    cleanup-tasks = ["clean"]
+    iterations = 2
+}
+
+assemble_tests = ${base_config} {
+    tasks = [":test:test"]
+    gradle-args = ${base_config.gradle-args} ["-I", "tools/gradle_benchmark_test_skipper.gradle.kts"]
+    iterations = 5
+}
+
+assemble_tests_cleaned = ${base_config} {
+    tasks = [":test:test"]
+    gradle-args = ${base_config.gradle-args} ["-I", "tools/gradle_benchmark_test_skipper.gradle.kts"]
+    cleanup-tasks = ["clean"]
+    iterations = 2
+}
+
+assemble_tests_abi_change_LambdaFactoryTest = ${base_config} {
+    tasks = [":test:test"]
+    gradle-args = ${base_config.gradle-args} ["-I", "tools/gradle_benchmark_test_skipper.gradle.kts"]
+    apply-abi-change-to = ["src/test/java/com/android/tools/r8/desugar/lambdas/LambdaFactoryTest.java"]
+    iterations = 2
+}
