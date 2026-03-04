@@ -17,6 +17,7 @@ import com.android.tools.r8.graph.DexType;
 import com.android.tools.r8.shaking.ifrules.MaterializedSubsequentRulesOptimizer;
 import com.android.tools.r8.shaking.rootset.ConsequentRootSetBuilder;
 import com.android.tools.r8.shaking.rootset.RootSetBuilder;
+import com.android.tools.r8.shaking.rootset.RootSetBuilderAnnotationIndex;
 import com.android.tools.r8.threading.TaskCollection;
 import com.android.tools.r8.utils.MapUtils;
 import com.android.tools.r8.utils.Pair;
@@ -103,6 +104,7 @@ public class IfRuleEvaluator {
     if (classKind == ClassKind.PROGRAM) {
       ifRule.forEachRelevantCandidate(
           appView,
+          RootSetBuilderAnnotationIndex.none(),
           enqueuer.getSubtypingInfo(),
           (Iterable<DexProgramClass>) classesWithNewlyLiveMembers,
           isEffectivelyLive,
@@ -430,7 +432,8 @@ public class IfRuleEvaluator {
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
       Timing timing) {
     try {
-      rootSetBuilder.runPerRule(tasks, materializedSubsequentRule, ifRulePreconditionMatch, timing);
+      rootSetBuilder.runPerRule(
+          tasks, materializedSubsequentRule, ifRulePreconditionMatch, null, timing);
     } catch (ExecutionException e) {
       throw new UncheckedExecutionException(e);
     }
