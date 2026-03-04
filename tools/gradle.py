@@ -79,6 +79,18 @@ def EnsureGradle():
                                           GRADLE8_SHA1, 'Gradle binary')
 
 
+def EnsureGradleRepositories():
+    dependencies_path = os.path.join(utils.THIRD_PARTY, 'dependencies')
+    dependencies_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz')
+    dependencies_sha1 = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz.sha1')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_path, dependencies_tgz,
+                                          dependencies_sha1, 'Gradle dependencies')
+    dependencies_plugin_path = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin')
+    dependencies_plugin_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin.tar.gz')
+    dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin.tar.gz.sha1')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_path, dependencies_plugin_tgz,
+                                          dependencies_plugin_sha1, 'Gradle plugin dependencies')
+
 def EnsureJdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
@@ -98,6 +110,7 @@ def EnsureProtoc():
 
 def EnsureDeps():
     EnsureGradle()
+    EnsureGradleRepositories()
     EnsureJdk()
     EnsureProtoc()
 
