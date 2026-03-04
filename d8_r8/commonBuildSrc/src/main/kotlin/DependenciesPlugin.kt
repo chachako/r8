@@ -16,6 +16,7 @@ import org.gradle.api.Task
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.Directory
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.JavaExec
@@ -318,6 +319,25 @@ private fun getClasspath(vararg paths: File): String {
   assert(!paths.isEmpty())
   val separator = if (os.isWindows) ";" else ":"
   return paths.joinToString(separator = separator) { it.toString() }
+}
+
+public fun Project.baseCompilerCommandLine(
+  jars: FileCollection,
+  deps: File,
+  compiler: String,
+  args: List<String> = listOf(),
+): List<String> {
+  // Execute r8 commands against a stable r8 with dependencies.
+  // TODO(b/139725780): See if we can remove or lower the heap size (-Xmx8g).
+  return listOf(
+    getJavaPath(Jdk.JDK_17),
+    "-Xmx8g",
+    "-ea",
+    "-cp",
+    getClasspath(*(jars.toList().toTypedArray() + deps)),
+    "com.android.tools.r8.SwissArmyKnife",
+    compiler,
+  ) + args
 }
 
 public fun Project.baseCompilerCommandLine(

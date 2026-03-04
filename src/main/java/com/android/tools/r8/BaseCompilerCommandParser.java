@@ -23,7 +23,7 @@ public class BaseCompilerCommandParser<
   public static final String OUTPUT_FLAG = "--output";
   protected static final String STARTUP_PROFILE_FLAG = "--startup-profile";
   public static final String THREAD_COUNT_FLAG = "--thread-count";
-  protected static final String MAP_DIAGNOSTICS = "--map-diagnostics";
+  public static final String MAP_DIAGNOSTICS = "--map-diagnostics";
   protected static final String DUMP_INPUT_TO_FILE = "--dumpinputtofile";
   protected static final String DUMP_INPUT_TO_DIRECTORY = "--dumpinputtodirectory";
   protected static final String VERBOSE_SYNTHETIC_NAMES = "--verbose-synthetic-names";

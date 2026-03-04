@@ -43,7 +43,7 @@ val assistantCompileTask = projectTask("assistant", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
 val mainTurboCompileTask = projectTask("main", "compileTurboJava")
 val mainCompileTask = projectTask("main", "compileJava")
-val mainDepsJarTask = projectTask("dist", "depsJar")
+val mainDepsFilesTask = projectTask("dist", "depsFiles")
 val resourceShrinkerJavaCompileTask = projectTask("resourceshrinker", "compileJava")
 val resourceShrinkerKotlinCompileTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
@@ -128,7 +128,7 @@ tasks {
 
   withType<Test> {
     TestingState.setUpTestingState(this)
-    dependsOn(mainDepsJarTask)
+    dependsOn(mainDepsFilesTask)
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
     if (!project.hasProperty("no_internal")) {
       dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
@@ -156,7 +156,7 @@ tasks {
         File.pathSeparator +
         mainTurboCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
         File.pathSeparator +
-        mainDepsJarTask.outputs.files.singleFile +
+        mainDepsFilesTask.outputs.files.getAsPath() +
         File.pathSeparator +
         getRoot().resolveAll("src", "main", "resources") +
         File.pathSeparator +
@@ -169,7 +169,7 @@ tasks {
         resourceShrinkerKotlinCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
-    systemProperty("R8_DEPS", mainDepsJarTask.outputs.files.singleFile)
+    systemProperty("R8_DEPS", mainDepsFilesTask.outputs.files.getAsPath())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 

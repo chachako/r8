@@ -131,7 +131,7 @@ public class ExternalR8TestBuilder
 
       List<Path> classpathList = new ArrayList<>(r8Classpath);
       if (addR8ExternalDeps) {
-        classpathList.add(ToolHelper.getDeps());
+        classpathList.addAll(ToolHelper.getDeps());
       }
 
       String classPath =

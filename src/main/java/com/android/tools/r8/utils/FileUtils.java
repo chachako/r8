@@ -74,6 +74,10 @@ public class FileUtils {
     return name.endsWith(JAR_EXTENSION);
   }
 
+  public static boolean isJarOrZipFile(Path path) {
+    return isJarFile(path) || isZipFile(path);
+  }
+
   public static boolean isZipFile(Path path) {
     String name = StringUtils.toLowerCase(path.getFileName().toString());
     return name.endsWith(ZIP_EXTENSION);
@@ -147,8 +151,7 @@ public class FileUtils {
 
   public static Path validateOutputFile(Path path, Reporter reporter) {
     if (path != null) {
-      boolean isJarOrZip = isZipFile(path) || isJarFile(path);
-      if (!isJarOrZip && !(Files.exists(path) && Files.isDirectory(path))) {
+      if (!isJarOrZipFile(path) && !(Files.exists(path) && Files.isDirectory(path))) {
         reporter.error(new StringDiagnostic(
             "Invalid output: "
                 + path

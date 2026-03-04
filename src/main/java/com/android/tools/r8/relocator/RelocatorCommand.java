@@ -6,12 +6,14 @@ package com.android.tools.r8.relocator;
 
 import static com.android.tools.r8.BaseCompilerCommandUtils.createClassFileProgramOutputConsumer;
 
+import com.android.tools.r8.ArchiveProgramResourceProvider;
 import com.android.tools.r8.BaseCompilerCommandParser;
 import com.android.tools.r8.ClassFileConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.CompilationMode;
 import com.android.tools.r8.Diagnostic;
 import com.android.tools.r8.DiagnosticsHandler;
+import com.android.tools.r8.ProgramResourceProvider;
 import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
@@ -25,8 +27,10 @@ import com.android.tools.r8.shaking.ProguardPathList;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApp;
 import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.DirectoryProgramResourceProvider;
 import com.android.tools.r8.utils.ExceptionDiagnostic;
 import com.android.tools.r8.utils.ExceptionUtils;
+import com.android.tools.r8.utils.FileUtils;
 import com.android.tools.r8.utils.FlagFile;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.Reporter;
@@ -36,6 +40,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -48,7 +53,7 @@ public class RelocatorCommand {
   private static final String THREAD_COUNT_FLAG = "--thread-count";
 
   private static final Set<String> OPTIONS_WITH_PARAMETER =
-      ImmutableSet.of("--output", "--input", "--map", THREAD_COUNT_FLAG);
+      ImmutableSet.of("--output", "--input", "--input-no-res", "--map", THREAD_COUNT_FLAG);
 
   static final String USAGE_MESSAGE =
       String.join(
@@ -59,8 +64,12 @@ public class RelocatorCommand {
                   "Usage: relocator [options]",
                   " where options are:",
                   "  --input <file>          # Input file to remap, class, zip or jar.",
+                  "  --input-no-res <file>   # Input file to remap, zip or jar.",
+                  "                          # Only .class file entries are included.",
                   "  --output <file>         # Output result in <outfile>.",
                   "  --map <from->to>        # Registers a mapping.",
+                  "  --map-diagnostics [:<type>] <from-level> <to-level>",
+                  "                          # Map diagnostics level.",
                   "  --thread-count <number> # A specified number of threads to run with.",
                   "  --version               # Print the version of d8.",
                   "  --help                  # Print this message.")));
@@ -198,6 +207,10 @@ public class RelocatorCommand {
       this.reporter = builder.getReporter();
     }
 
+    Reporter getReporter() {
+      return reporter;
+    }
+
     /**
      * Setting output to a path.
      *
@@ -271,6 +284,11 @@ public class RelocatorCommand {
               error(new PathOrigin(file), e);
             }
           });
+      return this;
+    }
+
+    public Builder addProgramResourceProvider(ProgramResourceProvider programProvider) {
+      app.addProgramResourceProvider(programProvider);
       return this;
     }
 
@@ -394,7 +412,7 @@ public class RelocatorCommand {
             break;
           }
         }
-        if (arg.length() == 0) {
+        if (arg.isEmpty()) {
           continue;
         }
         switch (arg) {
@@ -409,15 +427,36 @@ public class RelocatorCommand {
             if (outputPath != null) {
               builder.error(
                   new StringDiagnostic(
-                      "Cannot output both to '" + outputPath.toString() + "' and '" + nextArg + "'",
-                      origin));
+                      "Cannot output both to '" + outputPath + "' and '" + nextArg + "'", origin));
               continue;
             }
             outputPath = Paths.get(nextArg);
             break;
           case "--input":
-            assert nextArg != null;
-            builder.addProgramFile(Paths.get(nextArg));
+            {
+              assert nextArg != null;
+              Path path = Paths.get(nextArg);
+              if (Files.isDirectory(path)) {
+                builder.addProgramResourceProvider(
+                    DirectoryProgramResourceProvider.fromDirectory(path));
+              } else {
+                builder.addProgramFile(path);
+              }
+            }
+            break;
+          case "--input-no-res":
+            {
+              assert nextArg != null;
+              Path path = Paths.get(nextArg);
+              if (FileUtils.isJarOrZipFile(path)) {
+                builder.addProgramResourceProvider(
+                    ArchiveProgramResourceProvider.fromArchive(path));
+              } else {
+                builder.error(
+                    new StringDiagnostic(
+                        "Unsupported argument: --input-no-res only supports .jar and .zip files"));
+              }
+            }
             break;
           case THREAD_COUNT_FLAG:
             BaseCompilerCommandParser.parsePositiveIntArgument(
@@ -436,6 +475,13 @@ public class RelocatorCommand {
             addMapping(source, destination, builder);
             break;
           default:
+            int argsConsumed =
+                BaseCompilerCommandParser.tryParseMapDiagnostics(
+                    builder::error, builder.getReporter(), arg, expandedArgs, i, origin);
+            if (argsConsumed >= 0) {
+              i += argsConsumed;
+              continue;
+            }
             builder.error(new StringDiagnostic("Unknown argument: " + arg, origin));
         }
       }

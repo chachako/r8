@@ -27,7 +27,7 @@ val keepAnnoSourcesTask = projectTask("keepanno", "sourcesJar")
 val libraryAnalyzerSourcesTask = projectTask("libanalyzer", "sourcesJar")
 val assistantJarTask = projectTask("assistant", "jar")
 val mainProtoJarTask = projectTask("dist", "protoJar")
-val mainDepsJarTask = projectTask("dist", "depsJar")
+val mainDepsFilesTask = projectTask("dist", "depsFiles")
 val swissArmyKnifeTask = projectTask("dist", "swissArmyKnife")
 val processKeepRulesLibWithRelocatedDepsTask =
   projectTask("dist", "processKeepRulesLibWithRelocatedDeps")
@@ -150,13 +150,13 @@ tasks {
     testJarProviders: List<TaskProvider<*>>,
     artifactName: String,
   ) {
-    dependsOn(mainDepsJarTask, packageTestDeps, r8WithRelocatedDepsTask)
+    dependsOn(mainDepsFilesTask, packageTestDeps, r8WithRelocatedDepsTask)
     targetJarProviders.forEach(::dependsOn)
     testJarProviders.forEach(::dependsOn)
-    val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
     val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
     val testDepsJar = packageTestDeps.getSingleOutputFile()
-    inputs.files(mainDepsJar, r8WithRelocatedDepsJar, testDepsJar)
+    inputs.files(r8WithRelocatedDepsJar, testDepsJar)
+    inputs.files(mainDepsFilesTask.outputs.files)
     inputs.files(targetJarProviders.map { it.getSingleOutputFile() })
     inputs.files(testJarProviders.map { it.getSingleOutputFile() })
     val output = file(Paths.get("build", "libs", artifactName))
@@ -168,12 +168,14 @@ tasks {
         "--lib",
         "${getJavaHome(Jdk.JDK_25)}",
         "--lib",
-        "$mainDepsJar",
-        "--lib",
         "$testDepsJar",
         "--output",
         "$output",
       )
+    mainDepsFilesTask.outputs.files.forEach {
+      argList.add("--lib")
+      argList.add("$it")
+    }
     targetJarProviders.forEach {
       argList.add("--target")
       argList.add("${it.getSingleOutputFile()}")
@@ -254,13 +256,12 @@ tasks {
 
   val assembleR8LibNoDeps by
     registering(Exec::class) {
-      dependsOn(mainDepsJarTask)
-      val mainDepsJar = mainDepsJarTask.getSingleOutputFile()
+      dependsOn(mainDepsFilesTask)
       val mainProtoJar = mainProtoJarTask.getSingleOutputFile()
       assembleR8Lib(
         swissArmyKnifeTask,
         generateKeepRulesForR8LibNoDeps,
-        listOf(mainDepsJar, mainProtoJar),
+        mainDepsFilesTask.outputs.files.toList() + mainProtoJar,
         "r8lib-exclude-deps.jar",
       )
     }
@@ -523,7 +524,7 @@ tasks {
     )
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesLibJar)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
-    systemProperty("R8_DEPS", mainDepsJarTask.getSingleOutputFile())
+    systemProperty("R8_DEPS", mainDepsFilesTask.outputs.files.getAsPath())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
