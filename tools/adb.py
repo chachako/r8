@@ -1,14 +1,11 @@
-#!/usr/bin/env python3
 # Copyright (c) 2020, the R8 project authors. Please see the AUTHORS file
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
 import os
 import subprocess
-import sys
 import threading
 import time
-import argparse
 from enum import Enum
 
 import utils
@@ -57,7 +54,7 @@ def run_monkey(app_id, device_id, apk, monkey_events, quiet, enable_logging):
     try:
         stdout = utils.RunCmd(cmd, quiet=quiet, logging=enable_logging)
         succeeded = ('Events injected: {}'.format(monkey_events) in stdout)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         succeeded = False
 
     uninstall(app_id, device_id=device_id)
@@ -91,9 +88,9 @@ def run_instrumented(app_id,
 
     try:
         stdout = utils.RunCmd(cmd, quiet=quiet, logging=enable_logging)
-        # The runner will print OK (X tests) if completed succesfully
+        # The runner will print OK (X tests) if completed successfully
         succeeded = any("OK (" in s for s in stdout)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         succeeded = False
 
     if on_completion_callback:
@@ -181,13 +178,18 @@ def capture_screen(target, device_id=None):
 
 
 def create_adb_cmd(arguments, device_id=None):
-    assert isinstance(arguments, list) or isinstance(arguments, str)
+    if isinstance(arguments, list):
+        args = arguments
+    elif isinstance(arguments, str):
+        args = arguments.split(' ')
+    else:
+        raise TypeError(
+            f'Expected string or list of strings, found {arguments}')
     cmd = ['adb']
     if device_id is not None:
         cmd.append('-s')
         cmd.append(device_id)
-    cmd.extend(
-        arguments if isinstance(arguments, list) else arguments.split(' '))
+    cmd.extend(args)
     return cmd
 
 
