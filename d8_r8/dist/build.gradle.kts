@@ -59,11 +59,11 @@ val blastRadiusJarTask = projectTask("blastradius", "jar")
 val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
 val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
-val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
+val keepAnnoToolsJarTask = projectTask("keepanno", "toolsJar")
 val libraryAnalyzerJarTask = projectTask("libanalyzer", "jar")
 val libraryAnalyzerProtoJarTask = projectTask("libanalyzer", "protoJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
-val resourceShrinkerDepsTask = projectTask("resourceshrinker", "depsJar")
+val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val mainJarTask = projectTask("main", "jar")
 val mainCompileJavaTask = projectTask("main", "compileJava")
 val mainProcessResourcesTask = projectTask("main", "processResources")
@@ -286,19 +286,28 @@ tasks {
     }
 
   // Task that provides all dependencies as a file collection.
-  val depsFiles by registering {
-    dependsOn(consolidatedLicense)
+  val depsJarFiles by registering {
     dependsOn(downloadDepsTask)
-    dependsOn(resourceShrinkerDepsTask)
+    dependsOn(resourceShrinkerDepsJarTask)
     dependsOn(threadingModuleBlockingJar)
     dependsOn(threadingModuleSingleThreadedJar)
     val files =
       objects.fileCollection().apply {
-        from(consolidatedLicense)
+        from(mainJarDependencies())
+        from(resourceShrinkerDepsJarTask)
         from(threadingModuleBlockingJar)
         from(threadingModuleSingleThreadedJar)
-        from(mainJarDependencies())
-        from(resourceShrinkerDepsTask)
+      }
+    outputs.files(files)
+  }
+
+  val depsFiles by registering {
+    dependsOn(consolidatedLicense)
+    dependsOn(depsJarFiles)
+    val files =
+      objects.fileCollection().apply {
+        from(consolidatedLicense)
+        from(depsJarFiles)
       }
     outputs.files(files)
   }
@@ -377,10 +386,10 @@ tasks {
 
   val keepAnnoToolsWithRelocatedDeps by
     registering(Exec::class) {
-      dependsOn(depsJar, keepAnnoDepsJarExceptAsm, keepAnnoToolsJar, swissArmyKnifeJarFiles)
+      dependsOn(depsJar, keepAnnoDepsJarExceptAsm, keepAnnoToolsJarTask, swissArmyKnifeJarFiles)
       val deps = depsJar.get().getSingleOutputFile()
       val keepAnnoDeps = keepAnnoDepsJarExceptAsm.getSingleOutputFile()
-      val keepAnnoTools = keepAnnoToolsJar.getSingleOutputFile()
+      val keepAnnoTools = keepAnnoToolsJarTask.getSingleOutputFile()
       inputs.files(deps, keepAnnoDeps, keepAnnoTools, swissArmyKnifeJarFiles)
       val output = getRoot().resolveAll("build", "libs", "keepanno-tools.jar")
       outputs.file(output)
