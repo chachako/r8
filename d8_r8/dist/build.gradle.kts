@@ -343,13 +343,21 @@ tasks {
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
     }
 
+  val r8WithRelocatedDepsManifest by
+    registering(Jar::class) {
+      manifest { attributes["Main-Class"] = "com.android.tools.r8.SwissArmyKnife" }
+      archiveFileName.set("r8-manifest.jar")
+    }
+
   val r8WithRelocatedDeps by
     registering(Exec::class) {
       dependsOn(depsJar, protoJar, swissArmyKnife, mainProcessResourcesTask)
+      dependsOn(r8WithRelocatedDepsManifest)
       val deps = depsJar.get().getSingleOutputFile()
       val proto = protoJar.getSingleOutputFile()
       val swissArmyKnifeJar = swissArmyKnife.getSingleOutputFile()
       val mainResourcesDir = mainProcessResourcesTask.getSingleOutputFile()
+      val manifestJar = r8WithRelocatedDepsManifest.getSingleOutputFile()
       inputs.files(deps, proto, swissArmyKnifeJar, mainResourcesDir)
       val output = getRoot().resolveAll("build", "libs", "r8.jar")
       outputs.file(output)
@@ -367,6 +375,8 @@ tasks {
             // Include the Java resources belonging to R8.
             "--input",
             "$mainResourcesDir",
+            "--input",
+            "$manifestJar",
             // Ensure we don't include the LICENSE and Java resources from swissArmyKnifeJar.
             "--input-no-res",
             "$swissArmyKnifeJar",

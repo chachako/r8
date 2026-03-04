@@ -63,6 +63,7 @@ public class SanityCheck extends TestBase {
       Path jar, boolean allowDirectories, ClassNameMapper mapping, Predicate<String> entryTester)
       throws Exception {
     BooleanBox licenseSeen = new BooleanBox();
+    BooleanBox manifestSeen = new BooleanBox();
     Set<String> apiDatabaseFiles = Sets.newHashSet("resources/new_api_database.ser");
     Set<String> r8AssistantRuntime =
         ImmutableSet.of(
@@ -116,7 +117,7 @@ public class SanityCheck extends TestBase {
                 }
               }
             } else if (name.equals("META-INF/MANIFEST.MF")) {
-              // Allow.
+              manifestSeen.set();
             } else if (name.equals("LICENSE")) {
               licenseSeen.set();
             } else if (name.equals(THREADING_MODULE_SERVICE_FILE)) {
@@ -135,8 +136,8 @@ public class SanityCheck extends TestBase {
             }
           });
       assertTrue(apiDatabaseFiles.isEmpty());
-      assertTrue(
-          "No LICENSE entry found in " + jar, licenseSeen.isAssigned() && licenseSeen.isTrue());
+      assertTrue("No LICENSE entry found in " + jar, licenseSeen.isTrue());
+      assertTrue("No META-INF/MANIFEST.MF entry found in " + jar, manifestSeen.isTrue());
     } catch (IOException e) {
       if (!Files.exists(jar)) {
         throw new NoSuchFileException(jar.toString());
