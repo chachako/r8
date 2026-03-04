@@ -319,6 +319,7 @@ tasks {
       from(depsFiles.get().outputs.files.filter { it.extension == "jar" }.map(::zipTree))
       from(depsFiles.get().outputs.files.filter { it.extension != "jar" })
       include("**/*.class")
+      include("META-INF/services/kotlin.metadata.internal.extensions.MetadataExtensions")
       include("LICENSE")
       exclude("**/module-info.class")
       exclude("javax/annotation/**")
