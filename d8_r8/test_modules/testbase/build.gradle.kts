@@ -28,22 +28,25 @@ kotlin { explicitApi() }
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
-val libraryAnalyzerCompileTask = projectTask("libanalyzer", "compileJava")
-val mainTurboCompileTask = projectTask("main", "compileTurboJava")
-val mainCompileTask = projectTask("main", "compileJava")
-val resourceShrinkerJavaCompileTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerKotlinCompileTask = projectTask("resourceshrinker", "compileKotlin")
+val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
+val libraryAnalyzerCompileJavaTask = projectTask("libanalyzer", "compileJava")
+val mainCompileJavaTask = projectTask("main", "compileJava")
+val mainProcessResourcesTask = projectTask("main", "processResources")
+val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
+val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
+val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
+val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDownloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
-  implementation(libraryAnalyzerCompileTask.outputs.files)
-  implementation(mainTurboCompileTask.outputs.files)
-  implementation(mainCompileTask.outputs.files)
-  implementation(projectTask("main", "processResources").outputs.files)
-  implementation(resourceShrinkerJavaCompileTask.outputs.files)
-  implementation(resourceShrinkerKotlinCompileTask.outputs.files)
+  implementation(libraryAnalyzerCompileJavaTask.outputs.files)
+  implementation(mainCompileJavaTask.outputs.files)
+  implementation(mainProcessResourcesTask.outputs.files)
+  implementation(mainTurboCompileJavaTask.outputs.files)
+  implementation(resourceShrinkerCompileJavaTask.outputs.files)
+  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
   implementation(Deps.androidxCollection)
   implementation(Deps.androidxTracingDriver)
@@ -78,12 +81,13 @@ fun testDependencies(): FileCollection {
 
 tasks {
   withType<JavaCompile> {
-    dependsOn(gradle.includedBuild("keepanno").task(":jar"))
-    dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
-    dependsOn(gradle.includedBuild("main").task(":compileJava"))
-    dependsOn(gradle.includedBuild("main").task(":processResources"))
-    dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    dependsOn(gradle.includedBuild("shared").task(":downloadTestDeps"))
+    dependsOn(keepAnnoCompileJavaTask)
+    dependsOn(mainCompileJavaTask)
+    dependsOn(mainProcessResourcesTask)
+    dependsOn(mainTurboCompileJavaTask)
+    dependsOn(resourceShrinkerCompileJavaTask)
+    dependsOn(sharedDownloadDepsTask)
+    dependsOn(sharedDownloadTestDepsTask)
   }
 
   withType<JavaExec> {
@@ -108,14 +112,13 @@ tasks {
 
   val depsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-      dependsOn(gradle.includedBuild("shared").task(":downloadTestDeps"))
-      dependsOn(gradle.includedBuild("keepanno").task(":jar"))
-      dependsOn(gradle.includedBuild("resourceshrinker").task(":jar"))
-      dependsOn(gradle.includedBuild("resourceshrinker").task(":depsJar"))
+      dependsOn(keepAnnoJarTask)
+      dependsOn(resourceShrinkerDepsJarTask)
+      dependsOn(sharedDownloadDepsTask)
+      dependsOn(sharedDownloadTestDepsTask)
       from(testDependencies().map(::zipTree))
-      from(resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree))
       from(keepAnnoJarTask.outputs.getFiles().map(::zipTree))
+      from(resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree))
       exclude("com/android/tools/r8/keepanno/annotations/**")
       exclude("androidx/annotation/keep/**")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
