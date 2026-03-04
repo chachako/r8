@@ -24,26 +24,28 @@ java {
 
 kotlin { explicitApi() }
 
-val testbaseJavaCompileTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
-
 val distR8WithRelocatedDeps = projectTask("dist", "r8WithRelocatedDeps")
 val distSwissArmyKnife = projectTask("dist", "swissArmyKnife")
-val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoCompileTask = projectTask("keepanno", "compileJava")
+val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
 val keepAnnoCompileKotlinTask = projectTask("keepanno", "compileKotlin")
-val resourceShrinkerJavaCompileTask = projectTask("resourceshrinker", "compileJava")
-val resourceShrinkerKotlinCompileTask = projectTask("resourceshrinker", "compileKotlin")
+val keepAnnoJarTask = projectTask("keepanno", "jar")
+val mainJarTask = projectTask("main", "jar")
+val resourceShrinkerCompileJavaTask = projectTask("resourceshrinker", "compileJava")
+val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compileKotlin")
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
+val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
+val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
+val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
+val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
-  implementation(projectTask("main", "jar").outputs.files)
-  implementation(resourceShrinkerJavaCompileTask.outputs.files)
-  implementation(resourceShrinkerKotlinCompileTask.outputs.files)
+  implementation(mainJarTask.outputs.files)
+  implementation(resourceShrinkerCompileJavaTask.outputs.files)
+  implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
   implementation(testbaseDepsJarTask.outputs.files)
-  implementation(testbaseJavaCompileTask.outputs.files)
+  implementation(testbaseCompileJavaTask.outputs.files)
 }
 
 fun testDependencies(): FileCollection {
@@ -55,7 +57,7 @@ fun testDependencies(): FileCollection {
 }
 
 tasks {
-  withType<JavaCompile> { dependsOn(gradle.includedBuild("main").task(":jar")) }
+  withType<JavaCompile> { dependsOn(mainJarTask) }
 
   withType<KotlinCompile> { kotlinOptions { enabled = false } }
 
@@ -68,13 +70,13 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseJavaCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
       extractClassesPaths(
         "keepanno" + File.separator,
-        keepAnnoCompileTask.outputs.files.asPath,
+        keepAnnoCompileJavaTask.outputs.files.asPath,
         keepAnnoCompileKotlinTask.outputs.files.asPath,
       ),
     )
@@ -92,10 +94,10 @@ tasks {
 
   val depsJar by
     registering(Jar::class) {
-      dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-      dependsOn(gradle.includedBuild("keepanno").task(":jar"))
+      dependsOn(keepAnnoJarTask)
+      dependsOn(sharedDownloadDepsTask)
       if (!project.hasProperty("no_internal")) {
-        dependsOn(gradle.includedBuild("shared").task(":downloadDepsInternal"))
+        dependsOn(sharedDownloadDepsInternalTask)
       }
       from(testDependencies().map(::zipTree))
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
