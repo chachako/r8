@@ -526,6 +526,23 @@ public object Deps {
     "com.google.protobuf:protobuf-java:${Versions.protobufVersion}"
   }
   public val zipflinger: String by lazy { "com.android:zipflinger:${Versions.zipflingerVersion}" }
+
+  public val compilerDeps: List<String> by lazy {
+    listOf(
+      androidxCollection,
+      androidxTracingDriver,
+      androidxTracingDriverWire,
+      asm,
+      asmCommons,
+      asmUtil,
+      fastUtil,
+      gson,
+      guava,
+      kotlinMetadata,
+      protobuf,
+      zipflinger,
+    )
+  }
 }
 
 public object ThirdPartyDeps {

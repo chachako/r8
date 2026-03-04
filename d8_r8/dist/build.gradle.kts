@@ -21,6 +21,9 @@ if (project.hasProperty("spdxVersion")) {
   project.version = project.property("spdxVersion")!!
 }
 
+// We need all the runtime deps for SPDX generation.
+dependencies { Deps.compilerDeps.forEach { compileOnly(it) } }
+
 spdxSbom {
   targets {
     create("r8") {

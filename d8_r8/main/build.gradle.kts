@@ -238,18 +238,7 @@ dependencies {
   implementation(blastRadiusProtoJarTask.outputs.files)
   implementation(keepAnnoJarTask.outputs.files)
   implementation(resourceShrinkerJarTask.outputs.files)
-  compileOnly(Deps.androidxCollection)
-  compileOnly(Deps.androidxTracingDriver)
-  compileOnly(Deps.androidxTracingDriverWire)
-  compileOnly(Deps.asm)
-  compileOnly(Deps.asmCommons)
-  compileOnly(Deps.asmUtil)
-  compileOnly(Deps.fastUtil)
-  compileOnly(Deps.gson)
-  compileOnly(Deps.guava)
-  compileOnly(Deps.kotlinMetadata)
-  compileOnly(Deps.protobuf)
-  compileOnly(Deps.zipflinger)
+  Deps.compilerDeps.forEach { compileOnly(it) }
   errorprone(Deps.errorprone)
 }
 
