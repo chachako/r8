@@ -223,6 +223,7 @@ def main():
     else:
         with utils.TempDir() as temp_output_dir:
             run_gradle_profiler_with_output_dir(args, temp_output_dir)
+    return 0
 
 
 if __name__ == '__main__':
