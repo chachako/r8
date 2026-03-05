@@ -33,6 +33,8 @@ dependencies {
   implementation(mainTurboCompileJavaTask.outputs.files)
   implementation(testbaseCompileJavaTask.outputs.files)
   implementation(testbaseDepsJarTask.outputs.files)
+  testImplementation(Deps.junitJupiter)
+  testRuntimeOnly(Deps.junitPlatform)
 }
 
 tasks {

@@ -9,37 +9,23 @@ import static junit.framework.TestCase.assertEquals;
 
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
-import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
+import com.android.tools.r8.WithAllCfRuntimes;
 import com.android.tools.r8.cf.CfVersion;
 import com.android.tools.r8.utils.StringUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.objectweb.asm.Attribute;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 
 // Test to validate that the tests_java_25 module is built with JDK-25.
-@RunWith(Parameterized.class)
 public class Java25ValidationTest extends TestBase {
 
   static final String EXPECTED = StringUtils.lines("Hello, world");
-
-  private final TestParameters parameters;
-
-  @Parameterized.Parameters(name = "{0}")
-  public static TestParametersCollection data() {
-    return getTestParameters().withCfRuntimes().build();
-  }
-
-  public Java25ValidationTest(TestParameters parameters) {
-    this.parameters = parameters;
-  }
 
   protected static CfVersion extractClassFileVersion(Path classFile) throws IOException {
     class ClassFileVersionExtractor extends ClassVisitor {
@@ -75,15 +61,17 @@ public class Java25ValidationTest extends TestBase {
     return extractor.getClassFileVersion();
   }
 
-  @Test
-  public void testTestClassClassFileVersion() throws Exception {
+  @ParameterizedTest
+  @WithAllCfRuntimes
+  public void testTestClassClassFileVersion(TestParameters parameters) throws Exception {
     assertEquals(
-        CfVersion.V24,
+        CfVersion.V25,
         extractClassFileVersion(ToolHelper.getClassFileForTestClass(TestClass.class)));
   }
 
-  @Test
-  public void testRunning() throws Exception {
+  @ParameterizedTest
+  @WithAllCfRuntimes
+  public void testRunning(TestParameters parameters) throws Exception {
     testForJvm(parameters)
         .addInnerClasses(getClass())
         .run(parameters.getRuntime(), TestClass.class)
