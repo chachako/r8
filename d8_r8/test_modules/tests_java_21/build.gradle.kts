@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import org.gradle.api.JavaVersion
-
 plugins {
   `kotlin-dsl`
   `java-library`
@@ -14,8 +12,7 @@ val root = getRoot()
 
 java {
   sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "java21")) }
-  sourceCompatibility = JavaVersion.VERSION_21
-  targetCompatibility = JavaVersion.VERSION_21
+  toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
 
 kotlin { explicitApi() }
@@ -38,12 +35,7 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> {
-    dependsOn(sharedDownloadDepsTask)
-    options.setFork(true)
-    options.forkOptions.memoryMaximumSize = "3g"
-    options.forkOptions.executable = getCompilerPath(Jdk.JDK_21)
-  }
+  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(

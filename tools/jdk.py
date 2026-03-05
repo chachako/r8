@@ -17,6 +17,10 @@ def GetDefaultJdkHome():
     return GetJdk11Home()
 
 
+def GetGradleJdkHome():
+    return GetJdk17Home()
+
+
 def GetJdkHome(name):
     if name == 'jdk8':
         return GetJdk8Home()

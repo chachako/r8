@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import org.gradle.api.JavaVersion
-
 plugins {
   `kotlin-dsl`
   `java-library`
@@ -17,8 +15,7 @@ java {
   // to tests. Currently both the Test target below and buildExampleJars depend
   // on this.
   sourceSets.test.configure { java.srcDir(root.resolveAll("src", "test", "java17")) }
-  sourceCompatibility = JavaVersion.VERSION_17
-  targetCompatibility = JavaVersion.VERSION_17
+  toolchain { languageVersion = JavaLanguageVersion.of(17) }
 }
 
 kotlin { explicitApi() }
@@ -39,12 +36,7 @@ dependencies {
 }
 
 tasks {
-  withType<JavaCompile> {
-    dependsOn(sharedDownloadDepsTask)
-    options.setFork(true)
-    options.forkOptions.memoryMaximumSize = "3g"
-    options.forkOptions.executable = getCompilerPath(Jdk.JDK_17)
-  }
+  withType<JavaCompile> { dependsOn(sharedDownloadDepsTask) }
 
   withType<Test> {
     notCompatibleWithConfigurationCache(
