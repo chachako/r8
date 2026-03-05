@@ -535,7 +535,6 @@ public class RootSetBuilder {
       TaskCollection<?> tasks,
       ProguardConfigurationRule rule,
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
-      RootSetBuilderAnnotationIndex annotationIndex,
       Timing timing)
       throws ExecutionException {
     if (rule.getClassNames().hasSpecificTypes()) {
@@ -552,12 +551,11 @@ public class RootSetBuilder {
       timing.end();
     } else if (rule.isOnlyApplicableToProgramClasses() && !rule.hasMemberRules()) {
       timing.begin("Fork rule evaluation ST");
-      evaluateRuleConcurrentlySingleTask(
-          tasks, rule, ifRulePreconditionMatch, annotationIndex, timing);
+      evaluateRuleConcurrentlySingleTask(tasks, rule, ifRulePreconditionMatch, timing);
       timing.end();
     } else {
       timing.begin("Fork rule evaluation");
-      evaluateRuleConcurrently(tasks, rule, ifRulePreconditionMatch, annotationIndex, timing);
+      evaluateRuleConcurrently(tasks, rule, ifRulePreconditionMatch, timing);
       timing.end();
     }
   }
@@ -566,7 +564,6 @@ public class RootSetBuilder {
       TaskCollection<?> tasks,
       ProguardConfigurationRule rule,
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
-      RootSetBuilderAnnotationIndex annotationIndex,
       Timing timing)
       throws ExecutionException {
     int batchSize =
@@ -575,7 +572,6 @@ public class RootSetBuilder {
     List<DexClass> classes = new ArrayList<>(batchSize);
     rule.forEachRelevantCandidate(
         appView,
-        annotationIndex,
         subtypingInfo,
         application.classes(),
         alwaysTrue(),
@@ -626,7 +622,6 @@ public class RootSetBuilder {
       TaskCollection<?> tasks,
       ProguardConfigurationRule rule,
       ProguardIfRulePreconditionMatch ifRulePreconditionMatch,
-      RootSetBuilderAnnotationIndex annotationIndex,
       Timing timing) {
     assert rule.isOnlyApplicableToProgramClasses();
     tasks.submitUnchecked(
@@ -634,7 +629,6 @@ public class RootSetBuilder {
           Timing threadTiming = timing.createThreadTiming("Process rule ST", options);
           rule.forEachRelevantCandidate(
               appView,
-              annotationIndex,
               subtypingInfo,
               application.classes(),
               alwaysTrue(),
@@ -650,15 +644,12 @@ public class RootSetBuilder {
       TaskCollection<?> tasks = new TaskCollection<>(options, executorService);
       // Mark all the things explicitly listed in keep rules.
       if (rules != null) {
-        RootSetBuilderAnnotationIndex annotationIndex =
-            RootSetBuilderAnnotationIndex.createForRootSetBuilder(
-                appView, rules, executorService, timing);
         for (ProguardConfigurationRule rule : rules) {
           if (rule instanceof ProguardIfRule) {
             ProguardIfRule ifRule = (ProguardIfRule) rule;
             ifRules.add(ifRule);
           } else {
-            runPerRule(tasks, rule, null, annotationIndex, timing);
+            runPerRule(tasks, rule, null, timing);
           }
         }
 
