@@ -59,7 +59,7 @@ fun testDependencies(): FileCollection {
 tasks {
   withType<JavaCompile> { dependsOn(mainJarTask) }
 
-  withType<KotlinCompile> { kotlinOptions { enabled = false } }
+  withType<KotlinCompile> { compilerOptions { enabled = false } }
 
   withType<Test> {
     TestingState.setUpTestingState(this)

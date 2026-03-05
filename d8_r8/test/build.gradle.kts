@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import java.nio.file.Paths
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -52,7 +53,7 @@ val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
 tasks {
   withType<Exec> { doFirst { println("Executing command: ${commandLine.joinToString(" ")}") } }
 
-  withType<KotlinCompile> { kotlinOptions { jvmTarget = "17" } }
+  withType<KotlinCompile> { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   "clean" {
     dependsOn(gradle.includedBuild("tests_bootstrap").task(":clean"))

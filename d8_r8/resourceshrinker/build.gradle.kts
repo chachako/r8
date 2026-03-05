@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -48,10 +49,10 @@ dependencies {
 tasks {
   withType<KotlinCompile> {
     dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-    kotlinOptions {
+    compilerOptions {
       // We cannot use languageVersion.set(JavaLanguageVersion.of(8)) because gradle cannot figure
       // out that the jdk is 1_8 and will try to download it.
-      jvmTarget = "${JvmCompatibility.release}"
+      jvmTarget = JvmTarget.fromTarget("${JvmCompatibility.release}")
     }
   }
 
