@@ -169,8 +169,11 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
           assert extras.get(0).isNewInstance();
           assert extras.get(1).isInvokeConstructor(dexItemFactory);
           instructionIterator.previous();
-          instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-              code, blockIterator, extras, options);
+          instructionIterator =
+              instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+                  code, blockIterator, extras, options);
+          Instruction toBeReplaced = instructionIterator.next();
+          assert toBeReplaced == instruction;
           instructionIterator.replaceCurrentInstructionWithThrow(
               appView,
               code,
@@ -181,8 +184,9 @@ public class ServiceLoaderRewriter extends CodeRewriterPass<AppInfoWithLiveness>
         } else {
           instructionIterator.replaceCurrentInstruction(replacement, affectedValues);
           if (extras != null) {
-            instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
-                code, blockIterator, extras, options);
+            instructionIterator =
+                instructionIterator.addPossiblyThrowingInstructionsToPossiblyThrowingBlock(
+                    code, blockIterator, extras, options);
           }
         }
       }
