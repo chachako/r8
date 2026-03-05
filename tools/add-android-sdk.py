@@ -14,17 +14,17 @@ def parse_options():
     parser = argparse.ArgumentParser(description='Release r8')
     parser.add_argument('--sdk-home',
                         '--sdk_home',
-                        metavar=('<SDK_HOME>'),
+                        metavar='<SDK_HOME>',
                         help='SDK_HOME to use for finding SDK'
-                             ' (default $SDK_HOME or $HOME/Android/Sdk)')
+                        ' (default $SDK_HOME or $HOME/Android/Sdk)')
     parser.add_argument('--sdk-name',
                         '--sdk_name',
                         required=True,
-                        metavar=('<name>'),
+                        metavar='<name>',
                         help='Name of the SDK, either API level or code name')
     parser.add_argument('--api-level',
                         '--api_level',
-                        metavar=('<level>'),
+                        metavar='<level>',
                         help='API level to add this as in third_party')
     return parser.parse_args()
 
@@ -48,42 +48,49 @@ def generate_readme_google(destination, sdk_name):
         f.write('This is excerpts from an Android SDK including android.jar.\n')
 
 
+def str_to_int(s):
+    try:
+        return int(s)
+    except ValueError:
+        return None
+
+
 def main():
     args = parse_options()
 
     if not args.sdk_home:
         args.sdk_home = os.environ.get('SDK_HOME')
         if not args.sdk_home:
-            if not os.environ.get('HOME'):
+            home_path = os.environ.get('HOME')
+            if not home_path:
                 print('No SDK_HOME specified')
-                sys.exit(1)
-            args.sdk_home = os.path.join(os.environ.get('HOME'), 'Android', 'Sdk')
+                return 1
+            args.sdk_home = os.path.join(home_path, 'Android', 'Sdk')
         if not os.path.exists(args.sdk_home):
             print('SDK_HOME does not exist')
-            sys.exit(1)
+            return 1
         print('Using SDK_HOME: %s' % args.sdk_home)
 
     source = os.path.join(args.sdk_home, 'platforms',
                           'android-%s' % args.sdk_name)
     if not os.path.exists(source):
         print('Path %s does not exist' % source)
-        sys.exit(1)
+        return 1
 
     api_level = args.api_level if args.api_level else args.sdk_name
-    api_level_major = -1
-    api_level_minor = 0
-    try:
-        api_level_parts = api_level.split('.')
-        if len(api_level_parts) > 2:
-            print('API level "%s" must be minor[.major]' % api_level)
-            return -1
+    api_level_parts = api_level.split('.')
+    if not (1 <= len(api_level_parts) <= 2):
+        print(f'API level "{api_level}" must be minor[.major]')
+        return 1
 
-        api_level_major = int(api_level_parts[0])
-        if len(api_level_parts) == 2:
-            api_level_minor = int(api_level_parts[1])
-    except:
-        print('API level "%s" must be minor[.major]' % api_level)
-        return -1
+    api_level_major = str_to_int(api_level_parts[0])
+    api_level_minor = 0
+    if len(api_level_parts) == 2:
+        api_level_minor = str_to_int(api_level_parts[1])
+
+    if api_level_major is None or api_level_minor is None:
+        print(f'API level "{api_level}" must be minor[.major] of integers')
+        return 1
 
     destination = utils.get_android_jar_dir(api_level_major, api_level_minor)
 
@@ -100,8 +107,8 @@ def main():
     shutil.copyfile(os.path.join(source, 'data', 'api-versions.xml'),
                     os.path.join(destination, 'api-versions.xml'))
     source_optional_path = os.path.join(source, 'optional')
-    for root, dirnames, filenames in os.walk(source_optional_path):
-        for filename in filenames:
+    for root, _, file_names in os.walk(source_optional_path):
+        for filename in file_names:
             if filename.endswith('.jar') or filename == 'optional.json':
                 shutil.copyfile(
                     os.path.join(source_optional_path, filename),
@@ -114,7 +121,8 @@ def main():
     print('Update d8_r8/commonBuildSrc/src/main/kotlin/DependenciesPlugin.kt'
           ' if this is a new dependency.')
     print('Run main method in AndroidApiHashingDatabaseBuilderGeneratorTest'
-        ' to generate the API database.')
+          ' to generate the API database.')
+    return 0
 
 
 if __name__ == '__main__':
