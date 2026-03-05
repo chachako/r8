@@ -67,20 +67,29 @@ r8_with_relocate_deps_cleaned = ${base_config} {
 
 assemble_tests = ${base_config} {
     tasks = [":test:test"]
-    gradle-args = ${base_config.gradle-args} ["-I", "tools/gradle_benchmark_test_skipper.gradle.kts"]
+    gradle-args = ${base_config.gradle-args} [
+        "-I", "tools/gradle_benchmark_test_skipper.gradle.kts",
+        "-Pno_internal"
+    ]
     iterations = 5
 }
 
 assemble_tests_cleaned = ${base_config} {
     tasks = [":test:test"]
-    gradle-args = ${base_config.gradle-args} ["-I", "tools/gradle_benchmark_test_skipper.gradle.kts"]
+    gradle-args = ${base_config.gradle-args} [
+        "-I", "tools/gradle_benchmark_test_skipper.gradle.kts",
+        "-Pno_internal"
+    ]
     cleanup-tasks = ["clean"]
     iterations = 2
 }
 
 assemble_tests_abi_change_LambdaFactoryTest = ${base_config} {
     tasks = [":test:test"]
-    gradle-args = ${base_config.gradle-args} ["-I", "tools/gradle_benchmark_test_skipper.gradle.kts"]
+    gradle-args = ${base_config.gradle-args} [
+        "-I", "tools/gradle_benchmark_test_skipper.gradle.kts",
+        "-Pno_internal"
+    ]
     apply-abi-change-to = ["src/test/java/com/android/tools/r8/desugar/lambdas/LambdaFactoryTest.java"]
     iterations = 2
 }
