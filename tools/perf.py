@@ -160,10 +160,46 @@ LOCAL_BENCHMARKS = {
         'targets': ['r8-full']
     },
 }
+# A collection of build benchmarks that are tracked on CI.
+# These are run using gradle_benchmark.py.
+BUILD_BENCHMARKS = {
+    'assemble_tests': {
+        'targets': ['build']
+    },
+    'assemble_tests_abi_change_LambdaFactoryTest': {
+        'targets': ['build']
+    },
+    'assemble_tests_cleaned': {
+        'targets': ['build']
+    },
+    'compile_java_main': {
+        'targets': ['build']
+    },
+    'compile_java_main_abi_change_InternalOptions': {
+        'targets': ['build']
+    },
+    'compile_java_main_cleaned': {
+        'targets': ['build']
+    },
+    'compile_java_main_non_abi_change_InternalOptions': {
+        'targets': ['build']
+    },
+    'configuration_only': {
+        'targets': ['build']
+    },
+    'r8_with_relocate_deps': {
+        'targets': ['build']
+    },
+    'r8_with_relocate_deps_cleaned': {
+        'targets': ['build']
+    },
+}
+
 ALL_BENCHMARKS = {}
 ALL_BENCHMARKS.update(EXTERNAL_BENCHMARKS)
 ALL_BENCHMARKS.update(INTERNAL_BENCHMARKS)
 ALL_BENCHMARKS.update(LOCAL_BENCHMARKS)
+ALL_BENCHMARKS.update(BUILD_BENCHMARKS)
 BUCKET = "r8-perf-results"
 SAMPLE_BENCHMARK_RESULT_JSON = {
     'benchmark_name': '<benchmark_name>',
