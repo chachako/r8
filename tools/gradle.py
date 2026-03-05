@@ -61,7 +61,7 @@ def ParseOptions():
 def GetJavaEnv(env):
     java_env = dict(env if env else os.environ, JAVA_HOME=jdk.GetGradleJdkHome())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
-        jdk.GetDefaultJdkHome(), 'bin')
+        jdk.GetGradleJdkHome(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
     return java_env
 
