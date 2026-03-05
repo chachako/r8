@@ -8,16 +8,16 @@ rootProject.name = "d8-r8"
 // is downloaded and populated by running 'tools/gradle.py'.
 pluginManagement {
   repositories {
-    maven { url = uri("file:third_party/dependencies") }
-    maven { url = uri("file:third_party/dependencies_plugin") }
+    maven { url = uri("third_party/dependencies") }
+    maven { url = uri("third_party/dependencies_plugin") }
   }
   includeBuild(rootProject.projectDir.resolve("d8_r8/commonBuildSrc"))
 }
 
 dependencyResolutionManagement {
   repositories {
-    maven { url = uri("file:third_party/dependencies_plugin") }
-    maven { url = uri("file:third_party/dependencies") }
+    maven { url = uri("third_party/dependencies_plugin") }
+    maven { url = uri("third_party/dependencies") }
   }
 }
 

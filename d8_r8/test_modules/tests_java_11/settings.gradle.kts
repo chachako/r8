@@ -4,13 +4,13 @@
 
 pluginManagement {
   repositories {
-    maven { url = uri("file:../../../third_party/dependencies_plugin") }
-    maven { url = uri("file:../../../third_party/dependencies") }
+    maven { url = uri("../../../third_party/dependencies_plugin") }
+    maven { url = uri("../../../third_party/dependencies") }
   }
 }
 
 dependencyResolutionManagement {
-  repositories { maven { url = uri("file:../../../third_party/dependencies") } }
+  repositories { maven { url = uri("../../../third_party/dependencies") } }
 }
 
 rootProject.name = "tests_java_11"
