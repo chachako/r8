@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import java.util.concurrent.Callable
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -58,7 +59,7 @@ tasks {
 
   val depsJar by
     registering(Jar::class) {
-      from(jarDependencies().map(::zipTree))
+      from(Callable { jarDependencies().map(::zipTree) })
       exclude("**/*.proto")
       exclude("versions-offline/**")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
