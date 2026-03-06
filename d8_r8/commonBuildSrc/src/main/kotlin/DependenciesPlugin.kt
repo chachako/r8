@@ -43,11 +43,17 @@ public class DependenciesPlugin : Plugin<Project> {
 
   public companion object {
     public fun computeRoot(file: File): File {
-      var parent = file
-      while (!parent.getName().equals("d8_r8")) {
-        parent = parent.getParentFile()
+      // The root folder name is setup dependent.
+      // It is instead identified by being a folder with a child folder called 'd8_r8'.
+      var current: File? = file
+      while (current != null) {
+        if (current.resolve("d8_r8").isDirectory) {
+          return current
+        } else {
+          current = current.getParentFile()
+        }
       }
-      return parent.getParentFile()
+      throw RuntimeException("Could not find root dir from $file")
     }
   }
 }
