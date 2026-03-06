@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.cf.methodhandles;
+package varhandle;
 
 import static com.android.tools.r8.DiagnosticsMatcher.diagnosticType;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -15,11 +15,9 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
 import com.android.tools.r8.errors.UnsupportedInvokePolymorphicMethodHandleDiagnostic;
-import com.android.tools.r8.examples.JavaExampleClassProxy;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
-import java.nio.file.Path;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,11 +27,6 @@ import org.junit.runners.Parameterized.Parameters;
 /** Test for VarHandle (these are a refactoring of the old example test setup.) */
 @RunWith(Parameterized.class)
 public class VarHandleTest extends TestBase {
-
-  private static final String PKG = "varhandle";
-  private static final String EXAMPLE = "examplesJava9/" + PKG;
-  private final JavaExampleClassProxy MAIN =
-      new JavaExampleClassProxy(EXAMPLE, PKG + ".VarHandleTests");
 
   private static final String EXPECTED = StringUtils.lines("true", "false");
 
@@ -71,16 +64,16 @@ public class VarHandleTest extends TestBase {
         && parameters.getApiLevel().isGreaterThanOrEqualTo(AndroidApiLevel.T);
   }
 
-  public List<Path> getProgramInputs() {
-    return ImmutableList.of(JavaExampleClassProxy.examplesJar(EXAMPLE));
+  public List<Class<?>> getProgramInputs() {
+    return ImmutableList.of(VarHandleTest.class);
   }
 
   @Test
   public void testReference() throws Throwable {
     parameters.assumeJvmTestParameters();
     testForJvm(parameters)
-        .addProgramFiles(getProgramInputs())
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .addProgramClasses(getProgramInputs())
+        .run(parameters.getRuntime(), VarHandleTest.class)
         .assertSuccessWithOutput(EXPECTED);
   }
 
@@ -91,7 +84,7 @@ public class VarHandleTest extends TestBase {
         "TODO(b/204855476): The default VM throws unsupported. Ignore it and reconsider for 8.0.0",
         parameters.isDexRuntimeVersion(Version.DEFAULT));
     testForD8()
-        .addProgramFiles(getProgramInputs())
+        .addProgramClasses(getProgramInputs())
         .setMinApi(parameters)
         .compileWithExpectedDiagnostics(
             diagnostics -> {
@@ -104,7 +97,7 @@ public class VarHandleTest extends TestBase {
                     .assertOnlyWarnings();
               }
             })
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .run(parameters.getRuntime(), VarHandleTest.class)
         .applyIf(
             !hasMethodHandlesClass(),
             r ->
@@ -126,11 +119,11 @@ public class VarHandleTest extends TestBase {
     // This just tests R8 on the targets where the program is fully supported.
     assumeTrue(hasInvokePolymorphicCompileSupport() && hasFindStaticVarHandleMethod());
     testForR8(parameters.getBackend())
-        .addProgramFiles(getProgramInputs())
+        .addProgramClasses(getProgramInputs())
         .setMinApi(parameters)
-        .addKeepClassAndMembersRules(MAIN.typeName())
+        .addKeepClassAndMembersRules(VarHandleTest.class)
         .applyIf(!hasVarHandleInLibrary(), b -> b.addDontWarn("java.lang.invoke.VarHandle"))
-        .run(parameters.getRuntime(), MAIN.typeName())
+        .run(parameters.getRuntime(), VarHandleTest.class)
         .assertSuccessWithOutput(EXPECTED);
   }
 }
