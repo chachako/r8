@@ -20,12 +20,14 @@ import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
 import com.android.tools.r8.shaking.ProguardWildcard.BackReference;
 import com.android.tools.r8.shaking.rootset.RootSetBuilder;
+import com.android.tools.r8.shaking.rootset.RootSetBuilderAnnotationIndex;
 import com.android.tools.r8.utils.IterableUtils;
 import com.android.tools.r8.utils.OptionalBool;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.Iterables;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -160,6 +162,7 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
 
   public void forEachRelevantCandidate(
       AppView<? extends AppInfoWithClassHierarchy> appView,
+      RootSetBuilderAnnotationIndex annotationIndex,
       ImmediateAppSubtypingInfo subtypingInfo,
       Iterable<DexProgramClass> defaultValue,
       Predicate<DexProgramClass> isRelevant,
@@ -175,7 +178,10 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
           consumer.accept(clazz);
         }
       }
-    } else if (hasInheritanceClassName() && getInheritanceClassName().hasSpecificType()) {
+      return;
+    }
+
+    if (hasInheritanceClassName() && getInheritanceClassName().hasSpecificType()) {
       DexType type = getInheritanceClassName().getSpecificType();
       DexClass clazz = appView.definitionFor(type);
       if (clazz != null) {
@@ -190,9 +196,22 @@ public abstract class ProguardConfigurationRule extends ProguardClassSpecificati
           }
         }
       }
-    } else {
-      defaultValue.forEach(consumer);
+      return;
     }
+
+    if (annotationIndex != null && hasMemberRules() && getMemberRules().size() == 1) {
+      Set<DexProgramClass> relevantCandidates = annotationIndex.getRelevantCandidatesOrNull(this);
+      if (relevantCandidates != null) {
+        for (DexProgramClass clazz : relevantCandidates) {
+          if (isRelevant.test(clazz)) {
+            consumer.accept(clazz);
+          }
+        }
+        return;
+      }
+    }
+
+    defaultValue.forEach(consumer);
   }
 
   abstract String typeString();
