@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import java.util.concurrent.Callable
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -70,15 +71,19 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
+      project.provider {
+        testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0]
+      },
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      extractClassesPaths(
-        "keepanno" + File.separator,
-        keepAnnoCompileJavaTask.outputs.files.asPath,
-        keepAnnoCompileKotlinTask.outputs.files.asPath,
-      ),
+      project.provider {
+        extractClassesPaths(
+          "keepanno" + File.separator,
+          keepAnnoCompileJavaTask.outputs.files.asPath,
+          keepAnnoCompileKotlinTask.outputs.files.asPath,
+        )
+      },
     )
     systemProperty("R8_SWISS_ARMY_KNIFE", distSwissArmyKnife.outputs.files.singleFile)
     systemProperty("R8_WITH_RELOCATED_DEPS", distR8WithRelocatedDeps.outputs.files.singleFile)
@@ -99,7 +104,7 @@ tasks {
       if (!project.hasProperty("no_internal")) {
         dependsOn(sharedDownloadDepsInternalTask)
       }
-      from(testDependencies().map(::zipTree))
+      from(Callable { testDependencies().map(::zipTree) })
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       archiveFileName.set("deps.jar")
     }
