@@ -4,6 +4,7 @@
 
 import com.google.protobuf.gradle.ProtobufExtension
 import com.google.protobuf.gradle.proto
+import java.util.concurrent.Callable
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
 plugins {
@@ -116,7 +117,7 @@ tasks {
   val depsJarExceptAsm by
     registering(Jar::class) {
       dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-      from(dependenciesExceptAsm().map(::zipTree))
+      from(Callable { dependenciesExceptAsm().map(::zipTree) })
       // TODO(b/428166503): Add license information.
       exclude("META-INF/*.kotlin_module")
       exclude("META-INF/com.android.tools/**")
@@ -135,7 +136,7 @@ tasks {
   val depsJarOnlyAsm by
     registering(Jar::class) {
       dependsOn(gradle.includedBuild("shared").task(":downloadDeps"))
-      from(dependenciesOnlyAsm().map(::zipTree))
+      from(Callable { dependenciesOnlyAsm().map(::zipTree) })
       // TODO(b/428166503): Add license information if needed.
       exclude("META-INF/*.kotlin_module")
       exclude("META-INF/com.android.tools/**")
