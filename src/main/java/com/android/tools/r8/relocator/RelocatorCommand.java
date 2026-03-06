@@ -225,6 +225,7 @@ public class RelocatorCommand {
         this.consumer = null;
         return this;
       }
+      FileUtils.validateOutputFile(outputPath, reporter);
       this.consumer = createClassFileProgramOutputConsumer(outputPath, true);
       return this;
     }
