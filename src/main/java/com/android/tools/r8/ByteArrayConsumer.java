@@ -3,7 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8;
 
-import androidx.annotation.keep.KeepForApi;
+import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
