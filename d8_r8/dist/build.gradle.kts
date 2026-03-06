@@ -7,6 +7,7 @@ import java.net.URI
 import java.nio.file.Files.readString
 import java.nio.file.Paths
 import java.util.UUID
+import java.util.concurrent.Callable
 import org.gradle.api.tasks.bundling.Jar
 import org.spdx.sbom.gradle.SpdxSbomTask
 import org.spdx.sbom.gradle.extensions.DefaultSpdxSbomTaskExtension
@@ -22,7 +23,18 @@ if (project.hasProperty("spdxVersion")) {
 }
 
 // We need all the runtime deps for SPDX generation.
-dependencies { Deps.compilerDeps.forEach { compileOnly(it) } }
+val r8Deps by
+  configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+  }
+
+dependencies {
+  Deps.compilerDeps.forEach {
+    compileOnly(it)
+    r8Deps(it)
+  }
+}
 
 spdxSbom {
   targets {
@@ -74,13 +86,15 @@ val downloadDepsTask = projectTask("shared", "downloadDeps")
 val downloadTestDepsTask = projectTask("shared", "downloadTestDeps")
 
 fun mainJarDependencies(): FileCollection {
-  return (mainCompileJavaTask as JavaCompile)
-    .classpath
-    .filter({
-      "$it".contains("third_party") &&
-        "$it".contains("dependencies") &&
-        !"$it".contains("errorprone")
-    })
+  return project.files(
+    Callable {
+      r8Deps.filter({
+        "$it".contains("third_party") &&
+          "$it".contains("dependencies") &&
+          !"$it".contains("errorprone")
+      })
+    }
+  )
 }
 
 fun relocateDepsExceptAsm(pkg: String): List<String> {
@@ -185,26 +199,27 @@ tasks {
     val libraryLicense = root.resolve("LIBRARY-LICENSE")
     val libraryLicenseFiles = fileTree(root.resolve("library-licensing"))
     inputs.files(
-      listOf(r8License, libraryLicense),
-      libraryLicenseFiles,
-      mainJarDependencies().map(::zipTree),
+      Callable {
+        listOf(r8License, libraryLicense, libraryLicenseFiles) +
+          mainJarDependencies().map(::zipTree)
+      }
     )
 
     val license = getRoot().resolveAll("build", "generatedLicense", "LICENSE")
     outputs.files(license)
-    val dependencies = mutableListOf<String>()
-    configurations
-      .findByName("runtimeClasspath")!!
-      .resolvedConfiguration
-      .resolvedArtifacts
-      .forEach {
-        val identifier = it.id.componentIdentifier
-        if (identifier is ModuleComponentIdentifier) {
-          dependencies.add("${identifier.group}:${identifier.module}")
-        }
-      }
 
     doLast {
+      val dependencies = mutableListOf<String>()
+      configurations
+        .findByName("runtimeClasspath")!!
+        .resolvedConfiguration
+        .resolvedArtifacts
+        .forEach {
+          val identifier = it.id.componentIdentifier
+          if (identifier is ModuleComponentIdentifier) {
+            dependencies.add("${identifier.group}:${identifier.module}")
+          }
+        }
       val libraryLicenses = libraryLicense.readText()
       dependencies.forEach {
         if (!libraryLicenses.contains("- artifact: $it")) {
@@ -294,33 +309,34 @@ tasks {
     dependsOn(resourceShrinkerDepsJarTask)
     dependsOn(threadingModuleBlockingJar)
     dependsOn(threadingModuleSingleThreadedJar)
-    val files =
-      objects.fileCollection().apply {
-        from(mainJarDependencies())
-        from(resourceShrinkerDepsJarTask)
-        from(threadingModuleBlockingJar)
-        from(threadingModuleSingleThreadedJar)
+    outputs.files(
+      Callable {
+        listOf(
+          mainJarDependencies(),
+          resourceShrinkerDepsJarTask,
+          threadingModuleBlockingJar,
+          threadingModuleSingleThreadedJar,
+        )
       }
-    outputs.files(files)
+    )
   }
 
   val depsFiles by registering {
     dependsOn(consolidatedLicense)
     dependsOn(depsJarFiles)
-    val files =
-      objects.fileCollection().apply {
-        from(consolidatedLicense)
-        from(depsJarFiles)
-      }
-    outputs.files(files)
+    outputs.files(Callable { listOf(consolidatedLicense, depsJarFiles) })
   }
 
   // Jar containing all 3p deps, plus R8 threading modules.
   val depsJar by
     registering(Zip::class) {
       dependsOn(depsFiles)
-      from(depsFiles.get().outputs.files.filter { it.extension == "jar" }.map(::zipTree))
-      from(depsFiles.get().outputs.files.filter { it.extension != "jar" })
+      from(
+        Callable {
+          depsFiles.get().outputs.files.filter { it.extension == "jar" }.map(::zipTree) +
+            depsFiles.get().outputs.files.filter { it.extension != "jar" }
+        }
+      )
       include("**/*.class")
       include("META-INF/services/kotlin.metadata.internal.extensions.MetadataExtensions")
       include("LICENSE")
@@ -357,73 +373,96 @@ tasks {
     registering(Exec::class) {
       dependsOn(depsJar, protoJar, swissArmyKnife, mainProcessResourcesTask)
       dependsOn(r8WithRelocatedDepsManifest)
-      val deps = depsJar.get().getSingleOutputFile()
-      val proto = protoJar.getSingleOutputFile()
-      val swissArmyKnifeJar = swissArmyKnife.getSingleOutputFile()
-      val mainResourcesDir = mainProcessResourcesTask.getSingleOutputFile()
-      val manifestJar = r8WithRelocatedDepsManifest.getSingleOutputFile()
-      inputs.files(deps, proto, swissArmyKnifeJar, mainResourcesDir)
       val output = getRoot().resolveAll("build", "libs", "r8.jar")
       outputs.file(output)
-      val pkg = "com.android.tools.r8"
-      commandLine =
-        baseCompilerCommandLine(
-          swissArmyKnifeJar,
-          deps,
-          "relocator",
+      inputs.files(
+        Callable {
           listOf(
-            "--input",
-            "$deps",
-            "--input",
-            "$proto",
-            // Include the Java resources belonging to R8.
-            "--input",
-            "$mainResourcesDir",
-            "--input",
-            "$manifestJar",
-            // Ensure we don't include the LICENSE and Java resources from swissArmyKnifeJar.
-            "--input-no-res",
-            "$swissArmyKnifeJar",
-            "--output",
-            "$output",
-            "--map",
-            "com.android.tools.r8.**->${pkg}",
-            "--map",
-            "com.android.tools.r8.keepanno.annotations.**->${pkg}.keepanno.annotations",
-            "--map",
-            "com.android.tools.r8.keepanno.**->${pkg}.relocated.keepanno",
-            "--map",
-            "org.objectweb.asm.**->${pkg}.org.objectweb.asm",
-          ) + relocateDepsExceptAsm(pkg) + listOf("--map-diagnostics", "warning", "error"),
-        )
+            depsJar.get().getSingleOutputFile(),
+            protoJar.getSingleOutputFile(),
+            swissArmyKnife.getSingleOutputFile(),
+            mainProcessResourcesTask.getSingleOutputFile(),
+            r8WithRelocatedDepsManifest.getSingleOutputFile(),
+          )
+        }
+      )
+      doFirst {
+        val deps = depsJar.get().getSingleOutputFile()
+        val proto = protoJar.getSingleOutputFile()
+        val swissArmyKnifeJar = swissArmyKnife.getSingleOutputFile()
+        val mainResourcesDir = mainProcessResourcesTask.getSingleOutputFile()
+        val manifestJar = r8WithRelocatedDepsManifest.getSingleOutputFile()
+        val pkg = "com.android.tools.r8"
+        commandLine =
+          baseCompilerCommandLine(
+            swissArmyKnifeJar,
+            deps,
+            "relocator",
+            listOf(
+              "--input",
+              "$deps",
+              "--input",
+              "$proto",
+              // Include the Java resources belonging to R8.
+              "--input",
+              "$mainResourcesDir",
+              "--input",
+              "$manifestJar",
+              // Ensure we don't include the LICENSE and Java resources from swissArmyKnifeJar.
+              "--input-no-res",
+              "$swissArmyKnifeJar",
+              "--output",
+              "$output",
+              "--map",
+              "com.android.tools.r8.**->${pkg}",
+              "--map",
+              "com.android.tools.r8.keepanno.annotations.**->${pkg}.keepanno.annotations",
+              "--map",
+              "com.android.tools.r8.keepanno.**->${pkg}.relocated.keepanno",
+              "--map",
+              "org.objectweb.asm.**->${pkg}.org.objectweb.asm",
+            ) + relocateDepsExceptAsm(pkg) + listOf("--map-diagnostics", "warning", "error"),
+          )
+      }
     }
 
   val keepAnnoToolsWithRelocatedDeps by
     registering(Exec::class) {
       dependsOn(depsJar, keepAnnoDepsJarExceptAsm, keepAnnoToolsJarTask, swissArmyKnifeJarFiles)
-      val deps = depsJar.get().getSingleOutputFile()
-      val keepAnnoDeps = keepAnnoDepsJarExceptAsm.getSingleOutputFile()
-      val keepAnnoTools = keepAnnoToolsJarTask.getSingleOutputFile()
-      inputs.files(deps, keepAnnoDeps, keepAnnoTools, swissArmyKnifeJarFiles)
       val output = getRoot().resolveAll("build", "libs", "keepanno-tools.jar")
       outputs.file(output)
-      val pkg = "com.android.tools.r8.keepanno"
-      commandLine =
-        baseCompilerCommandLine(
-          swissArmyKnifeJarFiles,
-          deps,
-          "relocator",
+      inputs.files(
+        Callable {
           listOf(
-            "--input-no-res",
-            "$keepAnnoDeps",
-            "--input-no-res",
-            "$keepAnnoTools",
-            "--output",
-            "$output",
-            "--map",
-            "com.android.tools.r8.keepanno.**->${pkg}",
-          ) + relocateDepsExceptAsm(pkg) + listOf("--map-diagnostics", "warning", "error"),
-        )
+            depsJar.get().getSingleOutputFile(),
+            keepAnnoDepsJarExceptAsm.getSingleOutputFile(),
+            keepAnnoToolsJarTask.getSingleOutputFile(),
+            swissArmyKnifeJarFiles,
+          )
+        }
+      )
+      doFirst {
+        val deps = depsJar.get().getSingleOutputFile()
+        val keepAnnoDeps = keepAnnoDepsJarExceptAsm.getSingleOutputFile()
+        val keepAnnoTools = keepAnnoToolsJarTask.getSingleOutputFile()
+        val pkg = "com.android.tools.r8.keepanno"
+        commandLine =
+          baseCompilerCommandLine(
+            swissArmyKnifeJarFiles,
+            deps,
+            "relocator",
+            listOf(
+              "--input-no-res",
+              "$keepAnnoDeps",
+              "--input-no-res",
+              "$keepAnnoTools",
+              "--output",
+              "$output",
+              "--map",
+              "com.android.tools.r8.keepanno.**->${pkg}",
+            ) + relocateDepsExceptAsm(pkg) + listOf("--map-diagnostics", "warning", "error"),
+          )
+      }
     }
 
   val processKeepRulesLibWithRelocatedDeps by
@@ -431,21 +470,27 @@ tasks {
       dependsOn(r8WithRelocatedDeps)
       val createR8LibFile = getRoot().resolveAll("tools", "create_r8lib.py")
       val keepRulesFile = getRoot().resolveAll("src", "main", "keep_processkeeprules.txt")
-      val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()
-      inputs.files(listOf(createR8LibFile, keepRulesFile, r8WithRelocatedDepsJar))
       val outputJar = getRoot().resolveAll("build", "libs", "processkeepruleslib.jar")
       outputs.file(outputJar)
-      commandLine =
-        createR8LibCommandLine(
-          r8WithRelocatedDepsJar,
-          r8WithRelocatedDepsJar,
-          outputJar,
-          listOf(keepRulesFile),
-          excludingDepsVariant = false,
-          debugVariant = false,
-          classpath = listOf(),
-          enableKeepAnnotations = false,
-        )
+      inputs.files(
+        Callable {
+          listOf(createR8LibFile, keepRulesFile, r8WithRelocatedDeps.get().getSingleOutputFile())
+        }
+      )
+      doFirst {
+        val r8WithRelocatedDepsJar = r8WithRelocatedDeps.get().getSingleOutputFile()
+        commandLine =
+          createR8LibCommandLine(
+            r8WithRelocatedDepsJar,
+            r8WithRelocatedDepsJar,
+            outputJar,
+            listOf(keepRulesFile),
+            excludingDepsVariant = false,
+            debugVariant = false,
+            classpath = listOf(),
+            enableKeepAnnotations = false,
+          )
+      }
     }
 }
 
