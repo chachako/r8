@@ -2,9 +2,9 @@
 # Copyright (c) 2018, the R8 project authors. Please see the AUTHORS file
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
-'''
+"""
 Compare the R8 API used by the API usage sample to the API kept by @Keep.
-'''
+"""
 
 import argparse
 import jdk
@@ -12,9 +12,14 @@ import os
 import subprocess
 import utils
 
-parser = argparse.ArgumentParser(description=__doc__.strip(),
-                                 formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('-o', '--output-dir')
+
+def parse_options():
+    parser = argparse.ArgumentParser(
+        description=__doc__.strip(),
+        formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('-o', '--output-dir')
+    return parser.parse_args()
+
 
 API_SAMPLE_JAR = 'tests/d8_api_usage_sample.jar'
 
@@ -23,10 +28,10 @@ def main(output_dir=None):
     if output_dir is None:
         output_dir = ''
 
-    javaExecutable = jdk.GetJavaExecutable()
+    java_executable = jdk.GetJavaExecutable()
     printseeds_path = os.path.join(output_dir, 'keep-seeds.txt')
     printseeds_args = [
-        javaExecutable,
+        java_executable,
         '-jar',
         utils.R8_JAR,
         'printseeds',
@@ -38,7 +43,7 @@ def main(output_dir=None):
 
     printuses_path = os.path.join(output_dir, 'sample-uses.txt')
     printuses_args = [
-        javaExecutable,
+        java_executable,
         '-jar',
         utils.R8_JAR,
         'printuses',
@@ -83,4 +88,4 @@ def print_diff(printseeds_path, printuses_path):
 
 
 if __name__ == '__main__':
-    main(**vars(parser.parse_args()))
+    main(**vars(parse_options()))
