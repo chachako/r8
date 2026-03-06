@@ -279,6 +279,8 @@ private fun Project.getJavaPath(jdk: Jdk): String {
 }
 
 public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
+  val installationPath = project.layout.projectDirectory.dir(getJavaHome(jdk).toString())
+  val executablePath = project.layout.projectDirectory.file(getJavaPath(jdk))
   return object : JavaLauncher {
     override fun getMetadata(): JavaInstallationMetadata {
       return object : JavaInstallationMetadata {
@@ -299,7 +301,7 @@ public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
         }
 
         override fun getInstallationPath(): Directory {
-          return project.layout.projectDirectory.dir(getJavaHome(jdk).toString())
+          return installationPath
         }
 
         override fun isCurrentJvm(): Boolean {
@@ -309,7 +311,7 @@ public fun Project.getJavaLauncher(jdk: Jdk): JavaLauncher {
     }
 
     override fun getExecutablePath(): RegularFile {
-      return project.layout.projectDirectory.file(getJavaPath(jdk))
+      return executablePath
     }
   }
 }
