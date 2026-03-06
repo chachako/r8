@@ -2,10 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.cf.varhandle;
+package varhandle;
 
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.examples.jdk9.VarHandle;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -45,10 +44,7 @@ public class VarHandleDesugaringInstanceObjectFieldTest extends VarHandleDesugar
           TEST_COMPAREANDSET_EXPECTED_OUTPUT,
           "testReturnValueClassCastException");
 
-  private static final String MAIN_CLASS = VarHandle.InstanceObjectField.typeName();
-  private static final List<String> JAR_ENTRIES =
-      ImmutableList.of(
-          "varhandle/InstanceObjectField.class", "varhandle/InstanceObjectField$A.class");
+  private static final String MAIN_CLASS = InstanceObjectField.class.getTypeName();
 
   @Override
   protected String getMainClass() {
@@ -61,8 +57,8 @@ public class VarHandleDesugaringInstanceObjectFieldTest extends VarHandleDesugar
   }
 
   @Override
-  protected List<String> getJarEntries() {
-    return JAR_ENTRIES;
+  protected List<Class<?>> getProgramClasses() {
+    return ImmutableList.of(InstanceObjectField.class);
   }
 
   @Override

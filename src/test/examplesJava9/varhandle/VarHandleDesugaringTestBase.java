@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.cf.varhandle;
+package varhandle;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -16,7 +16,6 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.examples.jdk9.VarHandle;
 import com.android.tools.r8.graph.DexMethod;
 import com.android.tools.r8.graph.DexString;
 import com.android.tools.r8.references.MethodReference;
@@ -24,12 +23,9 @@ import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.synthesis.SyntheticItemsTestUtils;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.IntBox;
-import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import com.google.common.collect.ImmutableList;
-import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,7 +55,7 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
     return ImmutableList.of("");
   }
 
-  protected abstract List<String> getJarEntries();
+  protected abstract List<Class<?>> getProgramClasses();
 
   protected abstract String getExpectedOutputForReferenceImplementation();
 
@@ -78,22 +74,9 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
     // desugared implementation does.
     assumeTrue(parameters.isCfRuntime() && parameters.asCfRuntime().isNewerThanOrEqual(CfVm.JDK9));
     testForJvm(parameters)
-        .addProgramFiles(VarHandle.jar())
+        .addProgramClassesAndInnerClasses(getProgramClasses())
         .run(parameters.getRuntime(), getMainClass())
         .assertSuccessWithOutput(getExpectedOutputForReferenceImplementation());
-  }
-
-  private List<byte[]> getProgramClassFileData() {
-    return getJarEntries().stream()
-        .map(
-            entry -> {
-              try {
-                return ZipUtils.readSingleEntry(VarHandle.jar(), entry);
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            })
-        .collect(Collectors.toList());
   }
 
   private boolean willDesugarVarHandle() {
@@ -196,7 +179,7 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
   public void testD8() throws Throwable {
     parameters.assumeDexRuntime();
     testForD8(parameters.getBackend())
-        .addProgramClassFileData(getProgramClassFileData())
+        .addProgramClassesAndInnerClasses(getProgramClasses())
         .setMinApi(parameters)
         .addOptionsModification(options -> options.enableVarHandleDesugaring = true)
         .collectSyntheticItems()
@@ -225,7 +208,7 @@ public abstract class VarHandleDesugaringTestBase extends TestBase {
             b -> b.addLibraryFiles(ToolHelper.getAndroidJar(AndroidApiLevel.T)),
             // Use system JDK to have references types including StringConcatFactory.
             b -> b.addLibraryProvider(JdkClassFileProvider.fromSystemJdk()))
-        .addProgramClassFileData(getProgramClassFileData())
+        .addProgramClassesAndInnerClasses(getProgramClasses())
         .addOptionsModification(options -> options.enableVarHandleDesugaring = true)
         .setMinApi(parameters)
         .addKeepMainRule(getMainClass())

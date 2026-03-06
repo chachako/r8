@@ -2,7 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.cf.varhandle;
+package varhandle;
 
 import static org.junit.Assert.assertTrue;
 
@@ -13,10 +13,8 @@ import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.TestRuntime.CfVm;
 import com.android.tools.r8.ToolHelper;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.examples.jdk9.VarHandle;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.StringUtils;
-import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.codeinspector.CodeInspector;
 import java.nio.file.Path;
 import org.junit.Test;
@@ -29,7 +27,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class VarHandleNoDesugaredTypesInSignaturesNoAttributesTest extends TestBase {
 
   private static final String EXPECTED_OUTPUT = StringUtils.lines("0");
-  private static final String MAIN_CLASS = VarHandle.NoDesugaredTypesInSignatures.typeName();
+  private static final String MAIN_CLASS = NoDesugaredTypesInSignatures.class.getTypeName();
   private static final String JAR_ENTRY = "varhandle/NoDesugaredTypesInSignatures.class";
 
   @Parameter(0)
@@ -53,7 +51,7 @@ public class VarHandleNoDesugaredTypesInSignaturesNoAttributesTest extends TestB
     Path programWithoutAttributes =
         testForR8(Backend.CF)
             .addLibraryProvider(JdkClassFileProvider.fromSystemJdk())
-            .addProgramClassFileData(ZipUtils.readSingleEntry(VarHandle.jar(), JAR_ENTRY))
+            .addProgramClasses(NoDesugaredTypesInSignatures.class)
             .addKeepClassAndMembersRules(MAIN_CLASS)
             .compile()
             .writeToZip();

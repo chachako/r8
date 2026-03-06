@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.cf.varhandle;
+package varhandle;
 
-import com.android.tools.r8.examples.jdk9.VarHandle;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -12,23 +11,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class VarHandleDesugaringInstanceBooleanFieldTest extends VarHandleDesugaringTestBase {
+public class VarHandleDesugaringInstanceFloatFieldTest extends VarHandleDesugaringTestBase {
 
   private static final String EXPECTED_OUTPUT =
       StringUtils.lines(
-          "testGet",
-          "false",
-          "true",
-          "false",
-          "testCompareAndSet",
-          "false",
-          "true",
-          "false",
-          "true",
-          "false");
+          "testGet", "0.0", "1.0", "2.0", "testCompareAndSet", "0.0", "1.0", "2.0", "3.0", "4.0");
 
-  private static final String MAIN_CLASS = VarHandle.InstanceBooleanField.typeName();
-  private static final String JAR_ENTRY = "varhandle/InstanceBooleanField.class";
+  private static final String MAIN_CLASS = InstanceFloatField.class.getTypeName();
 
   @Override
   protected String getMainClass() {
@@ -41,8 +30,8 @@ public class VarHandleDesugaringInstanceBooleanFieldTest extends VarHandleDesuga
   }
 
   @Override
-  protected List<String> getJarEntries() {
-    return ImmutableList.of(JAR_ENTRY);
+  protected List<Class<?>> getProgramClasses() {
+    return ImmutableList.of(InstanceFloatField.class);
   }
 
   @Override

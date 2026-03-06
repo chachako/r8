@@ -2,9 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-package com.android.tools.r8.cf.varhandle;
+package varhandle;
 
-import com.android.tools.r8.examples.jdk9.VarHandle;
 import com.android.tools.r8.utils.StringUtils;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
@@ -17,8 +16,7 @@ public class VarHandleDesugaringInstanceShortFieldTest extends VarHandleDesugari
   private static final String EXPECTED_OUTPUT =
       StringUtils.lines("testGet", "0", "1", "2", "testCompareAndSet", "0", "1", "2", "3", "4");
 
-  private static final String MAIN_CLASS = VarHandle.InstanceShortField.typeName();
-  private static final String JAR_ENTRY = "varhandle/InstanceShortField.class";
+  private static final String MAIN_CLASS = InstanceShortField.class.getTypeName();
 
   @Override
   protected String getMainClass() {
@@ -31,8 +29,8 @@ public class VarHandleDesugaringInstanceShortFieldTest extends VarHandleDesugari
   }
 
   @Override
-  protected List<String> getJarEntries() {
-    return ImmutableList.of(JAR_ENTRY);
+  protected List<Class<?>> getProgramClasses() {
+    return ImmutableList.of(InstanceShortField.class);
   }
 
   @Override
