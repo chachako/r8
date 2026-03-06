@@ -2,6 +2,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import java.util.concurrent.Callable
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -116,9 +117,9 @@ tasks {
       dependsOn(resourceShrinkerDepsJarTask)
       dependsOn(sharedDownloadDepsTask)
       dependsOn(sharedDownloadTestDepsTask)
-      from(testDependencies().map(::zipTree))
-      from(keepAnnoJarTask.outputs.getFiles().map(::zipTree))
-      from(resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree))
+      from(Callable { testDependencies().map(::zipTree) })
+      from(Callable { keepAnnoJarTask.outputs.getFiles().map(::zipTree) })
+      from(Callable { resourceShrinkerDepsJarTask.outputs.getFiles().map(::zipTree) })
       exclude("com/android/tools/r8/keepanno/annotations/**")
       exclude("androidx/annotation/keep/**")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
