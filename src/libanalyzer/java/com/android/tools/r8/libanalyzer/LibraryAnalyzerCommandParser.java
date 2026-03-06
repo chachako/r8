@@ -9,6 +9,7 @@ import static com.android.tools.r8.BaseCompilerCommandParser.OUTPUT_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.THREAD_COUNT_FLAG;
 import static com.android.tools.r8.BaseCompilerCommandParser.parsePositiveIntArgument;
 
+import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.CompilerCommandParserUtils;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
@@ -137,7 +138,7 @@ public class LibraryAnalyzerCommandParser {
       } else if (arg.equals(MIN_API_FLAG)) {
         builder.setMinApiLevel(AndroidApiLevel.parseAndroidApiLevel(nextArg));
       } else if (arg.equals(OUTPUT_FLAG)) {
-        builder.setOutputPath(Paths.get(nextArg));
+        builder.setOutputConsumer(new ByteArrayConsumer.FileConsumer(Paths.get(nextArg)));
       } else if (arg.equals(REPO_FLAG)) {
         Path repoPath = Paths.get(nextArg);
         if (!Files.isDirectory(repoPath)) {

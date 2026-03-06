@@ -7,6 +7,7 @@ import static com.android.tools.r8.utils.DescriptorUtils.javaTypeToDescriptor;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.CompilationFailedException;
 import com.android.tools.r8.OutputMode;
 import com.android.tools.r8.TestDiagnosticMessagesImpl;
@@ -94,6 +95,11 @@ public class LibraryAnalyzerTestBuilder {
     return this;
   }
 
+  public LibraryAnalyzerTestBuilder setOutputConsumer(ByteArrayConsumer<?> outputConsumer) {
+    commandBuilder.setOutputConsumer(outputConsumer);
+    return this;
+  }
+
   public LibraryAnalyzerCompileResult compile() throws CompilationFailedException {
     assertNotNull("Must call setAar() or setJar() to specify input type.", aarOrJar);
     Box<LibraryAnalyzerResult> LibraryAnalyzerResult = new Box<>();
@@ -103,7 +109,7 @@ public class LibraryAnalyzerTestBuilder {
       commandBuilder.addJarPath(createJar());
     }
     LibraryAnalyzerCommand command =
-        commandBuilder.setOutputConsumer(LibraryAnalyzerResult::set).build();
+        commandBuilder.setInternalOutputConsumer(LibraryAnalyzerResult::set).build();
     LibraryAnalyzer.run(command);
     diagnostics.assertNoMessages();
     return new LibraryAnalyzerCompileResult(LibraryAnalyzerResult.get());

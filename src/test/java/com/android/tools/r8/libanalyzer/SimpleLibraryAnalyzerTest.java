@@ -3,10 +3,13 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
+import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.libanalyzer.LibraryAnalyzerTestBuilder.AarOrJar;
+import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.utils.AndroidApiLevel;
+import com.android.tools.r8.utils.Box;
 import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +43,28 @@ public class SimpleLibraryAnalyzerTest extends TestBase {
         .setAarOrJar(aarOrJar)
         .setMinApi(AndroidApiLevel.getDefault())
         .compile()
+        .apply(this::inspect);
+  }
+
+  @Test
+  public void testArrayConsumer() throws Exception {
+    Box<byte[]> output = new Box<>();
+    testForLibraryAnalyzer()
+        .addProgramClasses(Main.class)
+        .addDefaultLibrary()
+        .addKeepRules(
+            "-keep class " + Main.class.getTypeName() + " {",
+            "  public static void main(java.lang.String[]);",
+            "}")
+        .setAarOrJar(aarOrJar)
+        .setMinApi(AndroidApiLevel.getDefault())
+        .setOutputConsumer((ByteArrayConsumer.ArrayConsumer) output::set)
+        .compile();
+    inspect(new LibraryAnalyzerCompileResult(LibraryAnalyzerResult.parseFrom(output.get())));
+  }
+
+  private void inspect(LibraryAnalyzerCompileResult compileResult) {
+    compileResult
         .inspectD8CompileResult(D8CompileResultInspector::assertPresent)
         .inspectR8CompileResult(R8CompileResultInspector::assertPresent)
         .inspectValidateConsumerKeepRulesResult(i -> i.assertPresent().assertNoBlockedKeepRules());

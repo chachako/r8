@@ -5,13 +5,19 @@ package com.android.tools.r8.libanalyzer;
 
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
 import com.android.tools.r8.utils.ThrowingConsumer;
+import java.util.function.Consumer;
 
 public class LibraryAnalyzerCompileResult {
 
   private final LibraryAnalyzerResult LibraryAnalyzerResult;
 
-  LibraryAnalyzerCompileResult(LibraryAnalyzerResult LibraryAnalyzerResult) {
+  public LibraryAnalyzerCompileResult(LibraryAnalyzerResult LibraryAnalyzerResult) {
     this.LibraryAnalyzerResult = LibraryAnalyzerResult;
+  }
+
+  public LibraryAnalyzerCompileResult apply(Consumer<LibraryAnalyzerCompileResult> consumer) {
+    consumer.accept(this);
+    return this;
   }
 
   public <E extends Exception> LibraryAnalyzerCompileResult inspectD8CompileResult(

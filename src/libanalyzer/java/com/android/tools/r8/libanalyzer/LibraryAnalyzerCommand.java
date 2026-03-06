@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 package com.android.tools.r8.libanalyzer;
 
+import com.android.tools.r8.ByteArrayConsumer;
 import com.android.tools.r8.DiagnosticsHandler;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.libanalyzer.proto.LibraryAnalyzerResult;
@@ -17,7 +18,6 @@ import com.android.tools.r8.utils.ThreadUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -145,28 +145,31 @@ public final class LibraryAnalyzerCommand {
       return this;
     }
 
+    public <OS extends OutputStream> Builder setOutputConsumer(
+        ByteArrayConsumer<OS> outputConsumer) {
+      return setInternalOutputConsumer(
+          result -> {
+            OS outputStream;
+            try (OS autoCloseable = outputStream = outputConsumer.getOutputStream()) {
+              result.writeTo(outputStream);
+            } catch (IOException e) {
+              throw new UncheckedIOException(e);
+            }
+            outputConsumer.finished(outputStream, reporter);
+          });
+    }
+
     /**
      * Must not be added to the public API, as that would require making the protos public API. This
-     * API is used for testing.
+     * API is used to implement the public consumer API as well as for testing.
      */
-    Builder setOutputConsumer(Consumer<LibraryAnalyzerResult> outputConsumer) {
+    Builder setInternalOutputConsumer(Consumer<LibraryAnalyzerResult> outputConsumer) {
       if (this.outputConsumer == null) {
         this.outputConsumer = outputConsumer;
       } else {
         this.outputConsumer = this.outputConsumer.andThen(outputConsumer);
       }
       return this;
-    }
-
-    public Builder setOutputPath(Path outputPath) {
-      return setOutputConsumer(
-          result -> {
-            try (OutputStream output = Files.newOutputStream(outputPath)) {
-              result.writeTo(output);
-            } catch (IOException e) {
-              throw new UncheckedIOException(e);
-            }
-          });
     }
 
     public Builder setMinApiLevel(int minMajorApiLevel, int minMinorApiLevel) {
