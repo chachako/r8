@@ -90,7 +90,7 @@ def download_version(root, version, target):
 
 def download_target(root, target, hash_or_version, is_hash, quiet=False):
     download_path = os.path.join(root, target)
-    url = archive.GetUploadDestination(hash_or_version, target, is_hash)
+    url = archive.get_upload_destination(hash_or_version, target, is_hash)
     if not quiet:
         print('Downloading: ' + url + ' -> ' + download_path)
     utils.download_file_from_cloud_storage(url,

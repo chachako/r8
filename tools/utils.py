@@ -33,9 +33,11 @@ DEX_SEGMENTS_RESULT_PATTERN = re.compile('- ([^:]+): ([0-9]+)')
 DEPENDENCIES_DIR = os.path.join(THIRD_PARTY, 'dependencies')
 
 BUILD = os.path.join(REPO_ROOT, 'build')
-BUILD_JAVA_MAIN_CLASSPATH = os.pathsep.join((
-    os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build', 'classes', 'java', 'main'),
-    os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build', 'classes', 'java', 'turbo')))
+BUILD_JAVA_MAIN_CLASSPATH = os.pathsep.join(
+    (os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build', 'classes', 'java',
+                  'main'),
+     os.path.join(REPO_ROOT, 'd8_r8', 'main', 'build', 'classes', 'java',
+                  'turbo')))
 LIBS = os.path.join(BUILD, 'libs')
 CUSTOM_CONVERSION_DIR = os.path.join(THIRD_PARTY, 'openjdk',
                                      'custom_conversion')
@@ -166,6 +168,7 @@ R8_INTERNAL_TEST_RESULTS_BUCKET = 'r8-internal-test-results'
 
 ARCHIVE_DETAILS = os.path.join(BUILD, 'archive_details.json')
 
+
 def archive_file(name, gs_dir, src_file):
     gs_file = '%s/%s' % (gs_dir, name)
     upload_file_to_cloud_storage(src_file, gs_file)
@@ -181,12 +184,12 @@ def archive_value(name, gs_dir, value):
 
 def find_cloud_storage_file_from_options(name, options, orElse=None):
     # Import archive on-demand since archive depends on utils.
-    from archive import GetUploadDestination
+    from archive import get_upload_destination
     hash_or_version = find_hash_or_version_from_options(options)
     if not hash_or_version:
         return orElse
     is_hash = options.commit_hash is not None
-    download_path = GetUploadDestination(hash_or_version, name, is_hash)
+    download_path = get_upload_destination(hash_or_version, name, is_hash)
     if file_exists_on_cloud_storage(download_path):
         out = tempfile.NamedTemporaryFile().name
         download_file_from_cloud_storage(download_path, out)

@@ -494,9 +494,10 @@ def download_distribution(version, args, temp):
                 [utils.GRADLE_TASK_R8] if nolib else [utils.GRADLE_TASK_R8LIB])
         return utils.R8_JAR if nolib else utils.R8LIB_JAR
     if version == 'source':
-        return os.pathsep.join((utils.BUILD_JAVA_MAIN_CLASSPATH, utils.ALL_DEPS_JAR))
+        return os.pathsep.join(
+            (utils.BUILD_JAVA_MAIN_CLASSPATH, utils.ALL_DEPS_JAR))
     name = 'r8.jar' if nolib else 'r8lib.jar'
-    source = archive.GetUploadDestination(version, name, is_hash(version))
+    source = archive.get_upload_destination(version, name, is_hash(version))
     dest = os.path.join(temp, 'r8.jar')
     utils.download_file_from_cloud_storage(source, dest)
     return dest
@@ -820,8 +821,8 @@ def try_retrace_output(e, version, temp):
 def get_map_file(version, temp):
     if version == 'main':
         return utils.R8LIB_MAP
-    download_path = archive.GetUploadDestination(version, 'r8lib.jar.map',
-                                                 is_hash(version))
+    download_path = archive.get_upload_destination(version, 'r8lib.jar.map',
+                                                   is_hash(version))
     if utils.file_exists_on_cloud_storage(download_path):
         map_path = os.path.join(temp, 'mapping.map')
         utils.download_file_from_cloud_storage(download_path, map_path)

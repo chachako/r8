@@ -262,10 +262,9 @@ def write_sha1_for(file):
 
 def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
     gradle.RunGradle([
-        utils.GRADLE_TASK_R8,
-        utils.GRADLE_TASK_TEST_BASE_JAR,
-        utils.GRADLE_TASK_TEST_JAR,
-        utils.GRADLE_TASK_TEST_DEPS_JAR, '-Pno_internal'
+        utils.GRADLE_TASK_R8, utils.GRADLE_TASK_TEST_BASE_JAR,
+        utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
+        '-Pno_internal'
     ])
     with utils.TempDir() as tmp:
         with zipfile.ZipFile(maven_zip, 'r') as zip_ref:
@@ -278,8 +277,8 @@ def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
         buildLibs = os.path.join(defines.REPO_ROOT, 'build', 'libs')
         cmd = [
             jdk.GetJavaExecutable(), '-cp',
-            '%s:%s:%s:%s' %
-            (utils.R8_JAR, utils.R8_TESTBASE_JAR, utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR),
+            '%s:%s:%s:%s' % (utils.R8_JAR, utils.R8_TESTBASE_JAR,
+                             utils.R8_TESTS_JAR, utils.R8_TESTS_DEPS_JAR),
             'com.android.tools.r8.desugar.desugaredlibrary.jdk11.DesugaredLibraryJDK11Undesugarer',
             desugar_jdk_libs_jar, undesugared_jar
         ]
@@ -336,7 +335,7 @@ def BuildAndUpload(options, variant):
                               desugar_jdk_libs_hash)
         version = GetVersion(os.path.join(checkout_dir, VERSION_MAP[variant]))
 
-        destination = archive.GetVersionDestination(
+        destination = archive.get_version_destination(
             'gs://', LIBRARY_NAME_MAP[variant] + '/' + version, is_main)
         if utils.cloud_storage_exists(destination) and not options.dry_run:
             raise Exception('Target archive directory %s already exists' %
@@ -347,18 +346,18 @@ def BuildAndUpload(options, variant):
 
         storage_path = LIBRARY_NAME_MAP[variant] + '/' + version
         # Upload the jar file with the library.
-        destination = archive.GetUploadDestination(
+        destination = archive.get_upload_destination(
             storage_path, LIBRARY_NAME_MAP[variant] + '.jar', is_main)
         Upload(options, library_jar, storage_path, destination, is_main)
 
         # Upload the maven zip file with the library.
-        destination = archive.GetUploadDestination(storage_path,
-                                                   MAVEN_RELEASE_ZIP[variant],
-                                                   is_main)
+        destination = archive.get_upload_destination(storage_path,
+                                                     MAVEN_RELEASE_ZIP[variant],
+                                                     is_main)
         Upload(options, maven_zip, storage_path, destination, is_main)
 
         # Upload the jar file for accessing GCS as a maven repro.
-        maven_destination = archive.GetUploadDestination(
+        maven_destination = archive.get_upload_destination(
             utils.get_maven_path(LIBRARY_NAME_MAP[variant], version),
             '%s-%s.jar' % (LIBRARY_NAME_MAP[variant], version), is_main)
         if options.dry_run:
@@ -366,7 +365,7 @@ def BuildAndUpload(options, variant):
         else:
             utils.upload_file_to_cloud_storage(library_jar, maven_destination)
             print('Maven repo root available at: %s' %
-                  archive.GetMavenUrl(is_main))
+                  archive.get_maven_url(is_main))
 
 
 def Main(argv):
@@ -381,7 +380,7 @@ def Main(argv):
     if options.build_only:
         MustBeExistingDirectory(options.build_only)
     if utils.is_bot():
-        archive.SetRLimitToMax()
+        archive.set_r_limit_to_max()
 
     # Make sure bazel is extracted in third_party.
     utils.DownloadFromGoogleCloudStorage(utils.BAZEL_SHA_FILE)

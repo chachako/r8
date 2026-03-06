@@ -594,8 +594,8 @@ def run_with_options(options,
     if options.hash:
         # Download r8-<hash>.jar from
         # https://storage.googleapis.com/r8-releases/raw/<hash>/.
-        download_path = archive.GetUploadDestination(options.hash, 'r8.jar',
-                                                     True)
+        download_path = archive.get_upload_destination(options.hash, 'r8.jar',
+                                                       True)
         assert utils.file_exists_on_cloud_storage(download_path), (
             'Could not find r8.jar file from provided hash: %s' % options.hash)
         destination = os.path.join(utils.LIBS, 'r8-' + options.hash + '.jar')
