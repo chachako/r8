@@ -66,7 +66,7 @@ def parse_options():
         parser.error('Expected one or more apk arguments, got none.')
     if len(apks) > 1 and options.out:
         parser.error('Cannot process multiple apks with --out')
-    return (options, apks)
+    return options, apks
 
 
 def is_archive(file):
