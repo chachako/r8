@@ -208,10 +208,8 @@ val assistantJarTask = projectTask("assistant", "jar")
 val blastRadiusJarTask = projectTask("blastradius", "jar")
 val blastRadiusProtoJarTask = projectTask("blastradius", "protoJar")
 val keepAnnoJarTask = projectTask("keepanno", "jar")
-val keepAnnoDepsJarExceptAsm = projectTask("keepanno", "depsJarExceptAsm")
 val keepAnnoToolsJar = projectTask("keepanno", "toolsJar")
 val resourceShrinkerJarTask = projectTask("resourceshrinker", "jar")
-val resourceShrinkerDepsTask = projectTask("resourceshrinker", "depsJar")
 val downloadDepsTask = projectTask("shared", "downloadDeps")
 
 fun mainJarDependencies(): FileCollection {
