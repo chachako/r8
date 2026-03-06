@@ -293,7 +293,7 @@ def process_commits(commits, local_bucket_dict, temp, outdir, is_try=False):
         retrace_benchmarks = {}
         for benchmark, benchmark_info in perf.ALL_BENCHMARKS.items():
             record_benchmark_result(commit, benchmark, benchmark_info,
-                                    local_bucket_dict, 'build', d8_benchmarks,
+                                    local_bucket_dict, 'build', build_benchmarks,
                                     is_try)
             record_benchmark_result(commit, benchmark, benchmark_info,
                                     local_bucket_dict, 'd8', d8_benchmarks,
