@@ -14,6 +14,7 @@ import com.android.tools.r8.origin.PathOrigin;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import com.android.tools.r8.utils.Box;
+import com.android.tools.r8.utils.ZipUtils;
 import com.android.tools.r8.utils.ZipUtils.ZipBuilder;
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -95,7 +96,7 @@ public class TraceReferencesLoadTest extends TestBase {
         .build();
     Origin origin =
         new ArchiveEntryOrigin(
-            ToolHelper.getClassPathForTests().relativize(classFile).toString(),
+            ZipUtils.zipEntryFromPath(ToolHelper.getClassPathForTests().relativize(classFile)),
             new PathOrigin(jarPath));
     pathConsumer.accept(jarPath);
     originConsumer.accept(origin);
