@@ -83,7 +83,8 @@ def get_commit_hash_from_scheduled_build(scheduled_build):
         if not line.startswith(COMMIT_HASH_PREFIX):
             continue
         if not line.endswith(COMMIT_HASH_SUFFIX):
-            continue
+            # Not a main commit, ignore.
+            return None
         commit_hash = line[len(COMMIT_HASH_PREFIX):-len(COMMIT_HASH_SUFFIX):]
         if len(commit_hash) != 40:
             raise Exception(
@@ -115,10 +116,10 @@ def main(argv):
             builder_name = get_builder_name_from_scheduled_build(
                 scheduled_build)
             commit_hash = get_commit_hash_from_scheduled_build(scheduled_build)
-            if commit_hash != latest_commit_hash and is_cancelation_enabled_for_builder(
+            if commit_hash and commit_hash != latest_commit_hash and is_cancelation_enabled_for_builder(
                     builder_name):
                 cancel_build(scheduled_build, builder_name, commit_hash)
-        time.sleep(5 * 60 * 1000)
+        time.sleep(5 * 60)
     return 0
 
 
