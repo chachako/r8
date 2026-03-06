@@ -2,10 +2,11 @@
 # Copyright (c) 2016, the R8 project authors. Please see the AUTHORS file
 # for details. All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
-
-# Wrapper script for running gradle.
-# Will make sure we pulled down gradle before running, and will use the pulled
-# down version to have a consistent developer experience.
+"""
+Wrapper script for running gradle.
+Will make sure we pulled down gradle before running, and will use the pulled
+down version to have a consistent developer experience.
+"""
 
 import argparse
 import os
@@ -34,7 +35,7 @@ def get_gradle_executable():
         return os.path.join(get_gradle_dir(), 'bin', 'gradle')
 
 
-def ParseOptions():
+def parse_options():
     parser = argparse.ArgumentParser(description='Call gradle.')
     parser.add_argument('--exclude-deps',
                         '--exclude_deps',
@@ -58,85 +59,92 @@ def ParseOptions():
     return parser.parse_known_args()
 
 
-def GetJavaEnv(env):
-    java_env = dict(env if env else os.environ, JAVA_HOME=jdk.GetGradleJdkHome())
+def get_java_env(env):
+    java_env = dict(env if env else os.environ,
+                    JAVA_HOME=jdk.GetGradleJdkHome())
     java_env['PATH'] = java_env['PATH'] + os.pathsep + os.path.join(
         jdk.GetGradleJdkHome(), 'bin')
     java_env['GRADLE_OPTS'] = '-Xmx1g'
     return java_env
 
 
-def PrintCmd(s):
+def print_cmd(s):
     if type(s) is list:
         s = ' '.join(s)
     print('Running: %s' % s)
-    # I know this will hit us on windows eventually if we don't do this.
     sys.stdout.flush()
 
 
-def EnsureGradle():
+def ensure_gradle():
     utils.EnsureDepFromGoogleCloudStorage(get_gradle_executable(), GRADLE8_TGZ,
                                           GRADLE8_SHA1, 'Gradle binary')
 
 
-def EnsureGradleRepositories():
+def ensure_gradle_repositories():
     dependencies_path = os.path.join(utils.THIRD_PARTY, 'dependencies')
     dependencies_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz')
-    dependencies_sha1 = os.path.join(utils.THIRD_PARTY, 'dependencies.tar.gz.sha1')
+    dependencies_sha1 = os.path.join(utils.THIRD_PARTY,
+                                     'dependencies.tar.gz.sha1')
     utils.EnsureDepFromGoogleCloudStorage(dependencies_path, dependencies_tgz,
-                                          dependencies_sha1, 'Gradle dependencies')
-    dependencies_plugin_path = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin')
-    dependencies_plugin_tgz = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin.tar.gz')
-    dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY, 'dependencies_plugin.tar.gz.sha1')
-    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_path, dependencies_plugin_tgz,
-                                          dependencies_plugin_sha1, 'Gradle plugin dependencies')
+                                          dependencies_sha1,
+                                          'Gradle dependencies')
+    dependencies_plugin_path = os.path.join(utils.THIRD_PARTY,
+                                            'dependencies_plugin')
+    dependencies_plugin_tgz = os.path.join(utils.THIRD_PARTY,
+                                           'dependencies_plugin.tar.gz')
+    dependencies_plugin_sha1 = os.path.join(utils.THIRD_PARTY,
+                                            'dependencies_plugin.tar.gz.sha1')
+    utils.EnsureDepFromGoogleCloudStorage(dependencies_plugin_path,
+                                          dependencies_plugin_tgz,
+                                          dependencies_plugin_sha1,
+                                          'Gradle plugin dependencies')
 
-def EnsureJdk():
+
+def ensure_jdk():
     # Gradle in the new setup will use the jdks in the evaluation - fetch
     # all beforehand.
     for root in jdk.GetAllJdkDirs():
-        jdkTgz = root + '.tar.gz'
-        jdkSha1 = jdkTgz + '.sha1'
-        utils.EnsureDepFromGoogleCloudStorage(root, jdkTgz, jdkSha1, root)
+        jdk_tgz = root + '.tar.gz'
+        jdk_sha1 = jdk_tgz + '.sha1'
+        utils.EnsureDepFromGoogleCloudStorage(root, jdk_tgz, jdk_sha1, root)
 
 
-def EnsureProtoc():
-    utils.EnsureDepFromGoogleCloudStorage(
-        PROTOC_ROOT,
-        PROTOC_TGZ,
-        PROTOC_SHA1,
-        'Proto Compiler')
+def ensure_protoc():
+    utils.EnsureDepFromGoogleCloudStorage(PROTOC_ROOT, PROTOC_TGZ, PROTOC_SHA1,
+                                          'Proto Compiler')
 
 
-def EnsureDeps():
-    EnsureGradle()
-    EnsureGradleRepositories()
-    EnsureJdk()
-    EnsureProtoc()
+def ensure_deps():
+    ensure_gradle()
+    ensure_gradle_repositories()
+    ensure_jdk()
+    ensure_protoc()
 
 
-def RunGradleIn(gradleCmd, args, cwd, throw_on_failure=True, env=None):
-    EnsureDeps()
-    cmd = [gradleCmd]
+def run_gradle_in(gradle_cmd, args, cwd, throw_on_failure=True, env=None):
+    ensure_deps()
+    cmd = [gradle_cmd]
     # Changes to these flags should be copied to gradle_benchmark.scenarios.
     args.extend(['--offline', '-Dorg.gradle.configuration-cache=false'])
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
         utils.PrintCmd(cmd)
-        return_value = subprocess.call(cmd, env=GetJavaEnv(env))
+        return_value = subprocess.call(cmd, env=get_java_env(env))
         if throw_on_failure and return_value != 0:
             raise Exception('Failed to execute gradle')
         return return_value
 
-def RunGradle(args, throw_on_failure=True, env=None):
-    return RunGradleIn(get_gradle_executable(),
-                       args,
-                       utils.REPO_ROOT,
-                       throw_on_failure,
-                       env=env)
 
-def Main():
-    (options, args) = ParseOptions()
+def run_gradle(args, throw_on_failure=True, env=None):
+    return run_gradle_in(get_gradle_executable(),
+                         args,
+                         utils.REPO_ROOT,
+                         throw_on_failure,
+                         env=env)
+
+
+def main():
+    (options, args) = parse_options()
     if options.java_home:
         args.append('-Dorg.gradle.java.home=' + options.java_home)
     if options.no_internal:
@@ -145,8 +153,8 @@ def Main():
         args.append('-Pexclude_deps')
     if options.worktree:
         args.append('-g=' + os.path.join(utils.REPO_ROOT, ".gradle_user_home"))
-    return RunGradle(args)
+    return run_gradle(args)
 
 
 if __name__ == '__main__':
-    sys.exit(Main())
+    sys.exit(main())

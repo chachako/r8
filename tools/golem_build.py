@@ -23,7 +23,7 @@ def Main():
     targets.update(lower(run_benchmark.GOLEM_BUILD_TARGETS))
     targets.update(lower(run_on_app_dump.GOLEM_BUILD_TARGETS))
     cmd = GRADLE_ARGS + [target for target in targets]
-    gradle.RunGradle(cmd)
+    gradle.run_gradle(cmd)
 
 
 if __name__ == '__main__':

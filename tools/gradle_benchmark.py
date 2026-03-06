@@ -29,7 +29,7 @@ GRADLE_PROFILER_TGZ = os.path.join(utils.THIRD_PARTY, 'gradle-profiler.tar.gz')
 
 
 def ensure_deps():
-    gradle.EnsureDeps()
+    gradle.ensure_deps()
     utils.EnsureDepFromGoogleCloudStorage(get_profiler_executable(),
                                           GRADLE_PROFILER_TGZ,
                                           GRADLE_PROFILER_SHA1, 'Gradle binary')
@@ -61,7 +61,7 @@ def run_gradle_profiler(cwd, benchmark_name, scenario_file, local_output_dir,
         cmd.extend(['--group', 'performance-suite'])
     utils.PrintCmd(cmd)
     with utils.ChangedWorkingDirectory(cwd):
-        return_value = subprocess.call(cmd, env=gradle.GetJavaEnv(None))
+        return_value = subprocess.call(cmd, env=gradle.get_java_env(None))
     if throw_on_failure and return_value != 0:
         raise Exception('failed to run gradle benchmarks')
     return return_value

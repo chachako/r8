@@ -148,13 +148,13 @@ def run_gradle_build(options, timing):
     if options.skip_gradle_build:
         return
     timing.begin("Download deps")
-    gradle.RunGradle([utils.GRADLE_TASK_DOWNLOAD_DEPS, '-Pno_internal'])
+    gradle.run_gradle([utils.GRADLE_TASK_DOWNLOAD_DEPS, '-Pno_internal'])
     timing.end()
     timing.begin("Build consolidated license")
-    gradle.RunGradle([utils.GRADLE_TASK_CONSOLIDATED_LICENSE, '-Pno_internal'])
+    gradle.run_gradle([utils.GRADLE_TASK_CONSOLIDATED_LICENSE, '-Pno_internal'])
     timing.end()
     timing.begin("Build keep anno")
-    gradle.RunGradle([
+    gradle.run_gradle([
         utils.GRADLE_TASK_KEEP_ANNO_JAR,
         utils.GRADLE_TASK_KEEP_ANNO_DOC,
         utils.GRADLE_TASK_KEEP_ANNO_LEGACY_JAR,
@@ -163,13 +163,13 @@ def run_gradle_build(options, timing):
     ])
     timing.end()
     timing.begin("Build process keep rules")
-    gradle.RunGradle([
+    gradle.run_gradle([
         utils.GRADLE_TASK_PROCESS_KEEP_RULES_LIB_JAR,
         '-Pno_internal',
     ])
     timing.end()
     timing.begin("Build R8")
-    gradle.RunGradle([
+    gradle.run_gradle([
         utils.GRADLE_TASK_R8,
         utils.GRADLE_TASK_R8LIB,
         utils.GRADLE_TASK_R8LIB_NO_DEPS,
@@ -179,13 +179,13 @@ def run_gradle_build(options, timing):
     ])
     timing.end()
     timing.begin("Build source jar")
-    gradle.RunGradle([utils.GRADLE_TASK_SOURCE_JAR, '-Pno_internal'])
+    gradle.run_gradle([utils.GRADLE_TASK_SOURCE_JAR, '-Pno_internal'])
     timing.end()
     timing.begin("Build swiss army knife")
-    gradle.RunGradle([utils.GRADLE_TASK_SWISS_ARMY_KNIFE, '-Pno_internal'])
+    gradle.run_gradle([utils.GRADLE_TASK_SWISS_ARMY_KNIFE, '-Pno_internal'])
     timing.end()
     timing.begin("Build keepanno tools")
-    gradle.RunGradle([
+    gradle.run_gradle([
         utils.GRADLE_TASK_KEEPANNOTOOLS,
         utils.GRADLE_TASK_KEEPANNOTOOLSLIB,
         '-Pno_internal',
@@ -325,7 +325,7 @@ def run(options):
         default_pom_file = os.path.join(temp, 'r8.pom')
         create_maven_release.write_default_r8_pom_file(default_pom_file,
                                                        version)
-        gradle.RunGradle([
+        gradle.run_gradle([
             ':dist:spdxSbom', '-PspdxVersion=' + version,
             '-PspdxRevision=' + get_git_hash()
         ])

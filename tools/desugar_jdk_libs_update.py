@@ -49,8 +49,8 @@ def run(args):
         bazel = os.path.join(utils.BAZEL_TOOL, 'lib', 'bazel', 'bin', 'bazel')
         with utils.ChangedWorkingDirectory(checkout_dir):
             subprocess.check_call([
-                bazel, '--bazelrc=/dev/null', 'build',
-                '--spawn_strategy=local', '--verbose_failures', ':desugar_jdk_libs_jdk11'
+                bazel, '--bazelrc=/dev/null', 'build', '--spawn_strategy=local',
+                '--verbose_failures', ':desugar_jdk_libs_jdk11'
             ])
 
         openjdk_dir = join('third_party', 'openjdk')
@@ -61,7 +61,7 @@ def run(args):
         # Retrieve current version to pick metadata files.
         tar_gz_sha1 = join(openjdk_dir, openjdk_subdir + '.tar.gz.sha1')
         subprocess.check_call(['git', 'checkout', tar_gz_sha1])
-        gradle.RunGradle([utils.GRADLE_TASK_DOWNLOAD_DEPS, '-Pno_internal'])
+        gradle.run_gradle([utils.GRADLE_TASK_DOWNLOAD_DEPS, '-Pno_internal'])
         metadata_files = ('LICENSE', 'README.google')
         for f in metadata_files:
             shutil.copyfile(join(dest_dir, f), join(tmp_dir, f))
@@ -73,9 +73,8 @@ def run(args):
         os.mkdir(dest_dir)
 
         # Create new version.
-        shutil.copyfile(
-            join(src_dir, 'd8_java_base_selected_with_addon.jar'),
-            join(dest_dir, 'desugar_jdk_libs.jar'))
+        shutil.copyfile(join(src_dir, 'd8_java_base_selected_with_addon.jar'),
+                        join(dest_dir, 'desugar_jdk_libs.jar'))
         for f in metadata_files:
             shutil.copyfile(join(tmp_dir, f), join(dest_dir, f))
         desugar_jdk_libs_hash = os.path.join(dest_dir, 'desugar_jdk_libs_hash')

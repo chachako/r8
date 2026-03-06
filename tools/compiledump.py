@@ -490,7 +490,7 @@ def download_distribution(version, args, temp):
     nolib = args.nolib
     if version == 'main':
         if not args.no_build:
-            gradle.RunGradle(
+            gradle.run_gradle(
                 [utils.GRADLE_TASK_R8] if nolib else [utils.GRADLE_TASK_R8LIB])
         return utils.R8_JAR if nolib else utils.R8LIB_JAR
     if version == 'source':
@@ -547,7 +547,7 @@ def clean_config_line(line, minify, optimize, shrink):
 
 
 def compile_reflective_helper(temp, jdkhome):
-    gradle.RunGradle([utils.GRADLE_TASK_MAIN_COMPILE])
+    gradle.run_gradle([utils.GRADLE_TASK_MAIN_COMPILE])
     base_path = os.path.join(
         utils.REPO_ROOT, 'src/main/java/com/android/tools/r8/utils/compiledump')
 
@@ -882,7 +882,7 @@ def summarize_jar(jar):
 
 
 def run(args, otherargs):
-    gradle.EnsureJdk()
+    gradle.ensure_jdk()
     jdkhome = jdk.GetJdkRoot(args.jdk) if args.jdk else None
     if args.summary:
         summarize_dump_files(otherargs)

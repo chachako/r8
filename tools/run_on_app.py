@@ -242,7 +242,7 @@ def get_permutations():
 def run_all(options, args):
     # Build first so that each job won't.
     if should_build(options):
-        gradle.RunGradle([utils.GRADLE_TASK_R8LIB])
+        gradle.run_gradle([utils.GRADLE_TASK_R8LIB])
         options.no_build = True
     assert not should_build(options)
 
@@ -663,7 +663,7 @@ def run_with_options(options,
                         main = 'com.android.tools.r8.' + options.compiler.upper(
                         )
                     if should_build(options):
-                        gradle.RunGradle([
+                        gradle.run_gradle([
                             utils.GRADLE_TASK_R8LIB if tool.startswith('r8lib')
                             else utils.GRADLE_TASK_R8
                         ])

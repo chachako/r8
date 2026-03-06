@@ -143,7 +143,7 @@ def main_build(maps, max_memory_size, targets, target_root):
     ]
     if max_memory_size:
         gradle_args.append('-Dorg.gradle.jvmargs=-Xmx' + max_memory_size)
-    gradle.RunGradle(gradle_args)
+    gradle.run_gradle(gradle_args)
     copy_jar_targets(utils.LIBS, target_root, jar_targets, maps)
     copy_other_targets(utils.GENERATED_LICENSE_DIR, target_root, OTHER_TARGETS)
 

@@ -144,7 +144,7 @@ def run(args):
             implementation_maven_zip = 'desugar_jdk_libs_jdk11_nio.zip'
             release_archive_location = 'desugar_jdk_libs_nio'
     implementation_build_output = join('bazel-bin', implementation_maven_zip)
-    gradle.RunGradle([utils.GRADLE_TASK_R8])
+    gradle.run_gradle([utils.GRADLE_TASK_R8])
     with utils.TempDir() as tmp_dir:
         (name,
          configuration_version) = utils.desugar_configuration_name_and_version(
@@ -181,13 +181,15 @@ def run(args):
                             if (version != desugar_jdk_libs_version):
                                 raise Exception(
                                     "Version mismatch. Configuration has version '"
-                                    + version
-                                    + "', and desugar_jdk_libs has version '"
-                                    + desugar_jdk_libs_version
-                                    + " in '" + version_file_name
-                                    + "'. If testing a new version use "
-                                    + "--desugar-jdk-libs-checkout with updated "
-                                    + "VERSION_*.txt and DEPENDENCIES_*.txt files.")
+                                    + version +
+                                    "', and desugar_jdk_libs has version '" +
+                                    desugar_jdk_libs_version + " in '" +
+                                    version_file_name +
+                                    "'. If testing a new version use " +
+                                    "--desugar-jdk-libs-checkout with updated "
+                                    +
+                                    "VERSION_*.txt and DEPENDENCIES_*.txt files."
+                                )
 
         # Build desugared library configuration.
         print("Building desugared library configuration " + version)
@@ -287,8 +289,8 @@ def run(args):
         print("  }")
         print()
         print(
-            'If not using the "changing" property remember to run gradle with ' +
-            "--refresh-dependencies (./gradlew --refresh-dependencies ...) " +
+            'If not using the "changing" property remember to run gradle with '
+            + "--refresh-dependencies (./gradlew --refresh-dependencies ...) " +
             "to ensure the cache is not used when the same version is published."
             + "multiple times.")
 

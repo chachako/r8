@@ -36,7 +36,7 @@ def run(tool,
     if build is None:
         build, args = extract_build_from_args(args)
     if build:
-        gradle.RunGradle([
+        gradle.run_gradle([
             utils.GRADLE_TASK_R8LIB
             if tool.startswith('r8lib') else utils.GRADLE_TASK_R8
         ])
@@ -69,7 +69,8 @@ def run(tool,
             'com.android.tools.r8.tracereferences.TraceReferences'
         ])
     else:
-        cmd.extend(['-cp', utils.R8_JAR, 'com.android.tools.r8.SwissArmyKnife', tool])
+        cmd.extend(
+            ['-cp', utils.R8_JAR, 'com.android.tools.r8.SwissArmyKnife', tool])
     lib, args = extract_lib_from_args(args)
     if lib:
         cmd.extend(["--lib", lib])

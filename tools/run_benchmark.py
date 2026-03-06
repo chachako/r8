@@ -127,10 +127,12 @@ def main(argv, temp):
         options.output = os.path.abspath(options.output)
 
     if options.dump_blast_radius_to_directory:
-        options.dump_blast_radius_to_directory = os.path.abspath(options.dump_blast_radius_to_directory)
+        options.dump_blast_radius_to_directory = os.path.abspath(
+            options.dump_blast_radius_to_directory)
 
     if options.dump_trace_to_directory:
-        options.dump_trace_to_directory = os.path.abspath(options.dump_trace_to_directory)
+        options.dump_trace_to_directory = os.path.abspath(
+            options.dump_trace_to_directory)
 
     if options.temp:
         temp = options.temp
@@ -170,7 +172,7 @@ def main(argv, temp):
             options.version, options, temp)
 
     if not options.no_build:
-        gradle.RunGradle(buildTargets + ['-Pno_internal'])
+        gradle.run_gradle(buildTargets + ['-Pno_internal'])
 
     if not options.golem:
         # When running locally, change the working directory to be in 'temp'.

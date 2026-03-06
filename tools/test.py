@@ -357,7 +357,7 @@ def Main():
 
 def test(options, args):
     if utils.is_bot():
-        gradle.RunGradle(['--no-daemon', 'clean'])
+        gradle.run_gradle(['--no-daemon', 'clean'])
         print('Running with python ' + str(sys.version_info))
         # Always print stats on bots if command cache is enabled
         options.command_cache_stats = options.command_cache_dir is not None
@@ -594,7 +594,7 @@ def test(options, args):
                 runtimes.extend(matches)
             gradle_args.append('-Pruntimes=%s' % ':'.join(runtimes))
 
-        return_code = gradle.RunGradle(gradle_args, throw_on_failure=False)
+        return_code = gradle.run_gradle(gradle_args, throw_on_failure=False)
         return archive_and_return(return_code, options)
 
     # Legacy testing populates the runtimes based on dex_vm.
@@ -606,11 +606,11 @@ def test(options, args):
         # Append the "none" runtime and default JVM if running the "default" DEX VM.
         if art_vm == "default":
             runtimes.extend(['jdk11', 'none'])
-        return_code = gradle.RunGradle(gradle_args + [
+        return_code = gradle.run_gradle(gradle_args + [
             '-Pdex_vm=%s' % art_vm + vm_suffix,
             '-Pruntimes=%s' % ':'.join(runtimes),
         ],
-                                       throw_on_failure=False)
+                                        throw_on_failure=False)
         if options.generate_golden_files_to:
             sha1 = '%s' % utils.get_HEAD_sha1()
             with utils.ChangedWorkingDirectory(

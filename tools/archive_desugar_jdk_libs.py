@@ -261,7 +261,7 @@ def write_sha1_for(file):
 
 
 def Undesugar(variant, maven_zip, version, undesugared_maven_zip):
-    gradle.RunGradle([
+    gradle.run_gradle([
         utils.GRADLE_TASK_R8, utils.GRADLE_TASK_TEST_BASE_JAR,
         utils.GRADLE_TASK_TEST_JAR, utils.GRADLE_TASK_TEST_DEPS_JAR,
         '-Pno_internal'

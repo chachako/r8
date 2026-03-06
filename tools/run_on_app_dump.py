@@ -623,9 +623,8 @@ def build_app_with_shrinker(app, options, temp_dir, app_dir, shrinker,
 
     properties = app.compiler_properties
     if options.dump_input_to_directory:
-        properties.append(
-            '-Dcom.android.tools.r8.dumpinputtodirectory=%s'
-                % options.dump_input_to_directory)
+        properties.append('-Dcom.android.tools.r8.dumpinputtodirectory=%s' %
+                          options.dump_input_to_directory)
     args = AttrDict({
         'dump': dump_for_app(app_dir, app),
         'r8_jar': get_r8_jar(options, temp_dir, shrinker),
@@ -888,11 +887,10 @@ def parse_options(argv):
         '(default enabled)',
         default=False,
         action='store_true')
-    result.add_argument(
-        '--dump-input-to-directory',
-        '--dump_input_to_directory',
-        help='Dump all compilations to directory',
-        default=None)
+    result.add_argument('--dump-input-to-directory',
+                        '--dump_input_to_directory',
+                        help='Dump all compilations to directory',
+                        default=None)
     result.add_argument('--emulator-id',
                         '--emulator_id',
                         help='Id of the emulator to use',
@@ -1189,16 +1187,14 @@ def main(argv):
                               quiet=options.quiet)
         elif options.version == 'main':
             if not options.no_build:
-                gradle.RunGradle([
-                    utils.GRADLE_TASK_R8,
-                    '-Pno_internal'
-                ])
+                gradle.run_gradle([utils.GRADLE_TASK_R8, '-Pno_internal'])
                 build_r8lib = False
                 for shrinker in options.shrinker:
                     if is_minified_r8(shrinker):
                         build_r8lib = True
                 if build_r8lib:
-                    gradle.RunGradle([utils.GRADLE_TASK_R8LIB, '-Pno_internal'])
+                    gradle.run_gradle(
+                        [utils.GRADLE_TASK_R8LIB, '-Pno_internal'])
             # Make a copy of r8.jar and r8lib.jar such that they stay the same for
             # the entire execution of this script.
             if 'r8-nolib' in options.shrinker or 'r8-nolib-full' in options.shrinker:
