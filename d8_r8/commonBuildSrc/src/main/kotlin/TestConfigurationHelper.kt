@@ -8,7 +8,6 @@ import java.io.PrintStream
 import java.nio.charset.StandardCharsets
 import java.util.Date
 import java.util.concurrent.TimeUnit
-import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestDescriptor
 import org.gradle.api.tasks.testing.TestListener
@@ -19,17 +18,18 @@ public class TestConfigurationHelper {
   public companion object {
 
     private fun retrace(
-      project: Project,
+      rootDir: File,
       r8jar: File,
       mappingFile: File,
       exception: Throwable,
+      printObfuscatedStacktraces: Boolean,
     ): String {
       val out = StringBuilder()
       val header = "RETRACED STACKTRACE: " + System.currentTimeMillis()
       out.append("\n--------------------------------------\n")
       out.append("${header}\n")
       out.append("--------------------------------------\n")
-      val retracePath = project.getRoot().resolveAll("tools", "retrace.py")
+      val retracePath = rootDir.resolveAll("tools", "retrace.py")
       val command =
         mutableListOf(
           "python3",
@@ -50,7 +50,7 @@ public class TestConfigurationHelper {
         out.append("ERROR DURING RETRACING: " + System.currentTimeMillis() + "\n")
         out.append(process.errorStream.bufferedReader().use { it.readText() })
       }
-      if (project.hasProperty("print_obfuscated_stacktraces") || !processCompleted) {
+      if (printObfuscatedStacktraces || !processCompleted) {
         out.append("\n\n--------------------------------------\n")
         out.append("OBFUSCATED STACKTRACE\n")
         out.append("--------------------------------------\n")
@@ -141,11 +141,14 @@ public class TestConfigurationHelper {
         test.maxHeapSize = "4G"
       }
 
-      if (
-        isR8Lib ||
-          project.hasProperty("one_line_per_test") ||
-          project.hasProperty("update_test_timestamp")
-      ) {
+      val printTimes = project.hasProperty("print_times")
+      val oneLinePerTest = project.hasProperty("one_line_per_test")
+      val hasUpdateTestTimestamp = project.hasProperty("update_test_timestamp")
+      val rootDir = project.getRoot()
+      val printObfuscatedStacktraces = project.hasProperty("print_obfuscated_stacktraces")
+
+      if (isR8Lib || oneLinePerTest || hasUpdateTestTimestamp) {
+        val updateTestTimestampPath = project.property("update_test_timestamp")!!.toString()
         test.addTestListener(
           object : TestListener {
             val testTimes = mutableMapOf<TestDescriptor?, Long>()
@@ -154,7 +157,7 @@ public class TestConfigurationHelper {
             override fun beforeSuite(desc: TestDescriptor?) {}
 
             override fun afterSuite(desc: TestDescriptor?, result: TestResult?) {
-              if (project.hasProperty("print_times")) {
+              if (printTimes) {
                 // desc.parent == null when we are all done
                 if (desc?.parent == null) {
                   testTimes
@@ -167,29 +170,34 @@ public class TestConfigurationHelper {
             }
 
             override fun beforeTest(desc: TestDescriptor?) {
-              if (project.hasProperty("one_line_per_test")) {
+              if (oneLinePerTest) {
                 println("Start executing ${desc}")
               }
-              if (project.hasProperty("print_times")) {
+              if (printTimes) {
                 testTimes[desc] = Date().getTime()
               }
             }
 
             override fun afterTest(desc: TestDescriptor?, result: TestResult?) {
-              if (project.hasProperty("one_line_per_test")) {
+              if (oneLinePerTest) {
                 println("Done executing ${desc} with result: ${result?.resultType}")
               }
-              if (project.hasProperty("print_times")) {
+              if (printTimes) {
                 testTimes[desc] = Date().getTime() - testTimes[desc]!!
               }
-              if (project.hasProperty("update_test_timestamp")) {
-                File(project.property("update_test_timestamp")!!.toString())
-                  .writeText(Date().getTime().toString())
-              }
+              File(updateTestTimestampPath).writeText(Date().getTime().toString())
               if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
                 val exception = result.exception as Throwable
                 if (isR8Lib) {
-                  println(retrace(project, r8Jar!!, r8LibMappingFile!!, exception))
+                  println(
+                    retrace(
+                      rootDir,
+                      r8Jar!!,
+                      r8LibMappingFile!!,
+                      exception,
+                      printObfuscatedStacktraces,
+                    )
+                  )
                 } else {
                   val baos = ByteArrayOutputStream()
                   exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
