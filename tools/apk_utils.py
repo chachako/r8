@@ -37,7 +37,7 @@ def parse_options():
     if len(args) != 1:
         parser.error('Expected <apk> argument, got: ' + ' '.join(args))
     apk = args[0]
-    return (options, apk)
+    return options, apk
 
 
 def add_baseline_profile_to_apk(apk, baseline_profile,
