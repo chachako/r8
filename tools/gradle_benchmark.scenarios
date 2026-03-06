@@ -2,7 +2,8 @@
 # https://github.com/gradle/gradle-profiler?tab=readme-ov-file#advanced-profiling-scenarios
 
 scenario-groups {
-    # This is run by gradle_benchmark.py
+    # This is the target run by gradle_benchmark.py.
+    # Remember to propagate any modifications to this list into perf.py.
     performance-suite = [
         "configuration_only",
         "compile_java_main",
