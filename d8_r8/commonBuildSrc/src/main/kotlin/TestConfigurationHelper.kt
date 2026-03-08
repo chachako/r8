@@ -148,7 +148,12 @@ public class TestConfigurationHelper {
       val printObfuscatedStacktraces = project.hasProperty("print_obfuscated_stacktraces")
 
       if (isR8Lib || oneLinePerTest || hasUpdateTestTimestamp) {
-        val updateTestTimestampPath = project.property("update_test_timestamp")!!.toString()
+        val updateTestTimestampPath =
+          if (hasUpdateTestTimestamp) {
+            project.property("update_test_timestamp")!!.toString()
+          } else {
+            null
+          }
         test.addTestListener(
           object : TestListener {
             val testTimes = mutableMapOf<TestDescriptor?, Long>()
@@ -185,7 +190,9 @@ public class TestConfigurationHelper {
               if (printTimes) {
                 testTimes[desc] = Date().getTime() - testTimes[desc]!!
               }
-              File(updateTestTimestampPath).writeText(Date().getTime().toString())
+              if (updateTestTimestampPath != null) {
+                File(updateTestTimestampPath).writeText(Date().getTime().toString())
+              }
               if (result?.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
                 val exception = result.exception as Throwable
                 if (isR8Lib) {
