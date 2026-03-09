@@ -164,10 +164,6 @@ public class ProguardMemberRule {
     return new Builder();
   }
 
-  public ProguardTypeMatcher getAnnotation(int index) {
-    return annotations.get(0);
-  }
-
   public List<ProguardTypeMatcher> getAnnotations() {
     return annotations;
   }
