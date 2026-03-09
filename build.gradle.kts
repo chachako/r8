@@ -31,7 +31,7 @@ tasks {
     dependsOn(gradle.includedBuild("resourceshrinker").task(":clean"))
     dependsOn(gradle.includedBuild("main").task(":clean"))
     dependsOn(gradle.includedBuild("library_desugar").task(":clean"))
-    dependsOn(gradle.includedBuild("test").task(":clean"))
+    dependsOn(":test:clean")
     dependsOn(gradle.includedBuild("dist").task(":clean"))
   }
 
@@ -40,8 +40,5 @@ tasks {
   val swissArmyKnife by
     registering() { dependsOn(gradle.includedBuild("dist").task(":swissArmyKnife")) }
 
-  val r8lib by
-    registering() {
-      dependsOn(gradle.includedBuild("test").task(":assembleR8LibWithRelocatedDeps"))
-    }
+  val r8lib by registering() { dependsOn(":test:assembleR8LibWithRelocatedDeps") }
 }
