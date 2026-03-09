@@ -152,50 +152,47 @@ tasks {
     testJarProviders: List<TaskProvider<*>>,
     artifactName: String,
   ) {
-    dependsOn(mainDepsJarTask, packageTestDeps, r8WithRelocatedDepsTask)
+    dependsOn(mainDepsJarFilesTask, packageTestDeps, r8WithRelocatedDepsTask)
     targetJarProviders.forEach(::dependsOn)
     testJarProviders.forEach(::dependsOn)
+    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+    val testDepsJar = packageTestDeps.getSingleOutputFile()
+    inputs.files(r8WithRelocatedDepsJar, testDepsJar)
+    inputs.files(mainDepsJarFilesTask.outputs.files)
+    inputs.files(targetJarProviders.map { it.getSingleOutputFile() })
+    inputs.files(testJarProviders.map { it.getSingleOutputFile() })
     val output = file(Paths.get("build", "libs", artifactName))
     outputs.file(output)
-
-    inputs.files(r8WithRelocatedDepsTask)
-    inputs.files(packageTestDeps)
-    inputs.files(mainDepsJarTask)
-    targetJarProviders.forEach { inputs.files(it) }
-    testJarProviders.forEach { inputs.files(it) }
-
-    doFirst {
-      val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-      val testDepsJar = packageTestDeps.getSingleOutputFile()
-      val argList =
-        mutableListOf(
-          "--keep-rules",
-          "--allowobfuscation",
-          "--lib",
-          "${getJavaHome(Jdk.JDK_25)}",
-          "--lib",
-          "$testDepsJar",
-          "--lib",
-          "${mainDepsJarTask.getSingleOutputFile()}",
-          "--output",
-          "$output",
-        )
-      targetJarProviders.forEach {
-        argList.add("--target")
-        argList.add("${it.getSingleOutputFile()}")
-      }
-      testJarProviders.forEach {
-        argList.add("--source")
-        argList.add("${it.getSingleOutputFile()}")
-      }
-      commandLine =
-        baseCompilerCommandLine(
-          listOf("-Dcom.android.tools.r8.tracereferences.obfuscateAllEnums"),
-          r8WithRelocatedDepsJar,
-          "tracereferences",
-          argList,
-        )
+    val argList =
+      mutableListOf(
+        "--keep-rules",
+        "--allowobfuscation",
+        "--lib",
+        "${getJavaHome(Jdk.JDK_25)}",
+        "--lib",
+        "$testDepsJar",
+        "--output",
+        "$output",
+      )
+    mainDepsJarFilesTask.outputs.files.forEach {
+      argList.add("--lib")
+      argList.add("$it")
     }
+    targetJarProviders.forEach {
+      argList.add("--target")
+      argList.add("${it.getSingleOutputFile()}")
+    }
+    testJarProviders.forEach {
+      argList.add("--source")
+      argList.add("${it.getSingleOutputFile()}")
+    }
+    commandLine =
+      baseCompilerCommandLine(
+        listOf("-Dcom.android.tools.r8.tracereferences.obfuscateAllEnums"),
+        r8WithRelocatedDepsJar,
+        "tracereferences",
+        argList,
+      )
   }
 
   val generateKeepRulesForR8LibWithRelocatedDeps by
@@ -228,48 +225,35 @@ tasks {
       r8WithRelocatedDepsTask,
       assistantJarTask,
     )
-    val outputJar = getRoot().resolveAll("build", "libs", artifactName)
-    outputs.file(outputJar)
+    val inputJar = inputJarProvider.getSingleOutputFile()
+    val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
+    val assistantJar = assistantJarTask.getSingleOutputFile()
     val keepRuleFiles =
       listOf(
         getRoot().resolveAll("src", "main", "keep.txt"),
         getRoot().resolveAll("src", "main", "discard.txt"),
-        generatedKeepRulesProvider.get().outputs.files,
+        generatedKeepRulesProvider.getSingleOutputFile(),
         // TODO(b/294351878): Remove once enum issue is fixed
         getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"),
       )
-    inputs.files(inputJarProvider)
-    inputs.files(r8WithRelocatedDepsTask)
-    inputs.files(assistantJarTask)
-    inputs.files(generatedKeepRulesProvider)
-    inputs.files(getRoot().resolveAll("tools", "create_r8lib.py"))
-    inputs.files(keepRuleFiles)
-    inputs.files(classpath)
-
-    doFirst {
-      val inputJar = inputJarProvider.getSingleOutputFile()
-      val r8WithRelocatedDepsJar = r8WithRelocatedDepsTask.getSingleOutputFile()
-      val assistantJar = assistantJarTask.getSingleOutputFile()
-      val keepRuleFiles =
-        listOf(
-          getRoot().resolveAll("src", "main", "keep.txt"),
-          getRoot().resolveAll("src", "main", "discard.txt"),
-          generatedKeepRulesProvider.getSingleOutputFile(),
-          // TODO(b/294351878): Remove once enum issue is fixed
-          getRoot().resolveAll("src", "main", "keep_r8resourceshrinker.txt"),
-        )
-      commandLine =
-        createR8LibCommandLine(
-          r8WithRelocatedDepsJar,
-          inputJar,
-          outputJar,
-          keepRuleFiles,
-          excludingDepsVariant = classpath.isNotEmpty(),
-          debugVariant = false,
-          classpath = classpath,
-          replaceFromJar = assistantJar,
-        )
-    }
+    inputs.files(
+      listOf(r8WithRelocatedDepsJar, inputJar, getRoot().resolveAll("tools", "create_r8lib.py"))
+        .union(keepRuleFiles)
+        .union(classpath)
+    )
+    val outputJar = getRoot().resolveAll("build", "libs", artifactName)
+    outputs.file(outputJar)
+    commandLine =
+      createR8LibCommandLine(
+        r8WithRelocatedDepsJar,
+        inputJar,
+        outputJar,
+        keepRuleFiles,
+        excludingDepsVariant = classpath.isNotEmpty(),
+        debugVariant = false,
+        classpath = classpath,
+        replaceFromJar = assistantJar,
+      )
   }
 
   val assembleR8LibNoDeps by
@@ -535,17 +519,15 @@ tasks {
 
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      project.provider {
-        extractClassesPaths(
-          "keepanno" + File.separator,
-          keepAnnoCompileTask.outputs.files.asPath,
-          keepAnnoCompileKotlinTask.outputs.files.asPath,
-        )
-      },
+      extractClassesPaths(
+        "keepanno" + File.separator,
+        keepAnnoCompileTask.outputs.files.asPath,
+        keepAnnoCompileKotlinTask.outputs.files.asPath,
+      ),
     )
     systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", processKeepRulesLibJar)
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8LibJar)
-    systemProperty("R8_DEPS", project.provider { mainDepsJarTask.outputs.files.getAsPath() })
+    systemProperty("R8_DEPS", mainDepsJarFilesTask.outputs.files.getAsPath())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
     systemProperty("R8_SWISS_ARMY_KNIFE", swissArmyKnifeJar)
     systemProperty("R8_WITH_RELOCATED_DEPS", r8WithRelocatedDepsJar)
