@@ -45,7 +45,9 @@ includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/testbase"))
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/tests_bootstrap"))
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/tests_java_8"))
+include(":tests_java_8")
+
+project(":tests_java_8").projectDir = file("d8_r8/test_modules/tests_java_8")
 
 includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/tests_java_9"))
 

@@ -19,6 +19,8 @@ java {
 
 kotlin { explicitApi() }
 
+evaluationDependsOn(":tests_java_8")
+
 dependencies {}
 
 val blastRadiusSourcesTask = projectTask("blastradius", "sourcesJar")
@@ -38,14 +40,12 @@ val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val javaTestBaseJarTask = projectTask("testbase", "testJar")
 val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
-val java8TestJarTask = projectTask("tests_java_8", "testJar")
 val java9TestJarTask = projectTask("tests_java_9", "testJar")
 val java11TestJarTask = projectTask("tests_java_11", "testJar")
 val java17TestJarTask = projectTask("tests_java_17", "testJar")
 val java21TestJarTask = projectTask("tests_java_21", "testJar")
 val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
 val bootstrapTestJarTask = projectTask("tests_bootstrap", "testJar")
-val testsJava8SourceSetDependenciesTask = projectTask("tests_java_8", "sourceSetDependencyTask")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
 val keepAnnoToolsWithRelocatedDepsTask = projectTask("dist", "keepAnnoToolsWithRelocatedDeps")
 val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
@@ -57,7 +57,7 @@ tasks {
 
   "clean" {
     dependsOn(gradle.includedBuild("tests_bootstrap").task(":clean"))
-    dependsOn(gradle.includedBuild("tests_java_8").task(":clean"))
+    dependsOn(":tests_java_8:clean")
     dependsOn(gradle.includedBuild("tests_java_9").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_11").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_17").task(":clean"))
@@ -67,13 +67,15 @@ tasks {
 
   val packageTests by
     registering(Jar::class) {
-      dependsOn(java8TestJarTask)
+      dependsOn(":tests_java_8:testJar")
       dependsOn(java9TestJarTask)
       dependsOn(java11TestJarTask)
       dependsOn(java17TestJarTask)
       dependsOn(java21TestJarTask)
       dependsOn(bootstrapTestJarTask)
-      from(java8TestJarTask.outputs.files.map(::zipTree))
+      from(
+        project(":tests_java_8").tasks.named("testJar").map { zipTree(it.outputs.files.singleFile) }
+      )
       from(java9TestJarTask.outputs.files.map(::zipTree))
       from(java11TestJarTask.outputs.files.map(::zipTree))
       from(java17TestJarTask.outputs.files.map(::zipTree))
@@ -491,7 +493,7 @@ tasks {
       r8WithRelocatedDepsTask,
       swissArmyKnifeTask,
       assembleR8LibNoDeps,
-      testsJava8SourceSetDependenciesTask,
+      ":tests_java_8:sourceSetDependencyTask",
       rewriteTestBaseForR8LibWithRelocatedDeps,
       unzipRewrittenTests,
       unzipTests,
@@ -579,7 +581,7 @@ tasks {
     } else if (project.hasProperty("r8lib_no_deps")) {
       dependsOn(testR8LibNoDeps)
     } else {
-      dependsOn(gradle.includedBuild("tests_java_8").task(":test"))
+      dependsOn(":tests_java_8:test")
       dependsOn(gradle.includedBuild("tests_java_9").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_11").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_17").task(":test"))
