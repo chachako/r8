@@ -122,9 +122,9 @@ public class RelocatorCommandTest extends TestBase {
               RelocatorCommand.parse(
                       new String[] {
                         "--output",
-                        "first_output",
+                        "first_output.zip",
                         "--output",
-                        "another_output",
+                        "another_output.zip",
                         "--map",
                         "foo->bar",
                         "--input",
@@ -135,7 +135,7 @@ public class RelocatorCommandTest extends TestBase {
             });
     assertThat(
         exception.getCause().getMessage(),
-        containsString("Cannot output both to 'first_output' and 'another_output'"));
+        containsString("Cannot output both to 'first_output.zip' and 'another_output.zip'"));
   }
 
   @Test
