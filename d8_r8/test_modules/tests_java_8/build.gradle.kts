@@ -139,60 +139,36 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      project.provider { testbaseCompileJavaTask.outputs.files.asPath.split(File.pathSeparator)[0] },
+      testbaseCompileJavaTask.outputs.files.asPath.split(File.pathSeparator)[0],
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",
-      project.provider {
-        extractClassesPaths(
-          "keepanno" + File.separator,
-          keepAnnoCompileJavaTask.outputs.files.asPath,
-          keepAnnoCompileKotlinTask.outputs.files.asPath,
-        )
-      },
+      extractClassesPaths(
+        "keepanno" + File.separator,
+        keepAnnoCompileJavaTask.outputs.files.asPath,
+        keepAnnoCompileKotlinTask.outputs.files.asPath,
+      ),
     )
     // This path is set when compiling examples jar task in DependenciesPlugin.
-    systemProperty(
-      "BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH",
-      project.provider {
-        mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          distDepsFilesTask.outputs.files.getAsPath() +
-          File.pathSeparator +
-          getRoot().resolveAll("src", "main", "resources") +
-          File.pathSeparator +
-          keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          assistantCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          resourceShrinkerCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
-      },
-    )
-    systemProperty(
-      "BUILD_PROP_R8_RUNTIME_PATH",
-      project.provider {
-        mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          distDepsFilesTask.outputs.files.getAsPath() +
-          File.pathSeparator +
-          getRoot().resolveAll("src", "main", "resources") +
-          File.pathSeparator +
-          keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          assistantCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          resourceShrinkerCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
-      },
-    )
-    systemProperty("R8_DEPS", project.provider { distDepsFilesTask.outputs.files.getAsPath() })
+    val r8RuntimePath =
+      mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        distDepsFilesTask.outputs.files.getAsPath() +
+        File.pathSeparator +
+        getRoot().resolveAll("src", "main", "resources") +
+        File.pathSeparator +
+        keepAnnoCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        assistantCompileTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        resourceShrinkerCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        resourceShrinkerCompileKotlinTask.outputs.files.getAsPath().split(File.pathSeparator)[1]
+    systemProperty("BUILD_PROP_PROCESS_KEEP_RULES_RUNTIME_PATH", r8RuntimePath)
+    systemProperty("BUILD_PROP_R8_RUNTIME_PATH", r8RuntimePath)
+    systemProperty("R8_DEPS", distDepsFilesTask.outputs.files.getAsPath())
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 

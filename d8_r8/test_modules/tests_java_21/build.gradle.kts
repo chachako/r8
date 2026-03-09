@@ -49,21 +49,17 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      project.provider {
-        testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0]
-      },
+      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
     )
     systemProperty(
       "BUILD_PROP_R8_RUNTIME_PATH",
-      project.provider {
-        mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
-          File.pathSeparator +
-          getRoot().resolveAll("src", "main", "resources") +
-          File.pathSeparator +
-          assistantCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0]
-      },
+      mainCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        mainTurboCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0] +
+        File.pathSeparator +
+        getRoot().resolveAll("src", "main", "resources") +
+        File.pathSeparator +
+        assistantCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
     )
   }
 

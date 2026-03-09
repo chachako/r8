@@ -49,9 +49,7 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      project.provider {
-        testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0]
-      },
+      testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0],
     )
   }
 }
