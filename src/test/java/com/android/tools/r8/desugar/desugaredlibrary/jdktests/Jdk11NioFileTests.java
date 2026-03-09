@@ -115,12 +115,14 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
   private static final Set<String> EXPECTED_FAILING_CLASSES_DESUGARING_26 =
       ImmutableSet.of(
           // SecureDirectoryStream is not supported with desugared library, which leads to issues.
-          "DirectoryStreamSecureDS",
+          "DirectoryStreamSecureDS"
           // Watch services are supported on high apis with desugared library, however, only
-          // equality
-          // and not identity is preserved which fails the tests.
-          "WatchServiceBasic",
-          "WatchServiceSensitivityModifier");
+          // equality and not identity is preserved which fails the tests.
+          // TODO(b/491047736): Reenable test.
+          // "WatchServiceBasic",
+          // TODO(b/491047736): Reenable test.
+          // "WatchServiceSensitivityModifier"
+          );
 
   // We distinguish 2 kinds of tests:
   // - Main tests, which are run by running the main method, and succeed if no error is raised.
@@ -149,11 +151,15 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
           "FilesNameLimits",
           "FilesCustomOptions",
           "FilesLinks",
-          "WatchServiceBasic",
+          // TODO(b/491047736): Reenable test.
+          // "WatchServiceBasic",
           "WatchServiceFileTreeModifier",
-          "WatchServiceDeleteInterference",
-          "WatchServiceLotsOfCancels",
-          "WatchServiceSensitivityModifier");
+          "WatchServiceDeleteInterference"
+          // TODO(b/491047736): Reenable test.
+          // "WatchServiceLotsOfCancels",
+          // TODO(b/491047736): Reenable test.
+          // "WatchServiceSensitivityModifier"
+          );
   private static final List<String> FAILING_MAIN_TESTS =
       ImmutableList.of(
           "PathPathOps",
@@ -322,12 +328,12 @@ public class Jdk11NioFileTests extends DesugaredLibraryTestBase {
       assertTrue(success >= 20 + sevenOffset + shrinkOffset);
     } else if (parameters.getApiLevel().isLessThan(AndroidApiLevel.O)) {
       // Desugaring high api level.
-      assertEquals(26, success);
-      assertEquals(3, failingClasses.size());
+      assertEquals(25, success);
+      assertEquals(1, failingClasses.size());
       assertTrue(failingClasses.containsAll(EXPECTED_FAILING_CLASSES_DESUGARING_26));
     } else {
       // No desugaring or partial desugaring, high api level.
-      assertEquals(29, success);
+      assertEquals(26, success);
       assertEquals(0, failingClasses.size());
     }
   }

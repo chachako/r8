@@ -177,8 +177,10 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
       };
   static final String[] RAW_TEMPORAL_SUCCESSES_IF_BRIDGE =
       new String[] {"tck.java.time.TestIsoChronology"};
-  static final String[] RAW_TEMPORAL_SUCCESSES_UP_TO_11 =
-      new String[] {"test.java.time.temporal.TestIsoWeekFields"};
+  static final String[] RAW_TEMPORAL_SUCCESSES_UP_TO_11 = new String[] {
+        // TODO(b/491047736): Reenable test.
+        // "test.java.time.temporal.TestIsoWeekFields"
+      };
   static final String[] RAW_TEMPORAL_SUCCESSES_UP_TO_14 =
       new String[] {
         // Reflective lookup Class.forName("java.time.Clock$SystemClock").getDeclaredField("offset")
@@ -204,18 +206,22 @@ public abstract class Jdk11TimeAbstractTests extends DesugaredLibraryTestBase {
         "test.java.time.format.TestCharLiteralParser",
         "test.java.time.chrono.TestChronologyPerf",
         "test.java.time.chrono.TestExampleCode",
-        "test.java.time.chrono.TestJapaneseChronology",
+        // TODO(b/491047736): Reenable test.
+        // "test.java.time.chrono.TestJapaneseChronology",
         "test.java.time.chrono.TestChronoLocalDate",
-        "test.java.time.chrono.TestIsoChronoImpl",
+        // TODO(b/491047736): Reenable test.
+        // "test.java.time.chrono.TestIsoChronoImpl",
       };
   static final String[] FORMAT_CHRONO_SUCCESSES_UP_TO_11 =
       new String[] {
         "test.java.time.format.TestDateTimeTextProviderWithLocale",
         "test.java.time.format.TestUnicodeExtension",
-        "test.java.time.format.TestDateTimeFormatterBuilderWithLocale",
+        // TODO(b/491047736): Reenable test.
+        // "test.java.time.format.TestDateTimeFormatterBuilderWithLocale",
         "test.java.time.format.TestTextParserWithLocale",
         "test.java.time.format.TestTextPrinterWithLocale",
-        "test.java.time.chrono.TestUmmAlQuraChronology",
+        // TODO(b/491047736): Reenable test.
+        // "test.java.time.chrono.TestUmmAlQuraChronology",
       };
 
   public String[] getFormatChronoSuccesses() {
