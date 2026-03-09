@@ -1,11 +1,21 @@
 // Copyright (c) 2024, the R8 project authors. Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
+import chart from "./chart.js";
 import state from "./state.js";
 
 function get() {
   const scales = {};
-  scales.x = {};
+  scales.x = {
+    ticks: {
+      callback: function(val, index) {
+        const commit = chart.getFilteredCommit(val);
+        return new Date(commit.submitted * 1000).toLocaleDateString('en-US', {
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+      }
+    }
+  };
   if (state.hasLegend('Dex size')) {
     scales.y = {
       position: 'left',
