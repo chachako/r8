@@ -30,6 +30,7 @@ java {
 
 kotlin { explicitApi() }
 
+// TODO(jonathanlist): This should be removed by "following gradle best practices".
 evaluationDependsOn(":tests_java_9")
 
 val testbaseCompileJavaTask = projectTask("testbase", "compileJava")

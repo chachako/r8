@@ -19,9 +19,12 @@ java {
 
 kotlin { explicitApi() }
 
+// TODO(jonathanlist): These should be removed by "following gradle best practices".
 evaluationDependsOn(":tests_java_8")
 
 evaluationDependsOn(":tests_java_9")
+
+evaluationDependsOn(":tests_java_11")
 
 dependencies {}
 
@@ -42,7 +45,6 @@ val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val javaTestBaseJarTask = projectTask("testbase", "testJar")
 val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
-val java11TestJarTask = projectTask("tests_java_11", "testJar")
 val java17TestJarTask = projectTask("tests_java_17", "testJar")
 val java21TestJarTask = projectTask("tests_java_21", "testJar")
 val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
@@ -60,7 +62,7 @@ tasks {
     dependsOn(gradle.includedBuild("tests_bootstrap").task(":clean"))
     dependsOn(":tests_java_8:clean")
     dependsOn(":tests_java_9:clean")
-    dependsOn(gradle.includedBuild("tests_java_11").task(":clean"))
+    dependsOn(":tests_java_11:clean")
     dependsOn(gradle.includedBuild("tests_java_17").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_21").task(":clean"))
     dependsOn(gradle.includedBuild("tests_java_25").task(":clean"))
@@ -70,7 +72,7 @@ tasks {
     registering(Jar::class) {
       dependsOn(":tests_java_8:testJar")
       dependsOn(":tests_java_9:testJar")
-      dependsOn(java11TestJarTask)
+      dependsOn(":tests_java_11:testJar")
       dependsOn(java17TestJarTask)
       dependsOn(java21TestJarTask)
       dependsOn(bootstrapTestJarTask)
@@ -80,7 +82,11 @@ tasks {
       from(
         project(":tests_java_9").tasks.named("testJar").map { zipTree(it.outputs.files.singleFile) }
       )
-      from(java11TestJarTask.outputs.files.map(::zipTree))
+      from(
+        project(":tests_java_11").tasks.named("testJar").map {
+          zipTree(it.outputs.files.singleFile)
+        }
+      )
       from(java17TestJarTask.outputs.files.map(::zipTree))
       from(java21TestJarTask.outputs.files.map(::zipTree))
       from(bootstrapTestJarTask.outputs.files.map(::zipTree))
@@ -586,7 +592,7 @@ tasks {
     } else {
       dependsOn(":tests_java_8:test")
       dependsOn(":tests_java_9:test")
-      dependsOn(gradle.includedBuild("tests_java_11").task(":test"))
+      dependsOn(":tests_java_11:test")
       dependsOn(gradle.includedBuild("tests_java_17").task(":test"))
       dependsOn(gradle.includedBuild("tests_java_21").task(":test"))
       dependsOn(gradle.includedBuild("tests_bootstrap").task(":test"))
