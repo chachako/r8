@@ -30,6 +30,8 @@ java {
 
 kotlin { explicitApi() }
 
+evaluationDependsOn(":tests_java_9")
+
 val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
 val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
@@ -67,7 +69,7 @@ dependencies {
 }
 
 val sourceSetDependenciesTasks =
-  arrayOf(projectTask("tests_java_9", getExampleJarsTaskName("examplesJava9")))
+  arrayOf(project(":tests_java_9").tasks.named(getExampleJarsTaskName("examplesJava9")))
 
 fun testDependencies(): FileCollection {
   return sourceSets.test.get().compileClasspath.filter {
