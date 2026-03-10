@@ -9,6 +9,8 @@ import com.android.tools.r8.ResourceException;
 import com.android.tools.r8.keepanno.annotations.KeepForApi;
 import com.android.tools.r8.origin.Origin;
 import com.android.tools.r8.position.Position;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /**
  * Diagnostic for any unhandled exception arising during compilation.
@@ -62,6 +64,8 @@ public class ExceptionDiagnostic implements Diagnostic {
 
   @Override
   public String getDiagnosticMessage() {
-    return cause.toString();
+    StringWriter out = new StringWriter();
+    cause.printStackTrace(new PrintWriter(out));
+    return out.toString();
   }
 }
