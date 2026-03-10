@@ -54,7 +54,7 @@ public class PartialCallGraphTest extends CallGraphTestBase {
                   new ProguardConfigurationParser(factory, reporter, configurationBuilder);
               parser.parse(
                   createConfigurationForTesting("-keep class ** { void m1(); void m5(); }"));
-              return configurationBuilder.build();
+              return configurationBuilder.buildForTesting();
             });
     this.options = appView.options();
     this.executorService = ThreadUtils.getExecutorService(options);

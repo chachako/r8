@@ -32,7 +32,6 @@ import com.android.tools.r8.shaking.Enqueuer.Mode;
 import com.android.tools.r8.utils.ArrayUtils;
 import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ThreadUtils;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -90,7 +89,7 @@ public class AnnotationRemover {
     ProguardKeepAttributes config =
         options.getProguardConfiguration() != null
             ? options.getProguardConfiguration().getKeepAttributes()
-            : ProguardKeepAttributes.fromPatterns(ImmutableList.of());
+            : ProguardKeepAttributes.empty();
 
     DexItemFactory dexItemFactory = appView.dexItemFactory();
     switch (annotation.visibility) {

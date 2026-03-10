@@ -54,7 +54,7 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
                 ProguardConfiguration.builder(
                         factory, new Reporter(new TestDiagnosticMessagesImpl()))
                     .addKeepAttributePatterns(ImmutableList.of(ProguardKeepAttributes.SIGNATURE))
-                    .build());
+                    .buildForTesting());
     GenericSignatureContextBuilder contextBuilder = GenericSignatureContextBuilder.create(appView);
     GenericSignatureCorrectnessHelper.createForVerification(appView, contextBuilder)
         .run(appView.appInfo().classes());
@@ -197,7 +197,7 @@ public class GenericSignatureCorrectnessHelperTests extends TestBase {
                 ProguardConfiguration.builder(
                         factory, new Reporter(new TestDiagnosticMessagesImpl()))
                     .addKeepAttributePatterns(ImmutableList.of(ProguardKeepAttributes.SIGNATURE))
-                    .build());
+                    .buildForTesting());
     GenericSignatureContextBuilder contextBuilder = GenericSignatureContextBuilder.create(appView);
     GenericSignatureCorrectnessHelper check =
         GenericSignatureCorrectnessHelper.createForInitialCheck(appView, contextBuilder);

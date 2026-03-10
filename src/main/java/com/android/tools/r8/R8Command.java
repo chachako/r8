@@ -823,17 +823,8 @@ public final class R8Command extends BaseCompilerCommand {
       }
     }
 
-    private void validateProguardConfiguration(
-        ProguardConfiguration configuration, ProguardConfigurationParserOptions parserOptions) {
+    private void validateProguardConfiguration(ProguardConfiguration configuration) {
       Reporter reporter = getReporter();
-      if (!parserOptions.isKeepRuntimeInvisibleAnnotationsEnabled()) {
-        if (configuration.getKeepAttributes().runtimeInvisibleAnnotations
-            || configuration.getKeepAttributes().runtimeInvisibleParameterAnnotations
-            || configuration.getKeepAttributes().runtimeInvisibleTypeAnnotations) {
-          throw fatalError(
-              new StringDiagnostic("Illegal attempt to keep runtime invisible annotations"));
-        }
-      }
       if (partialCompilationConfiguration.isEnabled()) {
         if (configuration.isProtoShrinkingEnabled()) {
           reporter.error("Partial shrinking does not support -shrinkunusedprotofields");
@@ -942,7 +933,11 @@ public final class R8Command extends BaseCompilerCommand {
 
     private ProguardConfiguration makeConfiguration(DexItemFactory factory) {
       ProguardConfigurationParserOptions parserOptions =
-          parserOptionsBuilder.setForceProguardCompatibility(forceProguardCompatibility).build();
+          parserOptionsBuilder
+              .setCanMatchRuntimeInvisibleAnnotationsWithWildcards(
+                  getProgramConsumer() instanceof ClassFileConsumer)
+              .setForceProguardCompatibility(forceProguardCompatibility)
+              .build();
       ProguardConfiguration.Builder configurationBuilder =
           ProguardConfiguration.builder(factory, getReporter())
               .setForceProguardCompatibility(forceProguardCompatibility);
@@ -980,8 +975,8 @@ public final class R8Command extends BaseCompilerCommand {
       // Extract out rules for keep annotations and amend the configuration.
       // TODO(b/248408342): Remove this and parse annotations as part of R8 root-set & enqueuer.
       extractKeepAnnotationRules(parser);
-      ProguardConfiguration configuration = configurationBuilder.build();
-      validateProguardConfiguration(configuration, parserOptions);
+      ProguardConfiguration configuration = configurationBuilder.build(parserOptions);
+      validateProguardConfiguration(configuration);
       return configuration;
     }
 

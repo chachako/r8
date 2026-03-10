@@ -661,13 +661,9 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
     return syntheticInfoConsumer;
   }
 
-  public boolean isRelocatorCompilation() {
-    return relocatorCompilation;
-  }
-
   public boolean shouldKeepStackMapTable() {
-    assert isRelocatorCompilation() || getProguardConfiguration() != null;
-    return isRelocatorCompilation() || getProguardConfiguration().getKeepAttributes().stackMapTable;
+    assert hasProguardConfiguration();
+    return getProguardConfiguration().getKeepAttributes().stackMapTable;
   }
 
   public boolean shouldRerunEnqueuer() {
@@ -1406,8 +1402,6 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   // If null, no configuration information needs to be printed.
   // If non-null, configuration must be passed to the consumer.
   public StringConsumer configurationConsumer = null;
-
-  public boolean relocatorCompilation = false;
 
   // If null, no graph information needs to be provided for the keep/inclusion of classes
   // in the output. If non-null, each edge pertaining to kept parts of the resulting program

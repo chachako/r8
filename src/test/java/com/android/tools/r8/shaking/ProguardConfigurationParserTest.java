@@ -207,7 +207,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     // Parse from file.
     parser.parse(Paths.get(PROGUARD_SPEC_FILE));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(24, rules.size());
     assertEquals(1, rules.get(0).getMemberRules().size());
 
@@ -215,7 +215,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     String lines = FileUtils.readTextFile(Paths.get(PROGUARD_SPEC_FILE));
     parser.parse(createConfigurationForTesting(lines));
-    rules = builder.build().getRules();
+    rules = builder.buildForTesting().getRules();
     assertEquals(24, rules.size());
     assertEquals(1, rules.get(0).getMemberRules().size());
   }
@@ -224,7 +224,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseMultipleNamePatterns() {
     parser.parse(Paths.get(MULTIPLE_NAME_PATTERNS_FILE));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(1, rules.size());
     ProguardConfigurationRule rule = rules.get(0);
     assertEquals(1, rule.getMemberRules().size());
@@ -252,7 +252,7 @@ public class ProguardConfigurationParserTest extends TestBase {
             "}"));
     parser.parse(createConfigurationForTesting(nonJavaIdentifiers));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(1, rules.size());
     assertEquals(ProguardClassType.CLASS, rules.get(0).getClassType());
     assertEquals(1, rules.get(0).getClassNames().size());
@@ -287,7 +287,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String configuration = "-dont" + xxx + " !foobar,*bar";
     parser.parse(createConfigurationForTesting(configuration));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     Predicate<DexType> matcher = matcherFactory.apply(config);
     assertFalse(matcher.test(dexItemFactory.createType("Lboobaz;")));
     assertTrue(matcher.test(dexItemFactory.createType("Lboobar;")));
@@ -308,7 +308,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     for (String configuration : ImmutableList.of(configuration1, configuration2)) {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       Predicate<DexType> matcher = matcherFactory.apply(config);
       assertTrue(matcher.test(dexItemFactory.createType("Lfoo/Bar;")));
       assertTrue(matcher.test(dexItemFactory.createType("Lfoo/bar7Bar;")));
@@ -328,7 +328,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String dontwarnAll = "-dont" + xxx + " *";
     parser.parse(createConfigurationForTesting(dontwarnAll));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     Predicate<DexType> matcher = matcherFactory.apply(config);
     assertTrue(matcher.test(dexItemFactory.createType("Lboobaz;")));
     assertTrue(matcher.test(dexItemFactory.createType("Lboobar;")));
@@ -347,7 +347,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String dontwarnAll = "-dont" + xxx;
     String otherOption = "-keep class *";
     parser.parse(createConfigurationForTesting(StringUtils.lines(dontwarnAll, otherOption)));
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     Predicate<DexType> matcher = matcherFactory.apply(config);
     assertTrue(matcher.test(dexItemFactory.createType("Lboobaz;")));
     assertTrue(matcher.test(dexItemFactory.createType("Lboobar;")));
@@ -364,7 +364,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseAccessFlags() {
     parser.parse(Paths.get(ACCESS_FLAGS_FILE));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(1, rules.size());
     ProguardConfigurationRule rule = rules.get(0);
     ClassAccessFlags publicAndFinalFlags = ClassAccessFlags.fromSharedAccessFlags(0);
@@ -408,7 +408,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseWhyAreYouKeeping() {
     parser.parse(Paths.get(WHY_ARE_YOU_KEEPING_FILE));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(1, rules.size());
     ProguardConfigurationRule rule = rules.get(0);
     assertEquals(1, rule.getClassNames().size());
@@ -421,7 +421,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseAssumeNoSideEffects() {
     parser.parse(Paths.get(ASSUME_NO_SIDE_EFFECTS));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> assumeNoSideEffects = builder.build().getRules();
+    List<ProguardConfigurationRule> assumeNoSideEffects = builder.buildForTesting().getRules();
     assertEquals(1, assumeNoSideEffects.size());
     assumeNoSideEffects.get(0).getMemberRules().forEach(rule -> {
       assertFalse(rule.hasReturnValue());
@@ -432,7 +432,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseAssumeNoSideEffectsWithReturnValue() {
     parser.parse(Paths.get(ASSUME_NO_SIDE_EFFECTS_WITH_RETURN_VALUE));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> assumeNoSideEffects = builder.build().getRules();
+    List<ProguardConfigurationRule> assumeNoSideEffects = builder.buildForTesting().getRules();
     assertEquals(1, assumeNoSideEffects.size());
     int matches = 0;
     for (ProguardMemberRule rule : assumeNoSideEffects.get(0).getMemberRules()) {
@@ -516,7 +516,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseAssumeValuesWithReturnValue() {
     parser.parse(Paths.get(ASSUME_VALUES_WITH_RETURN_VALUE));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> assumeValues = builder.build().getRules();
+    List<ProguardConfigurationRule> assumeValues = builder.buildForTesting().getRules();
     assertEquals(1, assumeValues.size());
     int matches = 0;
     for (ProguardMemberRule rule : assumeValues.get(0).getMemberRules()) {
@@ -603,7 +603,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String adaptClassStrings = "-adaptclassstrings !foobar,*bar";
     parser.parse(createConfigurationForTesting(adaptClassStrings));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertFalse(
         config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
     assertTrue(
@@ -620,7 +620,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     for (String configuration : ImmutableList.of(configuration1, configuration2)) {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertTrue(
           config.getAdaptClassStrings().matches(dexItemFactory.createType("Lfoo/Bar;")));
       assertTrue(
@@ -635,7 +635,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String adaptAll = "-adaptclassstrings *";
     parser.parse(createConfigurationForTesting(adaptAll));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(
         config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
     assertTrue(
@@ -649,7 +649,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String adaptAll = "-adaptclassstrings";
     parser.parse(createConfigurationForTesting(adaptAll));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(
         config.getAdaptClassStrings().matches(dexItemFactory.createType("Lboobaz;")));
     assertTrue(
@@ -674,7 +674,7 @@ public class ProguardConfigurationParserTest extends TestBase {
             + "}";
     parser.parse(createConfigurationForTesting(StringUtils.lines(config1, config2, config3)));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     List<ProguardConfigurationRule> identifierNameStrings = config.getRules();
     assertEquals(3, identifierNameStrings.size());
     assertEquals(1, identifierNameStrings.get(0).getClassNames().size());
@@ -724,7 +724,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String rule = "-convertchecknotnull class C { ** m(**, ...); }";
     parser.parse(createConfigurationForTesting(rule));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     assertTrue(config.getRules().get(0) instanceof ConvertCheckNotNullRule);
   }
@@ -743,7 +743,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     String rule = "-convertchecknotnull class C { void m(**, ...); }";
     parser.parse(createConfigurationForTesting(rule));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     assertTrue(config.getRules().get(0) instanceof ConvertCheckNotNullRule);
   }
@@ -752,7 +752,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseDontobfuscate() {
     parser.parse(Paths.get(DONT_OBFUSCATE));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertFalse(config.isObfuscating());
   }
 
@@ -760,7 +760,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseRepackageClassesEmpty() {
     parser.parse(Paths.get(PACKAGE_OBFUSCATION_1));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.REPACKAGE, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
     assertEquals("", config.getPackagePrefix());
@@ -770,7 +770,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseRepackageClassesNonEmpty() {
     parser.parse(Paths.get(PACKAGE_OBFUSCATION_2));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.REPACKAGE, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
     assertEquals("p.q.r", config.getPackagePrefix());
@@ -780,7 +780,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseFlattenPackageHierarchyEmpty() {
     parser.parse(Paths.get(PACKAGE_OBFUSCATION_3));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.FLATTEN, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
     assertEquals("", config.getPackagePrefix());
@@ -790,7 +790,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseFlattenPackageHierarchyNonEmpty() {
     parser.parse(Paths.get(PACKAGE_OBFUSCATION_4));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.FLATTEN, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
     assertEquals("p.q.r", config.getPackagePrefix());
@@ -802,7 +802,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(path);
     checkDiagnostics(handler.warnings, path, 6, 1,
         "repackageclasses", "overrides", "flattenpackagehierarchy");
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.REPACKAGE, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
     assertEquals("top", config.getPackagePrefix());
@@ -814,7 +814,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(path);
     checkDiagnostics(handler.warnings, path, 6, 1,
         "repackageclasses", "overrides", "flattenpackagehierarchy");
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(PackageObfuscationMode.REPACKAGE, config.getPackageObfuscationMode());
     assertNotNull(config.getPackagePrefix());
     assertEquals("top", config.getPackagePrefix());
@@ -824,7 +824,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseApplyMapping() {
     parser.parse(Paths.get(APPLY_MAPPING));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.hasApplyMappingFile());
   }
 
@@ -851,7 +851,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     Path path = Paths.get(KEEP_KOTLIN_METADATA);
     parser.parse(path);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(
         "-keepattributes RuntimeVisibleAnnotations", config.getKeepAttributes().toString());
     assertEquals(
@@ -894,7 +894,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     } else {
       parser.parse(Paths.get(LIBRARY_JARS));
     }
-    assertEquals(4, builder.build().getLibraryjars().size());
+    assertEquals(4, builder.buildForTesting().getLibraryjars().size());
   }
 
   @Test
@@ -959,7 +959,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseSeeds() {
     parser.parse(Paths.get(SEEDS));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintSeeds());
     assertNull(config.getSeedFile());
   }
@@ -968,7 +968,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseSeeds2() {
     parser.parse(Paths.get(SEEDS_2));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintSeeds());
     assertNotNull(config.getSeedFile());
   }
@@ -989,7 +989,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseDontshrink() {
     parser.parse(Paths.get(DONT_SHRINK));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertFalse(config.isShrinking());
   }
 
@@ -1021,7 +1021,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   @Test
   public void parseDontOptimize() {
     parser.parse(Paths.get(DONT_OPTIMIZE));
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     verifyParserEndsCleanly();
     assertFalse(config.isOptimizing());
   }
@@ -1031,7 +1031,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     Path path = Paths.get(DONT_OPTIMIZE_OVERRIDES_PASSES);
     parser.parse(path);
     checkDiagnostics(handler.infos, path, 7, 1, "Ignoring", "-optimizationpasses");
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertFalse(config.isOptimizing());
   }
 
@@ -1040,7 +1040,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     Path path = Paths.get(OPTIMIZATION_PASSES);
     parser.parse(path);
     checkDiagnostics(handler.infos, path, 5, 1, "Ignoring", "-optimizationpasses");
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isOptimizing());
   }
 
@@ -1081,7 +1081,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parse_printconfiguration_noArguments() {
     parser.parse(createConfigurationForTesting("-printconfiguration"));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintConfiguration());
     assertNull(config.getPrintConfigurationFile());
   }
@@ -1090,7 +1090,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parse_printconfiguration_argument() {
     parser.parse(createConfigurationForTesting("-printconfiguration file_name"));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintConfiguration());
     assertEquals("file_name", config.getPrintConfigurationFile().toString());
   }
@@ -1188,7 +1188,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parsePrintUsage() {
     parser.parse(Paths.get(PRINT_USAGE));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintUsage());
     assertNull(config.getPrintUsageFile());
   }
@@ -1197,7 +1197,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parsePrintUsageToFile() {
     parser.parse(Paths.get(PRINT_USAGE_TO_FILE));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintUsage());
     assertNotNull(config.getPrintUsageFile());
   }
@@ -1278,7 +1278,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
       parser.parse(proguardConfig);
       verifyParserEndsCleanly();
-      ProguardConfiguration config = builder.buildRaw();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals("PG", config.getRenameSourceFileAttribute());
       assertTrue(config.getKeepAttributes().sourceFile);
     }
@@ -1295,7 +1295,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
       parser.parse(proguardConfig);
       verifyParserEndsCleanly();
-      ProguardConfiguration config = builder.buildRaw();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals("", config.getRenameSourceFileAttribute());
       assertTrue(config.getKeepAttributes().sourceFile);
     }
@@ -1313,7 +1313,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
         parser.parse(proguardConfig);
         verifyParserEndsCleanly();
-        ProguardConfiguration config = builder.buildRaw();
+        ProguardConfiguration config = builder.buildForTesting();
         assertEquals("PG", config.getRenameSourceFileAttribute());
         assertTrue(config.getKeepAttributes().sourceFile);
       }
@@ -1332,7 +1332,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
         parser.parse(proguardConfig);
         verifyParserEndsCleanly();
-        ProguardConfiguration config = builder.buildRaw();
+        ProguardConfiguration config = builder.buildForTesting();
         assertEquals("", config.getRenameSourceFileAttribute());
         assertTrue(config.getKeepAttributes().sourceFile);
       }
@@ -1343,7 +1343,8 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(config));
     verifyParserEndsCleanly();
     assertEquals(
-        ProguardKeepAttributes.fromPatterns(expected), builder.buildRaw().getKeepAttributes());
+        ProguardKeepAttributes.fromPatterns(expected),
+        builder.buildForTesting().getKeepAttributes());
   }
 
   @Test
@@ -1431,14 +1432,14 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(
         createConfigurationForTesting(StringUtils.lines("-keepparameternames", "-dontobfuscate")));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isKeepParameterNames());
 
     parser.parse(createConfigurationForTesting("-keepparameternames"));
     verifyParserEndsCleanly();
     parser.parse(createConfigurationForTesting("-dontobfuscate"));
     verifyParserEndsCleanly();
-    config = builder.build();
+    config = builder.buildForTesting();
     assertTrue(config.isKeepParameterNames());
   }
 
@@ -1634,7 +1635,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     // Three -if rules and one independent -keepnames
     assertEquals(4, config.getRules().size());
     long ifCount =
@@ -1663,7 +1664,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**$R**", if0.getClassNames().toString());
@@ -1693,7 +1694,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
@@ -1715,7 +1716,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
@@ -1737,7 +1738,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
@@ -1780,7 +1781,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
@@ -1804,7 +1805,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardIfRule if0 = (ProguardIfRule) config.getRules().get(0);
     assertEquals("**.R*", if0.getClassNames().toString());
@@ -2153,7 +2154,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
 
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
     ProguardKeepRule rule = (ProguardKeepRule) config.getRules().get(0);
     assertEquals(ProguardClassType.ANNOTATION_INTERFACE, rule.getClassType());
@@ -2190,7 +2191,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     reset();
     parser.parse(createConfigurationForTesting(sourceRules));
     verifyParserEndsCleanly();
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(expected.size(), rules.size());
     for (int i = 0; i < expected.size(); i++) {
       assertEquals(trim ? expected.get(i).trim() : expected.get(i), rules.get(i).getSource());
@@ -2254,7 +2255,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
     parser.parse(proguardConfig);
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertTrue(config.isPrintConfiguration());
     assertNull(config.getPrintConfigurationFile());
     assertEquals("SRC", config.getRenameSourceFileAttribute());
@@ -2269,7 +2270,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       reset();
       parser.parse(createConfigurationForTesting(flag + " " + value));
       verifyParserEndsCleanly();
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       check.accept(value, extractPath.apply(config).toString());
     }
   }
@@ -2343,7 +2344,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       reset();
       parser.parse(createConfigurationForTesting(flag + " " + value));
       verifyParserEndsCleanly();
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       Path path = extractPath.apply(config);
       check.accept(
           value
@@ -2431,7 +2432,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     reset();
     parser.parse(createConfigurationForTesting(flag + " " + value));
     verifyParserEndsCleanly();
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     checker.accept(config.getPackageObfuscationMode(), config.getPackagePrefix());
   }
 
@@ -2506,13 +2507,13 @@ public class ProguardConfigurationParserTest extends TestBase {
   private ProguardConfiguration parseAndVerifyParserEndsCleanly(String config) {
     parser.parse(createConfigurationForTesting(config));
     verifyParserEndsCleanly();
-    return builder.build();
+    return builder.buildForTesting();
   }
 
   private ProguardConfiguration parseAndVerifyParserEndsCleanly(Path config) {
     parser.parse(config);
     verifyParserEndsCleanly();
-    return builder.build();
+    return builder.buildForTesting();
   }
 
   private void verifyParserEndsCleanly() {
@@ -2532,7 +2533,7 @@ public class ProguardConfigurationParserTest extends TestBase {
                 "<fields>;",
                 "<init>();",
                 "}")));
-    List<ProguardConfigurationRule> rules = builder.build().getRules();
+    List<ProguardConfigurationRule> rules = builder.buildForTesting().getRules();
     assertEquals(1, rules.size());
     ProguardConfigurationRule rule = rules.get(0);
     assertEquals(ProguardKeepRuleType.KEEP_CLASS_MEMBERS.toString(), rule.typeString());
@@ -2550,7 +2551,7 @@ public class ProguardConfigurationParserTest extends TestBase {
               : "-repackageclasses";
 
       parser.parse(createConfigurationForTesting(directive + " -keep class *"));
-      ProguardConfiguration configuration = builder.build();
+      ProguardConfiguration configuration = builder.buildForTesting();
       assertEquals(packageObfuscationMode, configuration.getPackageObfuscationMode());
       assertEquals("", configuration.getPackagePrefix());
 
@@ -2575,7 +2576,7 @@ public class ProguardConfigurationParserTest extends TestBase {
               : "-repackageclasses";
 
       parser.parse(createConfigurationForTesting(directive + " @" + includeFile.toAbsolutePath()));
-      ProguardConfiguration configuration = builder.build();
+      ProguardConfiguration configuration = builder.buildForTesting();
       assertEquals(packageObfuscationMode, configuration.getPackageObfuscationMode());
       assertEquals("", configuration.getPackagePrefix());
 
@@ -2655,7 +2656,7 @@ public class ProguardConfigurationParserTest extends TestBase {
   public void parseIncludeCode() throws Exception {
     Path proguardConfig = writeTextToTempFile("-keep,includecode class A { method(); }");
     parser.parse(proguardConfig);
-    assertEquals(1, builder.build().getRules().size());
+    assertEquals(1, builder.buildForTesting().getRules().size());
     assertEquals(1, handler.infos.size());
     checkDiagnostics(handler.infos, proguardConfig, 1, 7, "Ignoring modifier", "includecode");
   }
@@ -2670,7 +2671,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     assertEquals(0xbb, Byte.toUnsignedLong(bytes[1]));
     assertEquals(0xbf, Byte.toUnsignedLong(bytes[2]));
     parser.parse(proguardConfig);
-    assertEquals(1, builder.build().getRules().size());
+    assertEquals(1, builder.buildForTesting().getRules().size());
     assertEquals(1, handler.infos.size());
     checkDiagnostics(handler.infos, proguardConfig, 1, 7, "Ignoring modifier", "includecode");
   }
@@ -2698,7 +2699,7 @@ public class ProguardConfigurationParserTest extends TestBase {
                     + "class A { method(); }"
                     + whitespace1);
         parser.parse(proguardConfig);
-        assertEquals(1, builder.build().getRules().size());
+        assertEquals(1, builder.buildForTesting().getRules().size());
         assertEquals(1, handler.infos.size());
         // All BOSs except the leading are counted as input characters.
         checkDiagnostics(handler.infos, proguardConfig, 1, 0, "Ignoring modifier", "includecode");
@@ -2712,7 +2713,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(configuration));
     verifyParserEndsCleanly();
 
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     assertEquals(1, config.getRules().size());
 
     ProguardIfRule ifRule = (ProguardIfRule) config.getRules().iterator().next();
@@ -2776,7 +2777,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configurationContent));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration configuration = builder.build();
+      ProguardConfiguration configuration = builder.buildForTesting();
       assertEquals(1, configuration.getRules().size());
 
       ProguardKeepRule rule = ListUtils.first(configuration.getRules()).asProguardKeepRule();
@@ -2857,7 +2858,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
           verifyParserEndsCleanly();
 
-          ProguardConfiguration configuration = builder.build();
+          ProguardConfiguration configuration = builder.buildForTesting();
           assertEquals(1, configuration.getRules().size());
 
           ProguardKeepRule rule = ListUtils.first(configuration.getRules()).asProguardKeepRule();
@@ -2946,7 +2947,7 @@ public class ProguardConfigurationParserTest extends TestBase {
 
           verifyParserEndsCleanly();
 
-          ProguardConfiguration configuration = builder.build();
+          ProguardConfiguration configuration = builder.buildForTesting();
           assertEquals(1, configuration.getRules().size());
 
           ProguardKeepRule rule = ListUtils.first(configuration.getRules()).asProguardKeepRule();
@@ -2988,7 +2989,7 @@ public class ProguardConfigurationParserTest extends TestBase {
         parser.parse(createConfigurationForTesting(ruleWithModifier + " class A"));
         verifyParserEndsCleanly();
 
-        ProguardConfiguration configuration = builder.build();
+        ProguardConfiguration configuration = builder.buildForTesting();
         assertEquals(1, configuration.getRules().size());
         assertEquals(
             !modifier.isEmpty(),
@@ -3042,7 +3043,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals(logLevel.getLevelFromRule(), config.getMaxRemovedAndroidLogLevel());
       assertEquals(0, config.getRules().size());
 
@@ -3051,7 +3052,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      config = builder.build();
+      config = builder.buildForTesting();
       assertEquals(logLevel.getLevelFromRule(), config.getMaxRemovedAndroidLogLevel());
       assertEquals(0, config.getRules().size());
     }
@@ -3127,7 +3128,7 @@ public class ProguardConfigurationParserTest extends TestBase {
           parser.parse(createConfigurationForTesting(configuration));
           verifyParserEndsCleanly();
 
-          ProguardConfiguration config = builder.build();
+          ProguardConfiguration config = builder.buildForTesting();
           assertEquals(
               MaximumRemovedAndroidLogLevelRule.NOT_SET, config.getMaxRemovedAndroidLogLevel());
           assertEquals(1, config.getRules().size());
@@ -3198,7 +3199,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals(ProcessKotlinNullChecks.DEFAULT, config.getProcessKotlinNullChecks());
       assertEquals(0, config.getRules().size());
     }
@@ -3209,7 +3210,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals(ProcessKotlinNullChecks.REMOVE_MESSAGE, config.getProcessKotlinNullChecks());
       assertEquals(0, config.getRules().size());
     }
@@ -3220,7 +3221,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals(ProcessKotlinNullChecks.KEEP, config.getProcessKotlinNullChecks());
       assertEquals(0, config.getRules().size());
     }
@@ -3236,7 +3237,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals(ProcessKotlinNullChecks.REMOVE_MESSAGE, config.getProcessKotlinNullChecks());
       assertEquals(0, config.getRules().size());
     }
@@ -3252,7 +3253,7 @@ public class ProguardConfigurationParserTest extends TestBase {
       parser.parse(createConfigurationForTesting(configuration));
       verifyParserEndsCleanly();
 
-      ProguardConfiguration config = builder.build();
+      ProguardConfiguration config = builder.buildForTesting();
       assertEquals(ProcessKotlinNullChecks.REMOVE, config.getProcessKotlinNullChecks());
       assertEquals(0, config.getRules().size());
     }
@@ -3289,7 +3290,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     FileUtils.writeTextFile(include2, "# Include 2");
     parser.parse(config);
     verifyParserEndsCleanly();
-    String parsedConfiguration = builder.build().getParsedConfiguration();
+    String parsedConfiguration = builder.buildForTesting().getParsedConfiguration();
     String separator = ToolHelper.isWindows() ? "\\" : "/";
     assertEquals(
         StringUtils.lines(
@@ -3319,7 +3320,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(configuration));
     verifyParserEndsCleanly();
 
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     ProguardAssumeValuesRule rule = (ProguardAssumeValuesRule) config.getRules().get(0);
     assertTrue(rule.getMemberRule(0).hasReturnValue());
     assertEquals(
@@ -3336,7 +3337,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(configuration));
     verifyParserEndsCleanly();
 
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     ProguardAssumeValuesRule rule = (ProguardAssumeValuesRule) config.getRules().get(0);
     assertTrue(rule.getMemberRule(0).hasReturnValue());
     assertEquals(
@@ -3396,7 +3397,7 @@ public class ProguardConfigurationParserTest extends TestBase {
     parser.parse(createConfigurationForTesting(configuration));
     verifyParserEndsCleanly();
 
-    ProguardConfiguration config = builder.build();
+    ProguardConfiguration config = builder.buildForTesting();
     for (int i = 0; i < config.getRules().size(); i++) {
       ProguardConfigurationRule rule = config.getRules().get(i);
       assertTrue(rule.getSource(), sources.remove(rule.getSource()));

@@ -10,17 +10,18 @@ public class ProguardConfigurationParserOptions {
 
   private final boolean enableLegacyFullModeForKeepRules;
   private final boolean enableLegacyFullModeForKeepRulesWarnings;
-  private final boolean enableKeepRuntimeInvisibleAnnotations;
+  private final boolean canMatchRuntimeInvisibleAnnotationsWithWildcards;
   private final boolean enableTestingOptions;
   private final boolean forceProguardCompatibility;
 
   ProguardConfigurationParserOptions(
+      boolean canMatchRuntimeInvisibleAnnotationsWithWildcards,
       boolean enableLegacyFullModeForKeepRules,
       boolean enableLegacyFullModeForKeepRulesWarnings,
-      boolean enableKeepRuntimeInvisibleAnnotations,
       boolean enableTestingOptions,
       boolean forceProguardCompatibility) {
-    this.enableKeepRuntimeInvisibleAnnotations = enableKeepRuntimeInvisibleAnnotations;
+    this.canMatchRuntimeInvisibleAnnotationsWithWildcards =
+        canMatchRuntimeInvisibleAnnotationsWithWildcards;
     this.enableTestingOptions = enableTestingOptions;
     this.enableLegacyFullModeForKeepRules = enableLegacyFullModeForKeepRules;
     this.enableLegacyFullModeForKeepRulesWarnings = enableLegacyFullModeForKeepRulesWarnings;
@@ -29,6 +30,10 @@ public class ProguardConfigurationParserOptions {
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  public boolean canMatchRuntimeInvisibleAnnotationsWithWildcards() {
+    return canMatchRuntimeInvisibleAnnotationsWithWildcards;
   }
 
   public boolean isLegacyFullModeForKeepRulesEnabled() {
@@ -41,10 +46,6 @@ public class ProguardConfigurationParserOptions {
     return !forceProguardCompatibility && enableLegacyFullModeForKeepRulesWarnings;
   }
 
-  public boolean isKeepRuntimeInvisibleAnnotationsEnabled() {
-    return enableKeepRuntimeInvisibleAnnotations;
-  }
-
   public boolean isTestingOptionsEnabled() {
     return enableTestingOptions;
   }
@@ -53,7 +54,7 @@ public class ProguardConfigurationParserOptions {
 
     private boolean enableLegacyFullModeForKeepRules = true;
     private boolean enableLegacyFullModeForKeepRulesWarnings = false;
-    private boolean enableKeepRuntimeInvisibleAnnotations = true;
+    private boolean canMatchRuntimeInvisibleAnnotationsWithWildcards = true;
     private boolean enableTestingOptions;
     private boolean forceProguardCompatibility = false;
 
@@ -64,11 +65,15 @@ public class ProguardConfigurationParserOptions {
       enableLegacyFullModeForKeepRulesWarnings =
           parseSystemPropertyOrDefault(
               "com.android.tools.r8.enableLegacyFullModeForKeepRulesWarnings", false);
-      enableKeepRuntimeInvisibleAnnotations =
-          parseSystemPropertyOrDefault(
-              "com.android.tools.r8.enableKeepRuntimeInvisibleAnnotations", true);
       enableTestingOptions =
           parseSystemPropertyOrDefault("com.android.tools.r8.allowTestProguardOptions", false);
+      return this;
+    }
+
+    public Builder setCanMatchRuntimeInvisibleAnnotationsWithWildcards(
+        boolean canMatchRuntimeInvisibleAnnotationsWithWildcards) {
+      this.canMatchRuntimeInvisibleAnnotationsWithWildcards =
+          canMatchRuntimeInvisibleAnnotationsWithWildcards;
       return this;
     }
 
@@ -95,9 +100,9 @@ public class ProguardConfigurationParserOptions {
 
     public ProguardConfigurationParserOptions build() {
       return new ProguardConfigurationParserOptions(
+          canMatchRuntimeInvisibleAnnotationsWithWildcards,
           enableLegacyFullModeForKeepRules,
           enableLegacyFullModeForKeepRulesWarnings,
-          enableKeepRuntimeInvisibleAnnotations,
           enableTestingOptions,
           forceProguardCompatibility);
     }

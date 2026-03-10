@@ -987,7 +987,7 @@ public class TestBase {
             builder.addRule(ProguardKeepRule.defaultKeepAllRule(unused -> {}), null, null);
             return builder
                 .addKeepAttributePatterns(ImmutableList.of(ProguardKeepAttributes.SIGNATURE))
-                .build();
+                .buildForTesting();
           };
     }
     InternalOptions options =
@@ -1131,7 +1131,7 @@ public class TestBase {
       DexItemFactory factory, Reporter reporter, Collection<ProguardConfigurationRule> rules) {
     ProguardConfiguration.Builder builder = ProguardConfiguration.builder(factory, reporter);
     rules.forEach(rule -> builder.addRule(rule, null, null));
-    return builder.build();
+    return builder.buildForTesting();
   }
 
   public static List<DataEntryResource> getDataResources(DataResourceProvider dataResourceProvider)

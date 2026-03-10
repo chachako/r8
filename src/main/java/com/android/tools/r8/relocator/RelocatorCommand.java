@@ -23,6 +23,7 @@ import com.android.tools.r8.references.ClassReference;
 import com.android.tools.r8.references.PackageReference;
 import com.android.tools.r8.references.Reference;
 import com.android.tools.r8.shaking.ProguardConfiguration;
+import com.android.tools.r8.shaking.ProguardConfigurationParserOptions;
 import com.android.tools.r8.shaking.ProguardPathList;
 import com.android.tools.r8.utils.AbortException;
 import com.android.tools.r8.utils.AndroidApp;
@@ -153,6 +154,10 @@ public class RelocatorCommand {
 
   public InternalOptions getInternalOptions() {
     // We are using the proguard configuration for adapting resources.
+    ProguardConfigurationParserOptions parserOptions =
+        ProguardConfigurationParserOptions.builder()
+            .setCanMatchRuntimeInvisibleAnnotationsWithWildcards(true)
+            .build();
     InternalOptions options =
         new InternalOptions(
             // Set debug to ensure that we are writing all information to the application writer.
@@ -164,9 +169,8 @@ public class RelocatorCommand {
                 .addKeepAttributePatterns(ImmutableList.of("*"))
                 .applyAdaptResourceFilenamesBuilder(
                     b -> b.addPattern(ProguardPathList.builder().addFileName("**").build()))
-                .build(),
+                .build(parserOptions),
             getReporter());
-    options.relocatorCompilation = true;
     options.threadCount = getThreadCount();
     options.programConsumer = consumer;
     assert consumer != null;

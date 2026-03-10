@@ -311,7 +311,12 @@ public class ProguardConfiguration {
         ProguardConfigurationSourceParser parser,
         Position position,
         TextPosition positionStart) {
+      addKeepAttributePatterns(keepAttributePatterns);
+    }
+
+    public Builder addKeepAttributePatterns(List<String> keepAttributePatterns) {
       this.keepAttributePatterns.addAll(keepAttributePatterns);
+      return this;
     }
 
     @Override
@@ -337,11 +342,6 @@ public class ProguardConfiguration {
         Position position,
         TextPosition positionStart) {
       processKotlinNullChecks = processKotlinNullChecks.meet(value);
-    }
-
-    public Builder addKeepAttributePatterns(List<String> keepAttributePatterns) {
-      this.keepAttributePatterns.addAll(keepAttributePatterns);
-      return this;
     }
 
     @Override
@@ -520,9 +520,15 @@ public class ProguardConfiguration {
       protoShrinking = true;
     }
 
-    public ProguardConfiguration buildRaw() {
+    public ProguardConfiguration buildForTesting() {
+      return build(ProguardConfigurationParserOptions.builder().readEnvironment().build());
+    }
+
+    public ProguardConfiguration build(ProguardConfigurationParserOptions parserOptions) {
       ProguardKeepAttributes proguardKeepAttributes =
-          ProguardKeepAttributes.fromPatterns(keepAttributePatterns);
+          ProguardKeepAttributes.fromPatterns(
+              keepAttributePatterns,
+              parserOptions.canMatchRuntimeInvisibleAnnotationsWithWildcards());
       // For Proguard -keepattributes are only applicable when obfuscating.
       if (forceProguardCompatibility && !isObfuscating()) {
         proguardKeepAttributes.keepAllAttributesExceptRuntimeInvisibleAnnotations();
@@ -569,14 +575,8 @@ public class ProguardConfiguration {
               protoShrinking,
               getMaxRemovedAndroidLogLevel(),
               processKotlinNullChecks);
-
       reporter.failIfPendingErrors();
-
       return configuration;
-    }
-
-    public ProguardConfiguration build() {
-      return buildRaw();
     }
   }
 

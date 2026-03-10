@@ -102,7 +102,7 @@ public class InlineTest extends IrInjectionTestBase {
   private static InternalOptions createOptions() {
     Reporter reporter = new Reporter();
     ProguardConfiguration proguardConfiguration =
-        ProguardConfiguration.builder(new DexItemFactory(), reporter).build();
+        ProguardConfiguration.builder(new DexItemFactory(), reporter).buildForTesting();
     InternalOptions options =
         new InternalOptions(CompilationMode.RELEASE, proguardConfiguration, reporter);
     options.programConsumer = DexIndexedConsumer.emptyConsumer();

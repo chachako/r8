@@ -1724,7 +1724,7 @@ public class ToolHelper {
     for (Path configPath : configPaths) {
       parser.parse(configPath);
     }
-    return builder.build();
+    return builder.buildForTesting();
   }
 
   public static D8Command.Builder prepareD8CommandBuilder(AndroidApp app) {

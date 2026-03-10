@@ -147,10 +147,12 @@ public class ProguardConfigurationParser {
       return ImmutableList.of();
     }
     ProguardConfiguration.Builder builder = ProguardConfiguration.builder(factory, reporter);
+    ProguardConfigurationParserOptions parserOptions =
+        ProguardConfigurationParserOptions.builder().readEnvironment().build();
     ProguardConfigurationParser parser =
         new ProguardConfigurationParser(factory, reporter, builder);
     parser.parse(sources);
-    return ImmutableList.copyOf(builder.build().getRules());
+    return ImmutableList.copyOf(builder.build(parserOptions).getRules());
   }
 
   public static List<String> getUnsupportedOptions() {
@@ -806,19 +808,6 @@ public class ProguardConfigurationParser {
       List<String> attributesPatterns = acceptKeepAttributesPatternList();
       if (attributesPatterns.isEmpty()) {
         throw parseError("Expected attribute pattern list");
-      }
-      if (!options.isKeepRuntimeInvisibleAnnotationsEnabled()) {
-        ProguardKeepAttributes keepAttributes =
-            ProguardKeepAttributes.fromPatterns(attributesPatterns);
-        if (keepAttributes.runtimeInvisibleAnnotations
-            || keepAttributes.runtimeInvisibleParameterAnnotations
-            || keepAttributes.runtimeInvisibleTypeAnnotations) {
-          reporter.error(
-              new StringDiagnostic(
-                  "Illegal attempt to keep runtime invisible annotations (origin: "
-                      + origin
-                      + ")"));
-        }
       }
       configurationConsumer.addKeepAttributePatterns(
           attributesPatterns, this, getPosition(start), start);

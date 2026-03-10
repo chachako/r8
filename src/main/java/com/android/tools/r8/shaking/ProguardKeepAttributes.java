@@ -4,6 +4,7 @@
 package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.utils.ListUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -109,13 +110,23 @@ public class ProguardKeepAttributes {
     return textPos == text.length();
   }
 
+  public static ProguardKeepAttributes empty() {
+    return new ProguardKeepAttributes();
+  }
+
   public static ProguardKeepAttributes fromPatterns(List<String> patterns) {
+    return fromPatterns(patterns, true);
+  }
+
+  public static ProguardKeepAttributes fromPatterns(
+      List<String> patterns, boolean canMatchRuntimeInvisibleAnnotationsWithWildcards) {
     ProguardKeepAttributes keepAttributes = new ProguardKeepAttributes();
-    keepAttributes.applyPatterns(patterns);
+    keepAttributes.applyPatterns(patterns, canMatchRuntimeInvisibleAnnotationsWithWildcards);
     return keepAttributes;
   }
 
-  public void applyPatterns(List<String> patterns) {
+  private void applyPatterns(
+      List<String> patterns, boolean canMatchRuntimeInvisibleAnnotationsWithWildcards) {
     sourceFile = update(sourceFile, SOURCE_FILE, patterns);
     innerClasses = update(innerClasses, INNER_CLASSES, patterns);
     enclosingMethod = update(enclosingMethod, ENCLOSING_METHOD, patterns);
@@ -125,16 +136,37 @@ public class ProguardKeepAttributes {
     sourceDebugExtension = update(sourceDebugExtension, SOURCE_DEBUG_EXTENSION, patterns);
     runtimeVisibleAnnotations = update(runtimeVisibleAnnotations, RUNTIME_VISIBLE_ANNOTATIONS,
         patterns);
-    runtimeInvisibleAnnotations = update(runtimeInvisibleAnnotations,
-        RUNTIME_INVISIBLE_ANNOTATIONS, patterns);
     runtimeVisibleParameterAnnotations = update(runtimeVisibleParameterAnnotations,
         RUNTIME_VISIBLE_PARAMETER_ANNOTATIONS, patterns);
-    runtimeInvisibleParameterAnnotations = update(runtimeInvisibleParameterAnnotations,
-        RUNTIME_INVISIBLE_PARAMETER_ANNOTATIONS, patterns);
     runtimeVisibleTypeAnnotations = update(runtimeVisibleTypeAnnotations,
         RUNTIME_VISIBLE_TYPE_ANNOTATIONS, patterns);
-    runtimeInvisibleTypeAnnotations = update(runtimeInvisibleTypeAnnotations,
-        RUNTIME_INVISIBLE_TYPE_ANNOTATIONS, patterns);
+    if (canMatchRuntimeInvisibleAnnotationsWithWildcards) {
+      runtimeInvisibleAnnotations =
+          update(runtimeInvisibleAnnotations, RUNTIME_INVISIBLE_ANNOTATIONS, patterns);
+      runtimeInvisibleParameterAnnotations =
+          update(
+              runtimeInvisibleParameterAnnotations,
+              RUNTIME_INVISIBLE_PARAMETER_ANNOTATIONS,
+              patterns);
+      runtimeInvisibleTypeAnnotations =
+          update(runtimeInvisibleTypeAnnotations, RUNTIME_INVISIBLE_TYPE_ANNOTATIONS, patterns);
+    } else {
+      List<String> patternsWithoutWildcards =
+          ListUtils.filter(patterns, pattern -> pattern.indexOf('*') < 0);
+      runtimeInvisibleAnnotations =
+          update(
+              runtimeInvisibleAnnotations, RUNTIME_INVISIBLE_ANNOTATIONS, patternsWithoutWildcards);
+      runtimeInvisibleParameterAnnotations =
+          update(
+              runtimeInvisibleParameterAnnotations,
+              RUNTIME_INVISIBLE_PARAMETER_ANNOTATIONS,
+              patternsWithoutWildcards);
+      runtimeInvisibleTypeAnnotations =
+          update(
+              runtimeInvisibleTypeAnnotations,
+              RUNTIME_INVISIBLE_TYPE_ANNOTATIONS,
+              patternsWithoutWildcards);
+    }
     annotationDefault = update(annotationDefault, ANNOTATION_DEFAULT, patterns);
     stackMapTable = update(stackMapTable, STACK_MAP_TABLE, patterns);
     permittedSubclasses = update(permittedSubclasses, PERMITTED_SUBCLASSES, patterns);
