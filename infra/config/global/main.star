@@ -89,7 +89,17 @@ led_users(
     ],
 )
 
+led_users(
+    pool_realm = "pools/ci",
+    builder_realm = "try",
+    groups = [
+        "mdb/r8-team",
+        "mdb/chrome-troopers",
+    ],
+)
+
 luci.bucket(name = "ci")
+luci.bucket(name = "try")
 
 luci.milo()
 
@@ -153,6 +163,23 @@ luci.console_view(
     refs = ["refs/heads/.*"],
 )
 
+luci.cq_group(
+    name = "main-cq",
+    watch = cq.refset(
+        repo = "https://r8.googlesource.com/r8",
+        refs = ["refs/heads/main"],
+    ),
+    acls = [
+        acl.entry(acl.CQ_COMMITTER, groups = ["project-r8-committers"]),
+        acl.entry(acl.CQ_DRY_RUNNER, groups = ["googlers"]),
+    ],
+)
+
+luci.list_view(
+    name = "try",
+    title = "R8 Try Builders",
+)
+
 view_builders = []
 
 def builder_view(name, category, short_name):
@@ -202,6 +229,7 @@ def get_dimensions(windows = False, internal = False, archive = False, jammy = T
 
 def r8_builder(
         name,
+        bucket = "ci",
         priority = 26,
         trigger = True,
         category = None,
@@ -216,16 +244,16 @@ def r8_builder(
             triggered = release_trigger if release_trigger else ["branch-gitiles-trigger"]
         else:
             triggered = ["main-gitiles-trigger"]
-    triggering_policy = triggering_policy or scheduler.policy(
+    triggering_policy = triggering_policy or (scheduler.policy(
         kind = scheduler.GREEDY_BATCHING_KIND,
         max_batch_size = 1 if release else None,
         max_concurrent_invocations = max_concurrent_invocations,
-    )
+    ) if bucket == "ci" else None)
 
     luci.builder(
         name = name,
-        bucket = "ci",
-        service_account = "r8-ci-builder@chops-service-accounts." +
+        bucket = bucket,
+        service_account = "r8-" + bucket + "-builder@chops-service-accounts." +
                           "iam.gserviceaccount.com",
         build_numbers = True,
         swarming_tags = ["vpython:native-python-wrapper"],
@@ -237,13 +265,21 @@ def r8_builder(
         resultdb_settings = resultdb.settings(enable = True, bq_exports = None, history_options = None),
         **kwargs
     )
-    category = category if category else "R8"
-    category = "Release|" + category if release else category
-    builder_view(name, category, name.split("-")[-1].replace("_release", ""))
+    if bucket == "ci":
+        category = category if category else "R8"
+        category = "Release|" + category if release else category
+        builder_view(name, category, name.split("-")[-1].replace("_release", ""))
+    elif bucket == "try":
+        luci.list_view_entry(
+            list_view = "try",
+            builder = name,
+        )
 
 def r8_tester(
         name,
         test_options,
+        bucket = "ci",
+        trigger = True,
         dimensions = None,
         execution_timeout = default_timeout,
         expiration_timeout = time.hour * 35,
@@ -251,9 +287,12 @@ def r8_tester(
         category = None,
         release_trigger = None):
     dimensions = dimensions if dimensions else get_dimensions()
-    for name in [name, name + "_release"]:
+    names = [name, name + "_release"] if trigger else [name]
+    for name in names:
         r8_builder(
             name = name,
+            bucket = bucket,
+            trigger = trigger,
             category = category,
             execution_timeout = execution_timeout,
             expiration_timeout = expiration_timeout,
@@ -269,6 +308,8 @@ def r8_tester(
 def r8_tester_with_default(
         name,
         test_options,
+        bucket = "ci",
+        trigger = True,
         dimensions = None,
         category = None,
         release_trigger = None,
@@ -277,6 +318,8 @@ def r8_tester_with_default(
     r8_tester(
         name,
         test_options + common_test_options,
+        bucket = bucket,
+        trigger = trigger,
         dimensions = dimensions,
         category = category,
         release_trigger = release_trigger,
@@ -412,6 +455,18 @@ r8_tester_with_default(
     "linux-default",
     ["--runtimes=dex-default", "--command_cache_dir=/tmp/ccache"],
     max_concurrent_invocations = 2,
+)
+
+r8_tester_with_default(
+    "presubmit",
+    [],
+    bucket = "try",
+    trigger = False,
+)
+
+luci.cq_tryjob_verifier(
+    builder = "presubmit",
+    cq_group = "main-cq",
 )
 r8_tester_with_default(
     "linux-none",
