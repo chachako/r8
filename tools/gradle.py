@@ -125,7 +125,7 @@ def run_gradle_in(gradle_cmd, args, cwd, throw_on_failure=True, env=None):
     ensure_deps()
     cmd = [gradle_cmd]
     # Changes to these flags should be copied to gradle_benchmark.scenarios.
-    args.extend(['--offline', '-Dorg.gradle.configuration-cache=false'])
+    args.extend(['--offline'])
     cmd.extend(args)
     with utils.ChangedWorkingDirectory(cwd):
         utils.PrintCmd(cmd)
