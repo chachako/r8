@@ -109,6 +109,10 @@ def is_cancelation_enabled_for_builder(builder_name):
         'linux') and not builder_name.endswith('_release')
 
 
+def is_by_r8(scheduled_build):
+    return 'By: project:r8' in scheduled_build
+
+
 def main(argv):
     while True:
         latest_commit_hash = get_latest_commit_hash()
@@ -117,7 +121,7 @@ def main(argv):
                 scheduled_build)
             commit_hash = get_commit_hash_from_scheduled_build(scheduled_build)
             if commit_hash and commit_hash != latest_commit_hash and is_cancelation_enabled_for_builder(
-                    builder_name):
+                    builder_name) and is_by_r8(scheduled_build):
                 cancel_build(scheduled_build, builder_name, commit_hash)
         time.sleep(5 * 60)
     return 0
