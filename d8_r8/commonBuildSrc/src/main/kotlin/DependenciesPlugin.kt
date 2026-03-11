@@ -1253,7 +1253,13 @@ private fun allDependencies(): List<ThirdPartyDependency> {
   ThirdPartyDeps::class.declaredMemberProperties.forEach {
     val value = it.get(ThirdPartyDeps)
     if (value is List<*>) {
-      allDeps.addAll(value as List<ThirdPartyDependency>)
+      value.forEach { dep ->
+        if (dep is ThirdPartyDependency) {
+          allDeps.add(dep)
+        } else {
+          throw RuntimeException("Cannot handle non ThirdPartyDependency dependency.")
+        }
+      }
     } else {
       allDeps.add(value as ThirdPartyDependency)
     }
