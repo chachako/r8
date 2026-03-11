@@ -62,7 +62,9 @@ public class TestConfigurationHelper {
     }
 
     public fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
-      test.useJUnitPlatform()
+      // TODO(b/489058560) Enable when we have figured out re-running single test variants.
+      // test.useJUnitPlatform()
+      test.useJUnit()
       test.systemProperty("junit.jupiter.execution.parallel.enabled", "true")
       val project = test.project
       if (project.hasProperty("testfilter")) {
