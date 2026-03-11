@@ -375,7 +375,10 @@ def run(options):
             utils.KEEPANNO_ANNOTATIONS_JAR,
             utils.KEEPANNO_LEGACY_ANNOTATIONS_JAR,
             utils.KEEPANNO_ANDROIDX_ANNOTATIONS_JAR, utils.GENERATED_LICENSE,
-            'd8_r8/dist/build/spdx/r8.spdx.json'
+            'd8_r8/dist/build/spdx/r8.spdx.json',
+            'src/blastradius/proto/blastradius.proto',
+            'src/blastradius/proto/blastradiussummary.proto',
+            'src/libanalyzer/proto/libraryanalyzerresult.proto'
         ])
         for file in for_archiving:
             file_name = os.path.basename(file)
