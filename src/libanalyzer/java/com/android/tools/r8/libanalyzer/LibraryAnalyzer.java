@@ -76,10 +76,13 @@ public class LibraryAnalyzer {
 
   public static void run(LibraryAnalyzerCommand command) throws CompilationFailedException {
     LibraryAnalyzerOptions options = command.getInternalOptions();
-    run(
-        command,
-        ThreadUtils.getExecutorService(options.threadCount, options.getThreadingModule()),
-        options);
+    ExecutorService executorService =
+        ThreadUtils.getExecutorService(options.threadCount, options.getThreadingModule());
+    try {
+      run(command, executorService, options);
+    } finally {
+      executorService.shutdown();
+    }
   }
 
   public static void run(LibraryAnalyzerCommand command, ExecutorService executorService)
@@ -121,7 +124,10 @@ public class LibraryAnalyzer {
             .setProgramConsumer(sizeConsumer);
     configure(commandBuilder);
     try {
-      D8.run(commandBuilder.build(), executorService);
+      D8.LibraryAnalyzerEntryPoint.run(
+          commandBuilder.build(),
+          executorService,
+          d8Options -> d8Options.libraryAnalyzerSubCompilation = true);
     } catch (CompilationFailedException e) {
       reporter.warning(new ExceptionDiagnostic(e));
       reporter.clearAbort();
@@ -144,6 +150,7 @@ public class LibraryAnalyzer {
           commandBuilder.build(),
           executorService,
           r8Options -> {
+            r8Options.libraryAnalyzerSubCompilation = true;
             r8Options.ignoreUnusedProguardRules = true;
             if (options.blastRadiusOutputPath != null) {
               r8Options.getBlastRadiusOptions().outputPath =

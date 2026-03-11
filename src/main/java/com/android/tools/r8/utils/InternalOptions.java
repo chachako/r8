@@ -1117,6 +1117,7 @@ public class InternalOptions implements GlobalKeepInfoConfiguration {
   public R8PartialCompilationConfiguration partialCompilationConfiguration =
       R8PartialCompilationConfiguration.disabledConfiguration();
   public R8PartialSubCompilationConfiguration partialSubCompilationConfiguration = null;
+  public boolean libraryAnalyzerSubCompilation;
   public final TestingOptions testing = new TestingOptions();
 
   public List<ProguardConfigurationRule> mainDexKeepRules = ImmutableList.of();

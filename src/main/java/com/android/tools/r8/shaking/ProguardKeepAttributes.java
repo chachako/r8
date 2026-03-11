@@ -4,6 +4,7 @@
 package com.android.tools.r8.shaking;
 
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.utils.InternalOptions;
 import com.android.tools.r8.utils.ListUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -173,11 +174,13 @@ public class ProguardKeepAttributes {
     lineNumberTable = update(lineNumberTable, LINE_NUMBER_TABLE, patterns);
   }
 
-  public void ensureValid(boolean forceProguardCompatibility) {
-    if (forceProguardCompatibility && innerClasses != enclosingMethod) {
-      // If only one is true set both to true in Proguard compatibility mode.
-      enclosingMethod = true;
-      innerClasses = true;
+  public void ensureValid(InternalOptions options) {
+    if (options.forceProguardCompatibility || options.libraryAnalyzerSubCompilation) {
+      if (innerClasses != enclosingMethod) {
+        // If only one is true set both to true in Proguard compatibility mode.
+        enclosingMethod = true;
+        innerClasses = true;
+      }
     }
     if (innerClasses && !enclosingMethod) {
       throw new CompilationError("Attribute InnerClasses requires EnclosingMethod attribute. "

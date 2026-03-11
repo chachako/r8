@@ -481,4 +481,19 @@ public final class D8 {
     @Override
     public void finished(DiagnosticsHandler handler) {}
   }
+
+  public static class LibraryAnalyzerEntryPoint {
+
+    public static void run(
+        D8Command command,
+        ExecutorService executorService,
+        Consumer<InternalOptions> optionsModification)
+        throws CompilationFailedException {
+      AndroidApp app = command.getInputApp();
+      InternalOptions options = command.getInternalOptions();
+      optionsModification.accept(options);
+      ExceptionUtils.withR8CompilationHandler(
+          options.reporter, () -> runInternal(app, options, executorService));
+    }
+  }
 }

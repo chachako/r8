@@ -1405,14 +1405,7 @@ public class R8 {
       InternalOptions options = command.getInternalOptions();
       optionsModification.accept(options);
       ExceptionUtils.withR8CompilationHandler(
-          options.reporter,
-          () -> {
-            try {
-              runInternal(app, options, executorService);
-            } finally {
-              executorService.shutdown();
-            }
-          });
+          options.reporter, () -> runInternal(app, options, executorService));
     }
   }
 

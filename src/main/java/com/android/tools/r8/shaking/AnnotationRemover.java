@@ -183,7 +183,7 @@ public class AnnotationRemover {
   }
 
   public AnnotationRemover ensureValid() {
-    keep.ensureValid(appView.options().forceProguardCompatibility);
+    keep.ensureValid(appView.options());
     return this;
   }
 
