@@ -60,6 +60,12 @@ public class Reporter implements DiagnosticsHandler {
     this.clientHandler = clientHandler;
   }
 
+  public static Reporter create(DiagnosticsHandler diagnosticsHandler) {
+    return diagnosticsHandler instanceof Reporter
+        ? (Reporter) diagnosticsHandler
+        : new Reporter(diagnosticsHandler);
+  }
+
   public void clearAbort() {
     abort = null;
   }
