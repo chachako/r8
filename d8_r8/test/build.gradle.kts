@@ -67,7 +67,7 @@ tasks {
     dependsOn(":tests_java_11:clean")
     dependsOn(":tests_java_17:clean")
     dependsOn(":tests_java_21:clean")
-    dependsOn(gradle.includedBuild("tests_java_25").task(":clean"))
+    dependsOn(":tests_java_25:clean")
   }
 
   val packageTests by

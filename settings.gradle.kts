@@ -65,7 +65,9 @@ include(":tests_java_21")
 
 project(":tests_java_21").projectDir = file("d8_r8/test_modules/tests_java_21")
 
-includeBuild(rootProject.projectDir.resolve("d8_r8/test_modules/tests_java_25"))
+include(":tests_java_25")
+
+project(":tests_java_25").projectDir = file("d8_r8/test_modules/tests_java_25")
 
 include(":test")
 
