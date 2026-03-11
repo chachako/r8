@@ -132,7 +132,7 @@ public class SdkIntMemberValuePropagationTest extends TestBase {
         .transform();
   }
 
-  private byte[] getTransformedBuildVERSIONClass() throws IOException, NoSuchFieldException {
+  private byte[] getTransformedBuildVERSIONClass() throws NoSuchFieldException {
     return transformer(VERSION.class)
         .setClassDescriptor("Landroid/os/Build$VERSION;")
         .setAccessFlags(VERSION.class.getDeclaredField("SDK_INT"), AccessFlags::setFinal)

@@ -320,8 +320,14 @@ public class IRConverter {
     if (options.testing.forceIRForCfToCfDesugar) {
       return true;
     }
-    assert method.getDefinition().getCode().isCfCode();
-    return !conversionOptions.isGeneratingClassFiles();
+    if (method.getDefinition().getCode().isCfCode()) {
+      return !conversionOptions.isGeneratingClassFiles();
+    } else {
+      assert method.getDefinition().getCode().isDexCode();
+      assert !options.passthroughDexCode
+          || DexToDexCodeOptimizations.shouldOptimize(appView, method);
+      return true;
+    }
   }
 
   protected void workaroundAbstractMethodOnNonAbstractClassVerificationBug(

@@ -13,6 +13,7 @@ import com.android.tools.r8.errors.CompilationError;
 import com.android.tools.r8.graph.AppInfo;
 import com.android.tools.r8.graph.AppView;
 import com.android.tools.r8.graph.DexApplication;
+import com.android.tools.r8.graph.DexCode;
 import com.android.tools.r8.graph.DexEncodedMethod;
 import com.android.tools.r8.graph.DexProgramClass;
 import com.android.tools.r8.graph.DexString;
@@ -147,8 +148,7 @@ public class PrimaryD8L8IRConverter extends IRConverter {
       return;
     }
     checkPrefixMerging(method);
-    if (options.isGeneratingClassFiles()
-        || !(options.passthroughDexCode && definition.getCode().isDexCode())) {
+    if (needsConversion(method)) {
       // We do not process in call graph order, so anything could be a leaf.
       rewriteNonDesugaredCode(
           method,
@@ -160,6 +160,17 @@ public class PrimaryD8L8IRConverter extends IRConverter {
     } else {
       assert definition.getCode().isDexCode();
     }
+  }
+
+  private boolean needsConversion(ProgramMethod method) {
+    if (options.isGeneratingClassFiles() || !method.getDefinition().getCode().isDexCode()) {
+      return true;
+    }
+    if (!options.passthroughDexCode) {
+      return true;
+    }
+    DexCode code = method.getDefinition().getCode().asDexCode();
+    return DexToDexCodeOptimizations.shouldOptimize(appView, code);
   }
 
   private void checkPrefixMerging(ProgramMethod method) {
