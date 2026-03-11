@@ -31,6 +31,12 @@ public class SetUtils {
     return false;
   }
 
+  public static <S, T> Set<T> flatMapIdentitySet(Set<S> set, Function<S, Collection<T>> fn) {
+    Set<T> result = Sets.newIdentityHashSet();
+    set.forEach(element -> result.addAll(fn.apply(element)));
+    return result;
+  }
+
   public static <T> Set<T> newConcurrentHashSet() {
     return ConcurrentHashMap.newKeySet();
   }

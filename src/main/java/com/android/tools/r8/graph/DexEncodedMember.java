@@ -53,6 +53,10 @@ public abstract class DexEncodedMember<D extends DexEncodedMember<D, R>, R exten
     return getReference().getName();
   }
 
+  public ParameterAnnotationsList getParameterAnnotations() {
+    return ParameterAnnotationsList.empty();
+  }
+
   @Override
   public R getReference() {
     return reference;

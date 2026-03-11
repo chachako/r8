@@ -406,8 +406,17 @@ public abstract class ProguardTypeMatcher {
 
     public final DexType type;
 
-    private MatchSpecificType(DexType type) {
+    // The original rule that was optimized into this MatchSpecificType.
+    @SuppressWarnings("UnusedVariable")
+    private final ProguardTypeMatcher original;
+
+    public MatchSpecificType(DexType type) {
+      this(type, null);
+    }
+
+    public MatchSpecificType(DexType type, ProguardTypeMatcher original) {
       this.type = type;
+      this.original = original;
     }
 
     @Override
@@ -454,8 +463,17 @@ public abstract class ProguardTypeMatcher {
 
     public final Set<DexType> types;
 
+    // The original rule that was optimized into this MatchSpecificType.
+    @SuppressWarnings("UnusedVariable")
+    private final ProguardTypeMatcher original;
+
     public MatchSpecificTypes(Set<DexType> types) {
+      this(types, null);
+    }
+
+    public MatchSpecificTypes(Set<DexType> types, ProguardTypeMatcher original) {
       this.types = types;
+      this.original = original;
     }
 
     @Override

@@ -923,6 +923,7 @@ public class DexEncodedMethod extends DexEncodedMember<DexEncodedMethod, DexMeth
     return getParameterAnnotations().get(index);
   }
 
+  @Override
   public ParameterAnnotationsList getParameterAnnotations() {
     return parameterAnnotationsList;
   }
