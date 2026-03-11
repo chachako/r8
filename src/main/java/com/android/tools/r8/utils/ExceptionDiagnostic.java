@@ -27,6 +27,8 @@ public class ExceptionDiagnostic implements Diagnostic {
   private final Origin origin;
   private final Position position;
 
+  private boolean isPrintingStackTrace = false;
+
   public ExceptionDiagnostic(Throwable cause, Origin origin, Position position) {
     assert cause != null;
     assert origin != null;
@@ -64,8 +66,16 @@ public class ExceptionDiagnostic implements Diagnostic {
 
   @Override
   public String getDiagnosticMessage() {
-    StringWriter out = new StringWriter();
-    cause.printStackTrace(new PrintWriter(out));
-    return out.toString();
+    String message;
+    if (isPrintingStackTrace) {
+      message = cause.getMessage();
+    } else {
+      isPrintingStackTrace = true;
+      StringWriter out = new StringWriter();
+      cause.printStackTrace(new PrintWriter(out));
+      message = out.toString();
+      isPrintingStackTrace = false;
+    }
+    return message;
   }
 }
