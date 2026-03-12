@@ -2,19 +2,12 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
-import java.net.HttpURLConnection
-import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.util.Date
 import java.util.concurrent.TimeUnit
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestDescriptor
 import org.gradle.api.tasks.testing.TestListener
@@ -23,34 +16,6 @@ import org.gradle.api.tasks.testing.TestResult
 public class TestConfigurationHelper {
 
   public companion object {
-
-    private data class ResultSinkInfo(val address: String, val authToken: String)
-
-    private val resultSinkInfo: ResultSinkInfo? by lazy {
-      val luciContextPath = System.getenv("LUCI_CONTEXT")
-      if (luciContextPath != null) {
-        try {
-          val content = File(luciContextPath).readText()
-          val json = Gson().fromJson(content, JsonObject::class.java)
-          val resultSink = json.getAsJsonObject("result_sink")
-          if (resultSink != null) {
-            val address = resultSink.get("address")?.asString
-            val authToken = resultSink.get("auth_token")?.asString
-            if (address != null && authToken != null) {
-              ResultSinkInfo(address, authToken)
-            } else {
-              null
-            }
-          } else {
-            null
-          }
-        } catch (e: Exception) {
-          null
-        }
-      } else {
-        null
-      }
-    }
 
     private fun retrace(
       rootDir: File,
@@ -94,97 +59,6 @@ public class TestConfigurationHelper {
         out.append(baos.toString())
       }
       return out.toString()
-    }
-
-    @OptIn(ExperimentalEncodingApi::class)
-    private fun reportToResultSink(
-      desc: TestDescriptor?,
-      result: TestResult?,
-      rootDir: File,
-      isR8Lib: Boolean,
-      r8Jar: File?,
-      r8LibMappingFile: File?,
-      printObfuscatedStacktraces: Boolean,
-    ) {
-      val info = resultSinkInfo ?: return
-      if (desc == null || result == null || desc.className == null) return
-
-      val testId = "${desc.className}.${desc.name}"
-      val status =
-        when (result.resultType) {
-          TestResult.ResultType.SUCCESS -> "PASS"
-          TestResult.ResultType.FAILURE -> "FAIL"
-          TestResult.ResultType.SKIPPED -> "SKIP"
-          else -> "FAIL"
-        }
-      val expected = result.resultType == TestResult.ResultType.SUCCESS
-      val durationMs = result.endTime - result.startTime
-      val duration = "${durationMs / 1000.0}s"
-
-      var stackTraceStr: String? = null
-      if (result.resultType == TestResult.ResultType.FAILURE && result.exception != null) {
-        val exception = result.exception as Throwable
-        stackTraceStr =
-          if (isR8Lib && r8Jar != null && r8LibMappingFile != null) {
-            retrace(rootDir, r8Jar, r8LibMappingFile, exception, printObfuscatedStacktraces)
-          } else {
-            val baos = ByteArrayOutputStream()
-            exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
-            baos.toString()
-          }
-      }
-
-      val payloadObj = JsonObject()
-      val testResultsArr = com.google.gson.JsonArray()
-      val testResultObj = JsonObject()
-
-      val testIdStructuredObj = JsonObject()
-      val testIdCaseNameComponents = JsonArray()
-      testIdCaseNameComponents.add(desc.displayName.substringBeforeLast('['))
-      val argumentString = desc.displayName.substringAfterLast('[').substringBeforeLast(']')
-      testIdStructuredObj.addProperty("module", "junit")
-      testIdStructuredObj.addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
-      testIdStructuredObj.addProperty("fineName", desc.className?.substringAfterLast(".") ?: "")
-      testIdStructuredObj.add("caseNameComponents", testIdCaseNameComponents)
-      testResultObj.add("testIdStructured", testIdStructuredObj)
-
-      testResultObj.addProperty("testId", testId)
-      testResultObj.addProperty("status", status)
-      testResultObj.addProperty("expected", expected)
-      testResultObj.addProperty("duration", duration)
-      val summaryHtml = "<p>Arguments string: $argumentString</p>"
-      if (stackTraceStr != null) {
-        val artifact = JsonObject()
-        val encodedStackTrace = Base64.Default.encode(stackTraceStr.encodeToByteArray())
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("contents", encodedStackTrace)
-        artifact.add("artifact-content-in-request", jsonObject)
-        testResultObj.add("artifacts", artifact)
-        testResultObj.addProperty(
-          "summaryHtml",
-          summaryHtml +
-            "<p>Stack trace:</p>" +
-            "<p><text-artifact artifact-id=\"artifact-content-in-request\"></p>",
-        )
-      } else {
-        testResultObj.addProperty("summaryHtml", summaryHtml)
-      } / testResultsArr.add(testResultObj)
-      payloadObj.add("testResults", testResultsArr)
-
-      try {
-        val url = URL("http://${info.address}/prpc/luci.resultsink.v1.Sink/ReportTestResults")
-        val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.doOutput = true
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Authorization", "ResultSink ${info.authToken}")
-        conn.outputStream.use {
-          it.write(Gson().toJson(payloadObj).toByteArray(StandardCharsets.UTF_8))
-        }
-        conn.inputStream.use { it.readBytes() }
-      } catch (e: Exception) {
-        // Ignore
-      }
     }
 
     public fun setupTestTask(test: Test, isR8Lib: Boolean, r8Jar: File?, r8LibMappingFile: File?) {
@@ -339,15 +213,6 @@ public class TestConfigurationHelper {
                   println(baos)
                 }
               }
-              reportToResultSink(
-                desc,
-                result,
-                rootDir,
-                isR8Lib,
-                r8Jar,
-                r8LibMappingFile,
-                printObfuscatedStacktraces,
-              )
             }
           }
         )
@@ -368,15 +233,6 @@ public class TestConfigurationHelper {
                 exception.printStackTrace(PrintStream(baos, true, StandardCharsets.UTF_8))
                 println(baos)
               }
-              reportToResultSink(
-                desc,
-                result,
-                rootDir,
-                isR8Lib,
-                r8Jar,
-                r8LibMappingFile,
-                printObfuscatedStacktraces,
-              )
             }
           }
         )
