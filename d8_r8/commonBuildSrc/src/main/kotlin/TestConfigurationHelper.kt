@@ -112,12 +112,11 @@ public class TestConfigurationHelper {
       val testId = "${desc.className}.${desc.name}"
       val status =
         when (result.resultType) {
-          TestResult.ResultType.SUCCESS -> "PASS"
-          TestResult.ResultType.FAILURE -> "FAIL"
-          TestResult.ResultType.SKIPPED -> "SKIP"
-          else -> "FAIL"
+          TestResult.ResultType.SUCCESS -> "PASSED"
+          TestResult.ResultType.FAILURE -> "FAILED"
+          TestResult.ResultType.SKIPPED -> "SKIPPED"
+          else -> "PRECLUDED"
         }
-      val expected = result.resultType == TestResult.ResultType.SUCCESS
       val durationMs = result.endTime - result.startTime
       val duration = "${durationMs / 1000.0}s"
 
@@ -140,8 +139,8 @@ public class TestConfigurationHelper {
 
       val testIdStructuredObj = JsonObject()
       val testIdCaseNameComponents = JsonArray()
-      testIdCaseNameComponents.add(desc.displayName.substringBeforeLast('['))
-      val argumentString = desc.displayName.substringAfterLast('[').substringBeforeLast(']')
+      testIdCaseNameComponents.add(desc.displayName.substringBefore('['))
+      val argumentString = desc.displayName.substringAfter('[').substringBeforeLast(']')
       testIdStructuredObj.addProperty("module", "junit")
       testIdStructuredObj.addProperty("coarseName", desc.className?.substringBeforeLast(".") ?: "")
       testIdStructuredObj.addProperty("fineName", desc.className?.substringAfterLast(".") ?: "")
@@ -149,9 +148,19 @@ public class TestConfigurationHelper {
       testResultObj.add("testIdStructured", testIdStructuredObj)
 
       testResultObj.addProperty("testId", testId)
-      testResultObj.addProperty("status", status)
-      testResultObj.addProperty("expected", expected)
+      testResultObj.addProperty("statusV2", status)
       testResultObj.addProperty("duration", duration)
+
+      if (result.resultType == TestResult.ResultType.FAILURE) {
+        val failureReasonObj = JsonObject()
+        failureReasonObj.addProperty("kind", "ORDINARY")
+        testResultObj.add("failureReason", failureReasonObj)
+      } else if (result.resultType == TestResult.ResultType.SKIPPED) {
+        val skipReasonObj = JsonObject()
+        skipReasonObj.addProperty("kind", "DISABLED_AT_DECLARATION")
+        testResultObj.add("skippedReason", skipReasonObj)
+      }
+
       val summaryHtml = "<p>Arguments string: $argumentString</p>"
       if (stackTraceStr != null) {
         val artifact = JsonObject()
