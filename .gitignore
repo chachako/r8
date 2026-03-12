@@ -1,8 +1,3 @@
-!third_party/chrome/*.sha1
-!third_party/gmscore/*.sha1
-!third_party/internal/*.sha1
-!third_party/nest/*.sha1
-!third_party/youtube/*sha1
 #*#
 *.dex
 *.iml
@@ -292,7 +287,6 @@ third_party/opensource-apps/android/nowinandroid.tar.gz
 third_party/processkeeprules/binary_compatibility
 third_party/processkeeprules/binary_compatibility.tar.gz
 third_party/proguard/*
-!third_party/proguard/*.sha1
 third_party/proguardsettings.tar.gz
 third_party/proguardsettings/
 third_party/proto/runtime/edition2023
