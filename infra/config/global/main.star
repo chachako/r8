@@ -57,6 +57,19 @@ luci.project(
             roles = "role/swarming.poolViewer",
             groups = "googlers",
         ),
+        # Roles for LUCI Analysis.
+        luci.binding(
+            roles = "role/analysis.reader",
+            groups = "mdb/r8-team",
+        ),
+        luci.binding(
+            roles = "role/analysis.queryUser",
+            groups = "mdb/r8-team",
+        ),
+        luci.binding(
+            roles = "role/analysis.editor",
+            groups = "mdb/r8-team",
+        ),
     ],
 )
 
