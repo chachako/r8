@@ -33,8 +33,7 @@ kotlin { explicitApi() }
 // TODO(jonathanlist): This should be removed by "following gradle best practices".
 evaluationDependsOn(":tests_java_9")
 
-val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
+evaluationDependsOn(":testbase")
 
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
@@ -65,8 +64,8 @@ dependencies {
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
-  implementation(testbaseDepsJarTask.outputs.files)
-  implementation(testbaseCompileJavaTask.outputs.files)
+  implementation(project(":testbase"))
+  implementation(files(project.project(":testbase").tasks.named("depsJar")))
 }
 
 val sourceSetDependenciesTasks =
@@ -105,7 +104,7 @@ tasks {
     }
   "compileTestJava" {
     dependsOn(sharedDownloadDepsTask)
-    dependsOn(testbaseCompileJavaTask)
+    dependsOn(":testbase:compileJava")
   }
   withType<JavaCompile> {
     dependsOn(createArtTests)
@@ -113,7 +112,7 @@ tasks {
     dependsOn(mainCompileJavaTask)
     dependsOn(resourceShrinkerCompileJavaTask)
     dependsOn(sharedDownloadDepsTask)
-    dependsOn(testbaseCompileJavaTask)
+    dependsOn(":testbase:compileJava")
   }
 
   withType<JavaExec> {
@@ -142,7 +141,14 @@ tasks {
     )
     systemProperty(
       "TESTBASE_DATA_LOCATION",
-      testbaseCompileJavaTask.outputs.files.asPath.split(File.pathSeparator)[0],
+      project(":testbase")
+        .tasks
+        .named<JavaCompile>("compileJava")
+        .get()
+        .outputs
+        .files
+        .asPath
+        .split(File.pathSeparator)[0],
     )
     systemProperty(
       "BUILD_PROP_KEEPANNO_RUNTIME_PATH",

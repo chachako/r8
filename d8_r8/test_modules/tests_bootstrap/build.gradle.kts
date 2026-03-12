@@ -25,6 +25,8 @@ java {
 
 kotlin { explicitApi() }
 
+evaluationDependsOn(":testbase")
+
 val distR8WithRelocatedDeps = projectTask("dist", "r8WithRelocatedDeps")
 val distSwissArmyKnife = projectTask("dist", "swissArmyKnife")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
@@ -36,8 +38,6 @@ val resourceShrinkerCompileKotlinTask = projectTask("resourceshrinker", "compile
 val resourceShrinkerDepsJarTask = projectTask("resourceshrinker", "depsJar")
 val sharedDownloadDepsTask = projectTask("shared", "downloadDeps")
 val sharedDownloadDepsInternalTask = projectTask("shared", "downloadDepsInternal")
-val testbaseCompileJavaTask = projectTask("testbase", "compileJava")
-val testbaseDepsJarTask = projectTask("testbase", "depsJar")
 
 dependencies {
   implementation(keepAnnoJarTask.outputs.files)
@@ -45,8 +45,8 @@ dependencies {
   implementation(resourceShrinkerCompileJavaTask.outputs.files)
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
-  implementation(testbaseDepsJarTask.outputs.files)
-  implementation(testbaseCompileJavaTask.outputs.files)
+  implementation(project(":testbase"))
+  implementation(files(project.project(":testbase").tasks.named("depsJar")))
 }
 
 fun testDependencies(): FileCollection {
@@ -72,7 +72,14 @@ tasks {
     systemProperty(
       "TESTBASE_DATA_LOCATION",
       project.provider {
-        testbaseCompileJavaTask.outputs.files.getAsPath().split(File.pathSeparator)[0]
+        project(":testbase")
+          .tasks
+          .named<JavaCompile>("compileJava")
+          .get()
+          .outputs
+          .files
+          .asPath
+          .split(File.pathSeparator)[0]
       },
     )
     systemProperty(

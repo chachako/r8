@@ -20,6 +20,8 @@ java {
 kotlin { explicitApi() }
 
 // TODO(jonathanlist): These should be removed by "following gradle best practices".
+evaluationDependsOn(":testbase")
+
 evaluationDependsOn(":tests_bootstrap")
 
 evaluationDependsOn(":tests_java_8")
@@ -49,8 +51,6 @@ val processKeepRulesLibWithRelocatedDepsTask =
 val r8WithRelocatedDepsTask = projectTask("dist", "r8WithRelocatedDeps")
 val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
-val javaTestBaseJarTask = projectTask("testbase", "testJar")
-val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
 val keepAnnoToolsWithRelocatedDepsTask = projectTask("dist", "keepAnnoToolsWithRelocatedDeps")
 val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
@@ -61,6 +61,7 @@ tasks {
   withType<KotlinCompile> { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   "clean" {
+    dependsOn(":testbase:clean")
     dependsOn(":tests_bootstrap:clean")
     dependsOn(":tests_java_8:clean")
     dependsOn(":tests_java_9:clean")
@@ -111,13 +112,13 @@ tasks {
 
   val packageTestDeps by
     registering(Jar::class) {
-      dependsOn(":tests_bootstrap:depsJar", javaTestBaseDepsJar, keepAnnoAndroidXAnnotationsJar)
+      dependsOn(":tests_bootstrap:depsJar", ":testbase:depsJar", keepAnnoAndroidXAnnotationsJar)
       from(
         project(":tests_bootstrap").tasks.named("depsJar").map {
           zipTree(it.outputs.files.singleFile)
         }
       )
-      from(javaTestBaseDepsJar.outputs.getFiles().map(::zipTree))
+      from(project(":testbase").tasks.named("depsJar").map { zipTree(it.outputs.files.singleFile) })
       from(keepAnnoAndroidXAnnotationsJar.outputs.getFiles().map(::zipTree))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -127,8 +128,8 @@ tasks {
 
   val packageTestBase by
     registering(Jar::class) {
-      dependsOn(javaTestBaseJarTask)
-      from(javaTestBaseJarTask.outputs.files.map(::zipTree))
+      dependsOn(":testbase:testJar")
+      from(project(":testbase").tasks.named("testJar").map { zipTree(it.outputs.files.singleFile) })
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8test_base.jar")
