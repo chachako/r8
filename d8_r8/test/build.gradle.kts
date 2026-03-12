@@ -20,6 +20,8 @@ java {
 kotlin { explicitApi() }
 
 // TODO(jonathanlist): These should be removed by "following gradle best practices".
+evaluationDependsOn(":tests_bootstrap")
+
 evaluationDependsOn(":tests_java_8")
 
 evaluationDependsOn(":tests_java_9")
@@ -49,8 +51,6 @@ val mainSourcesTask = projectTask("main", "sourcesJar")
 val resourceShrinkerSourcesTask = projectTask("resourceshrinker", "sourcesJar")
 val javaTestBaseJarTask = projectTask("testbase", "testJar")
 val javaTestBaseDepsJar = projectTask("testbase", "depsJar")
-val bootstrapTestsDepsJarTask = projectTask("tests_bootstrap", "depsJar")
-val bootstrapTestJarTask = projectTask("tests_bootstrap", "testJar")
 val keepAnnoAndroidXAnnotationsJar = projectTask("keepanno", "keepAnnoAndroidXAnnotationsJar")
 val keepAnnoToolsWithRelocatedDepsTask = projectTask("dist", "keepAnnoToolsWithRelocatedDeps")
 val depsJarOnlyAsmTask = projectTask("keepanno", "depsJarOnlyAsm")
@@ -61,7 +61,7 @@ tasks {
   withType<KotlinCompile> { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
 
   "clean" {
-    dependsOn(gradle.includedBuild("tests_bootstrap").task(":clean"))
+    dependsOn(":tests_bootstrap:clean")
     dependsOn(":tests_java_8:clean")
     dependsOn(":tests_java_9:clean")
     dependsOn(":tests_java_11:clean")
@@ -77,7 +77,7 @@ tasks {
       dependsOn(":tests_java_11:testJar")
       dependsOn(":tests_java_17:testJar")
       dependsOn(":tests_java_21:testJar")
-      dependsOn(bootstrapTestJarTask)
+      dependsOn(":tests_bootstrap:testJar")
       from(
         project(":tests_java_8").tasks.named("testJar").map { zipTree(it.outputs.files.singleFile) }
       )
@@ -99,7 +99,11 @@ tasks {
           zipTree(it.outputs.files.singleFile)
         }
       )
-      from(bootstrapTestJarTask.outputs.files.map(::zipTree))
+      from(
+        project(":tests_bootstrap").tasks.named("testJar").map {
+          zipTree(it.outputs.files.singleFile)
+        }
+      )
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata")
       destinationDirectory.set(getRoot().resolveAll("build", "libs"))
       archiveFileName.set("r8tests.jar")
@@ -107,8 +111,12 @@ tasks {
 
   val packageTestDeps by
     registering(Jar::class) {
-      dependsOn(bootstrapTestsDepsJarTask, javaTestBaseDepsJar, keepAnnoAndroidXAnnotationsJar)
-      from(bootstrapTestsDepsJarTask.outputs.getFiles().map(::zipTree))
+      dependsOn(":tests_bootstrap:depsJar", javaTestBaseDepsJar, keepAnnoAndroidXAnnotationsJar)
+      from(
+        project(":tests_bootstrap").tasks.named("depsJar").map {
+          zipTree(it.outputs.files.singleFile)
+        }
+      )
       from(javaTestBaseDepsJar.outputs.getFiles().map(::zipTree))
       from(keepAnnoAndroidXAnnotationsJar.outputs.getFiles().map(::zipTree))
       exclude("META-INF/*.kotlin_module", "**/*.kotlin_metadata", "org/jspecify/**", "org/jspecify")
@@ -605,7 +613,7 @@ tasks {
       dependsOn(":tests_java_11:test")
       dependsOn(":tests_java_17:test")
       dependsOn(":tests_java_21:test")
-      dependsOn(gradle.includedBuild("tests_bootstrap").task(":test"))
+      dependsOn(":tests_bootstrap:test")
     }
   }
 }
