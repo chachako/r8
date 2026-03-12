@@ -7,7 +7,10 @@ plugins {
   `java-gradle-plugin`
 }
 
-dependencies { implementation("net.ltgt.gradle:gradle-errorprone-plugin:3.0.1") }
+dependencies {
+  implementation("net.ltgt.gradle:gradle-errorprone-plugin:3.0.1")
+  implementation("com.google.code.gson:gson:2.10.1")
+}
 
 gradlePlugin {
   plugins.register("dependencies-plugin") {
