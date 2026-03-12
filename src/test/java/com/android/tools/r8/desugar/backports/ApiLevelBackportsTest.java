@@ -14,7 +14,7 @@ import com.android.tools.r8.TestBase;
 import com.android.tools.r8.TestParameters;
 import com.android.tools.r8.TestParametersCollection;
 import com.android.tools.r8.ToolHelper.DexVm.Version;
-import com.android.tools.r8.errors.AndroidApiLevelUnsupportedDiagnostic;
+import com.android.tools.r8.errors.UnsupportedAndroidApiLevelDiagnostic;
 import com.android.tools.r8.utils.AndroidApiLevel;
 import java.util.List;
 import org.junit.Test;
@@ -94,7 +94,7 @@ public class ApiLevelBackportsTest extends TestBase {
         .assertOnlyWarnings()
         .assertWarningThatMatches(
             allOf(
-                diagnosticType(AndroidApiLevelUnsupportedDiagnostic.class),
+                diagnosticType(UnsupportedAndroidApiLevelDiagnostic.class),
                 diagnosticMessage(containsString("is not supported by this compiler"))))
         .run(parameters.getRuntime(), TestMathMultiplyExactLongInt.class)
         .applyIf(
