@@ -704,3 +704,8 @@ def add_view_entries():
             )
 
 add_view_entries()
+
+lucicfg.emit(
+    dest = "luci-resultdb.cfg",
+    data = io.read_file("luci-resultdb.cfg"),
+)
