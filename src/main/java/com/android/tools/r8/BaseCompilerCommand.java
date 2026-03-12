@@ -7,6 +7,7 @@ import static com.android.tools.r8.BaseCompilerCommandUtils.createProgramOutputC
 
 import com.android.tools.r8.dump.DumpOptions;
 import com.android.tools.r8.errors.CompilationError;
+import com.android.tools.r8.errors.UnsupportedAndroidApiLevelDiagnostic;
 import com.android.tools.r8.graph.DexItemFactory;
 import com.android.tools.r8.inspector.Inspector;
 import com.android.tools.r8.ir.desugar.desugaredlibrary.DesugaredLibrarySpecification;
@@ -844,12 +845,7 @@ public abstract class BaseCompilerCommand extends BaseCommand {
       }
       if (getMinApiLevel() > AndroidApiLevel.LATEST.getLevel()) {
         if (getMinApiLevel() != AndroidApiLevel.ANDROID_PLATFORM_CONSTANT) {
-          reporter.warning(
-              "An API level of "
-                  + getMinApiLevel()
-                  + " is not supported by this compiler. Please use an API level of "
-                  + AndroidApiLevel.LATEST.getLevel()
-                  + " or earlier");
+          reporter.warning(new UnsupportedAndroidApiLevelDiagnostic(getMinApiLevel(), 0));
         }
       }
       if (hasDesugaredLibraryConfiguration() && getAndroidPlatformBuild()) {
