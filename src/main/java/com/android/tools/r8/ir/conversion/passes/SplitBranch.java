@@ -91,6 +91,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
 
   private Map<Goto, BasicBlock> findGotosToRetarget(List<BasicBlock> candidates) {
     Map<Goto, BasicBlock> newTargets = new LinkedHashMap<>();
+    candidateLoop:
     for (BasicBlock block : candidates) {
       // We need to verify any instruction in between the if and the chain of phis is empty or just
       // a constant used in the If instruction (we could duplicate instruction, but the common case
@@ -132,7 +133,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
         for (Phi phi : foundPhis) {
           for (Value value : phi.getOperands()) {
             if (!value.isConstNumber() && !(value.isPhi() && foundPhis.contains(value.asPhi()))) {
-              return newTargets;
+              continue candidateLoop;
             }
           }
         }
