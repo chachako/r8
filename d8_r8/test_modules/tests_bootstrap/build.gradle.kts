@@ -25,8 +25,6 @@ java {
 
 kotlin { explicitApi() }
 
-evaluationDependsOn(":testbase")
-
 val distR8WithRelocatedDeps = projectTask("dist", "r8WithRelocatedDeps")
 val distSwissArmyKnife = projectTask("dist", "swissArmyKnife")
 val keepAnnoCompileJavaTask = projectTask("keepanno", "compileJava")
@@ -46,7 +44,7 @@ dependencies {
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
   implementation(project(":testbase"))
-  implementation(files(project.project(":testbase").tasks.named("depsJar")))
+  implementation(project(":testbase", "depsJar"))
 }
 
 fun testDependencies(): FileCollection {
@@ -97,14 +95,14 @@ tasks {
     systemProperty("BUILD_PROP_R8_RUNTIME_PATH", distR8WithRelocatedDeps.outputs.files.singleFile)
   }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
       archiveFileName.set("not_named_tests_bootstrap.jar")
     }
 
-  val depsJar by
+  val assembleDepsJar by
     registering(Jar::class) {
       dependsOn(keepAnnoJarTask)
       dependsOn(sharedDownloadDepsTask)
@@ -115,4 +113,13 @@ tasks {
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       archiveFileName.set("deps.jar")
     }
+}
+
+val testJar by configurations.consumable("testJar")
+
+val depsJar by configurations.consumable("depsJar")
+
+artifacts {
+  add(testJar.name, tasks.named("assembleTestJar"))
+  add(depsJar.name, tasks.named("assembleDepsJar"))
 }

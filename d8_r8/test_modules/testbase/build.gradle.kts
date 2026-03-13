@@ -101,7 +101,7 @@ tasks {
 
   withType<KotlinCompile> { enabled = false }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.main.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
@@ -111,7 +111,7 @@ tasks {
       archiveFileName.set("not_named_testbase.jar")
     }
 
-  val depsJar by
+  val assembleDepsJar by
     registering(Jar::class) {
       dependsOn(keepAnnoJarTask)
       dependsOn(resourceShrinkerDepsJarTask)
@@ -125,4 +125,13 @@ tasks {
       duplicatesStrategy = DuplicatesStrategy.EXCLUDE
       archiveFileName.set("deps.jar")
     }
+}
+
+val testJar by configurations.consumable("testJar")
+
+val depsJar by configurations.consumable("depsJar")
+
+artifacts {
+  add(testJar.name, tasks.named("assembleTestJar"))
+  add(depsJar.name, tasks.named("assembleDepsJar"))
 }

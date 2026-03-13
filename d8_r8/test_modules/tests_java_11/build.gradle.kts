@@ -17,8 +17,6 @@ java {
 
 kotlin { explicitApi() }
 
-evaluationDependsOn(":testbase")
-
 val mainCompileJavaTask = projectTask("main", "compileJava")
 val mainProcessResourcesTask = projectTask("main", "processResources")
 val mainTurboCompileJavaTask = projectTask("main", "compileTurboJava")
@@ -29,7 +27,7 @@ dependencies {
   implementation(mainProcessResourcesTask.outputs.files)
   implementation(mainTurboCompileJavaTask.outputs.files)
   implementation(project(":testbase"))
-  implementation(files(project.project(":testbase").tasks.named("depsJar")))
+  implementation(project(":testbase", "depsJar"))
 }
 
 tasks {
@@ -58,7 +56,7 @@ tasks {
     )
   }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
@@ -68,3 +66,7 @@ tasks {
       archiveFileName.set("not_named_tests_java_11.jar")
     }
 }
+
+val testJar by configurations.consumable("testJar")
+
+artifacts { add(testJar.name, tasks.named("assembleTestJar")) }

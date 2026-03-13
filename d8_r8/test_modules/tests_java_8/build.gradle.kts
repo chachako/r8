@@ -30,11 +30,6 @@ java {
 
 kotlin { explicitApi() }
 
-// TODO(jonathanlist): This should be removed by "following gradle best practices".
-evaluationDependsOn(":tests_java_9")
-
-evaluationDependsOn(":testbase")
-
 // If we depend on keepanno by referencing the project source outputs we get an error regarding
 // incompatible java class file version. By depending on the jar we circumvent that.
 val assistantCompileTask = projectTask("assistant", "compileJava")
@@ -65,11 +60,8 @@ dependencies {
   implementation(resourceShrinkerCompileKotlinTask.outputs.files)
   implementation(resourceShrinkerDepsJarTask.outputs.files)
   implementation(project(":testbase"))
-  implementation(files(project.project(":testbase").tasks.named("depsJar")))
+  implementation(project(":testbase", "depsJar"))
 }
-
-val sourceSetDependenciesTasks =
-  arrayOf(project(":tests_java_9").tasks.named(getExampleJarsTaskName("examplesJava9")))
 
 fun testDependencies(): FileCollection {
   return sourceSets.test.get().compileClasspath.filter {
@@ -125,7 +117,9 @@ tasks {
 
   withType<KotlinCompile> { enabled = false }
 
-  val sourceSetDependencyTask by registering { dependsOn(*sourceSetDependenciesTasks) }
+  val sourceSetDependencyTask by registering {
+    dependsOn(":tests_java_9:${getExampleJarsTaskName("examplesJava9")}")
+  }
 
   withType<Test> {
     TestingState.setUpTestingState(this)
@@ -181,7 +175,7 @@ tasks {
     systemProperty("com.android.tools.r8.artprofilerewritingcompletenesscheck", "true")
   }
 
-  val testJar by
+  val assembleTestJar by
     registering(Jar::class) {
       from(sourceSets.test.get().output)
       // TODO(b/296486206): Seems like IntelliJ has a problem depending on test source sets.
@@ -191,3 +185,7 @@ tasks {
       archiveFileName.set("not_named_tests_java_8.jar")
     }
 }
+
+val testJar by configurations.consumable("testJar")
+
+artifacts { add(testJar.name, tasks.named("assembleTestJar")) }
