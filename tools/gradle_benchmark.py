@@ -9,7 +9,6 @@ import json
 import gradle
 import utils
 import os
-import shutil
 import perf
 import csv
 
@@ -98,15 +97,15 @@ def parse_options():
 
 
 # Upload to google storage unless a outdir is specified.
-def upload_benchmark(csv_path, log_path, outdir=None):
+def upload_benchmark(csv_path, outdir=None):
     benchmark_data = read_benchmark_csv(csv_path)
     for runs in benchmark_data:
-        upload_run(log_path, runs['benchmark'], runs['warmups'],
-                   runs['iterations'], outdir)
+        upload_run(runs['benchmark'], runs['warmups'], runs['iterations'],
+                   outdir)
 
 
 # Upload to google storage unless a outdir is specified.
-def upload_run(log_path, benchmark_name, warmups, iterations, outdir):
+def upload_run(benchmark_name, warmups, iterations, outdir):
     with utils.TempDir() as temp:
         output_file = os.path.join(temp, 'result.json')
         target_name = "build"
@@ -118,13 +117,6 @@ def upload_run(log_path, benchmark_name, warmups, iterations, outdir):
                                                   version=None,
                                                   filename="result.json")
         perf.ArchiveOutputFile(output_file, benchmark_dest, outdir=outdir)
-
-        # Write log.
-        log_dest = perf.GetArtifactLocation(benchmark=benchmark_name,
-                                            target=target_name,
-                                            version=None,
-                                            filename="log.txt")
-        perf.ArchiveOutputFile(log_path, log_dest, outdir=outdir)
 
         # Write metadata.
         if utils.is_bot():
@@ -199,7 +191,6 @@ def convert_ms_to_ns(time):
 def run_gradle_profiler_with_output_dir(args, profiler_output_dir):
     with utils.TempDir() as temp_gradle_home:
         csv_path = os.path.join(profiler_output_dir, 'benchmark.csv')
-        log_path = os.path.join(profiler_output_dir, 'profile.log')
         if not args.skip_benchmarks:
             ensure_deps()
             run_gradle_profiler(cwd=utils.REPO_ROOT,
@@ -213,7 +204,7 @@ def run_gradle_profiler_with_output_dir(args, profiler_output_dir):
                                 run_specific=args.scenario,
                                 throw_on_failure=True)
         if args.upload_benchmark_data_to_google_storage:
-            upload_benchmark(csv_path, log_path, args.output_dir)
+            upload_benchmark(csv_path, args.output_dir)
 
 
 def main():
