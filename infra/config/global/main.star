@@ -450,9 +450,9 @@ def gradle_benchmark():
         triggering_policy = scheduler.policy(
             kind = scheduler.GREEDY_BATCHING_KIND,
             max_batch_size = 1,
-            max_concurrent_invocations = 3,
+            max_concurrent_invocations = 1,
         ),
-        priority = 25,
+        priority = 35,
         properties = {
             "test_wrapper": "tools/gradle_benchmark.py",
             "builder_group": "internal.client.r8",
