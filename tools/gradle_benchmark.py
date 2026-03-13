@@ -14,17 +14,19 @@ import csv
 
 
 def get_profiler_executable():
-    profiler_path = os.path.join(utils.THIRD_PARTY, 'gradle-profiler',
-                                 'gradle-profiler-0.23.0', 'bin')
     if utils.IsWindows():
-        return os.path.join(profiler_path, 'gradle-profiler.bat')
+        return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler.bat')
     else:
-        return os.path.join(profiler_path, 'gradle-profiler')
+        return os.path.join(GRADLE_PROFILER_BIN, 'gradle-profiler')
 
 
-GRADLE_PROFILER_SHA1 = os.path.join(utils.THIRD_PARTY,
-                                    'gradle-profiler.tar.gz.sha1')
-GRADLE_PROFILER_TGZ = os.path.join(utils.THIRD_PARTY, 'gradle-profiler.tar.gz')
+GRADLE_PROFILER_DIR = os.path.join(utils.THIRD_PARTY, 'gradle-profiler')
+GRADLE_PROFILER_SHA1 = os.path.join(GRADLE_PROFILER_DIR,
+                                    'gradle-profiler-0.24.0.tar.gz.sha1')
+GRADLE_PROFILER_TGZ = os.path.join(GRADLE_PROFILER_DIR,
+                                   'gradle-profiler-0.24.0.tar.gz')
+GRADLE_PROFILER_BIN = os.path.join(GRADLE_PROFILER_DIR,
+                                   'gradle-profiler-0.24.0', 'bin')
 
 
 def ensure_deps():
