@@ -131,7 +131,7 @@ public class SplitBranch extends CodeRewriterPass<AppInfo> {
       if (!ALLOW_PARTIAL_REWRITE) {
         for (Phi phi : foundPhis) {
           for (Value value : phi.getOperands()) {
-            if (!value.isConstant() && !(value.isPhi() && foundPhis.contains(value.asPhi()))) {
+            if (!value.isConstNumber() && !(value.isPhi() && foundPhis.contains(value.asPhi()))) {
               return newTargets;
             }
           }
