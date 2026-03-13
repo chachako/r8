@@ -702,9 +702,6 @@ public class Enqueuer {
     }
     DexType dexType =
         appView.dexItemFactory().createType(DescriptorUtils.javaTypeToDescriptor(possibleClass));
-    if (!dexType.getBaseType().isClassType()) {
-      return false;
-    }
     DexProgramClass clazz = appView.definitionForProgramType(dexType);
     if (clazz == null) {
       return false;
