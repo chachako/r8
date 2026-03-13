@@ -8,7 +8,6 @@
 from __future__ import print_function
 from os.path import basename
 import argparse
-import os
 import sys
 
 import utils

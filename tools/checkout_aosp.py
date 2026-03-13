@@ -8,7 +8,6 @@ from shutil import copy2
 from subprocess import check_call
 import argparse
 import multiprocessing
-import os
 import sys
 
 import utils

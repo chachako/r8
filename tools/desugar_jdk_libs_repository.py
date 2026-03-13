@@ -5,7 +5,6 @@
 
 import argparse
 from enum import Enum
-import os
 from os.path import join
 import shutil
 import subprocess

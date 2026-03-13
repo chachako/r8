@@ -8,7 +8,6 @@ from glob import glob
 import argparse
 import copy
 import os
-import shutil
 import sys
 import time
 
@@ -19,7 +18,6 @@ from sanitize_libraries import SanitizeLibraries, SanitizeLibrariesInPgconf
 import thread_utils
 from thread_utils import print_thread
 import toolhelper
-import update_prebuilds_in_android
 import utils
 import youtube_data
 

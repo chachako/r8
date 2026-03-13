@@ -24,7 +24,6 @@
 #   $ git checkout feature_final;    git pull; git cl upload -m <message>
 
 import optparse
-import os
 import sys
 
 import defines

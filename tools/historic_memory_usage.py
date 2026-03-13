@@ -15,7 +15,6 @@ import optparse
 import os
 import subprocess
 import sys
-import utils
 
 APPS = ['gmscore', 'nest', 'youtube', 'chrome']
 COMPILERS = ['d8', 'r8']
@@ -27,9 +26,7 @@ def ParseOptions(argv):
                       help='The compiler to use',
                       default='d8',
                       choices=COMPILERS)
-    result.add_option('--app',
-                      help='What app to run on',
-                      choices=APPS)
+    result.add_option('--app', help='What app to run on', choices=APPS)
     result.add_option('--top',
                       default=historic_run.top_or_default(),
                       help='The most recent commit to test')

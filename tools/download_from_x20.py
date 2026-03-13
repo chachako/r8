@@ -9,9 +9,7 @@
 import optparse
 import os
 import shutil
-import subprocess
 import sys
-import tarfile
 import utils
 
 GMSCORE_DEPS = '/google/data/ro/teams/r8/deps'
