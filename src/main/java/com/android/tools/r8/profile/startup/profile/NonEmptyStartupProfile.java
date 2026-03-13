@@ -87,11 +87,15 @@ public class NonEmptyStartupProfile extends StartupProfile {
 
   private StartupProfile rewrittenWithLens(GraphLens graphLens) {
     return transform(
-        (classRule, builder) ->
+        (classRule, builder) -> {
+          DexType rewrittenType = graphLens.lookupType(classRule.getReference());
+          if (rewrittenType.isIntType()) {
+            assert graphLens.isEnumUnboxerLens();
+          } else {
             builder.addClassRule(
-                StartupProfileClassRule.builder()
-                    .setClassReference(graphLens.lookupType(classRule.getReference()))
-                    .build()),
+                StartupProfileClassRule.builder().setClassReference(rewrittenType).build());
+          }
+        },
         (methodRule, builder) ->
             builder.addMethodRule(
                 StartupProfileMethodRule.builder()
