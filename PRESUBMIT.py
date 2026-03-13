@@ -357,6 +357,24 @@ def CopyrightInContents(f, contents):
     return False
 
 
+def CheckLucicfg(input_api, output_api):
+    for f in input_api.AffectedFiles():
+        if f.LocalPath() == 'infra/config/global/main.star':
+            try:
+                check_call(
+                    ['lucicfg', 'validate', 'infra/config/global/main.star'],
+                    stdout=DEVNULL,
+                    stderr=STDOUT)
+            except CalledProcessError as e:
+                return [
+                    output_api.PresubmitError(
+                        'lucicfg validate infra/config/global/main.star failed')
+                ]
+            except FileNotFoundError:
+                return [output_api.PresubmitError('lucicfg not found in PATH')]
+    return []
+
+
 def CheckChange(input_api, output_api):
     branch = (check_output(['git', 'cl',
                             'upstream']).decode('utf-8').strip().replace(
@@ -370,6 +388,7 @@ def CheckChange(input_api, output_api):
     results.extend(CheckForAddedAllowXxxxxxMessages(input_api, output_api))
     results.extend(CheckForAddedPartialDebug(input_api, output_api))
     results.extend(CheckForCopyright(input_api, output_api, branch))
+    results.extend(CheckLucicfg(input_api, output_api))
     return results
 
 
